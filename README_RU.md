@@ -10,6 +10,12 @@
 
 CodexRunway — нативное приложение для строки меню macOS, которое показывает квоту Codex и Grok. Оно также даёт обновления сбросов Codex, reset credits, эквивалентную стоимость API и локальные сессии, а также отдельное управление несколькими аккаунтами для каждого провайдера.
 
+<p align="center">
+  <a href="docs/codex-runway-promo.mp4"><img src="docs/images/promo-poster.webp" alt="Видео о CodexRunway" width="720"></a>
+  <br>
+  <sub><a href="docs/codex-runway-promo.mp4">▶ Смотреть 84-секундное видео о продукте (текст на экране — на упрощённом китайском)</a></sub>
+</p>
+
 ## Возможности
 
 - Смотреть оставшуюся квоту Codex в строке меню.

@@ -10,6 +10,12 @@ Combien de temps votre Codex peut-il encore tourner ?
 
 CodexRunway est une application native de barre de menus macOS pour consulter les quotas Codex et Grok. Elle fournit aussi les actualités des réinitialisations Codex, les reset credits, le coût équivalent API et les sessions locales, avec une gestion multi-comptes séparée pour chaque fournisseur.
 
+<p align="center">
+  <a href="docs/codex-runway-promo.mp4"><img src="docs/images/promo-poster.webp" alt="Vidéo de présentation de CodexRunway" width="720"></a>
+  <br>
+  <sub><a href="docs/codex-runway-promo.mp4">▶ Voir la vidéo de présentation de 84 secondes (texte à l’écran en chinois simplifié)</a></sub>
+</p>
+
 ## Points forts
 
 - Consulter le quota Codex restant depuis la barre de menus.

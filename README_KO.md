@@ -10,6 +10,12 @@ Codex가 얼마나 더 달릴 수 있을까요?
 
 CodexRunway는 Codex와 Grok 할당량을 확인하는 네이티브 macOS 메뉴 막대 앱입니다. Codex 초기화 업데이트, reset credits, API 환산 비용, 로컬 세션과 공급자별 다중 계정 관리를 제공합니다.
 
+<p align="center">
+  <a href="docs/codex-runway-promo.mp4"><img src="docs/images/promo-poster.webp" alt="CodexRunway 제품 소개 영상" width="720"></a>
+  <br>
+  <sub><a href="docs/codex-runway-promo.mp4">▶ 84초 제품 소개 영상 보기 (화면 텍스트는 중국어 간체)</a></sub>
+</p>
+
 ## 주요 기능
 
 - 메뉴 막대에서 Codex 남은 할당량을 확인합니다.
