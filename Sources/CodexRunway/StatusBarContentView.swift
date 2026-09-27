@@ -68,7 +68,7 @@ final class StatusBarContentView: NSView {
         super.draw(dirtyRect)
         switch state.configuration.style {
         case .text:
-            drawText()
+            break // Percentage text is rendered by the native status bar button.
         case .countdown:
             drawCountdown()
         case .battery:
@@ -136,14 +136,6 @@ final class StatusBarContentView: NSView {
     }
 
     // MARK: - Countdown / meters / rings
-
-    private func drawText() {
-        let captions = layout.textCaptions
-        let frames = layout.columnFrames(widths: layout.textColumnWidths, gap: 4, in: bounds)
-        for (caption, frame) in zip(captions, frames) {
-            drawCentered(caption, font: layout.textFont, rect: frame, color: .labelColor)
-        }
-    }
 
     private func drawCountdown() {
         guard renderPlan.meters.count > 1 else {

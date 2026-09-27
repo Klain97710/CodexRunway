@@ -26,14 +26,29 @@ extension StatusController {
                 text: model.selectedStatusText,
                 meters: model.selectedQuotaMeters,
                 displayMinute: Int(Date().timeIntervalSince1970 / 60)))
-        let didChange = statusBarView.update(state)
-        guard didChange else { return }
-        statusItem.length = statusBarView.preferredWidth
+        guard Self.updateStatusBarContent(state, statusItem: statusItem, contentView: statusBarView) else { return }
         let quotaDetails = model.selectedQuotaMeters
             .map { "\($0.title): \($0.remainingPercent)%" }
             .joined(separator: " · ")
         statusItem.button?.toolTip = quotaDetails.isEmpty
             ? "CodexRunway · \(model.selectedStatusText)"
             : "CodexRunway · \(model.selectedStatusText)\n\(quotaDetails)"
+    }
+
+    @discardableResult
+    static func updateStatusBarContent(
+        _ state: StatusBarContentState,
+        statusItem: NSStatusItem,
+        contentView: StatusBarContentView) -> Bool
+    {
+        guard contentView.update(state) else { return false }
+        let layout = StatusBarContentLayout(state: state)
+        let usesNativeText = state.configuration.style == .text
+        contentView.isHidden = usesNativeText
+        // Let AppKit render the title's color and inactive-menu-bar appearance.
+        statusItem.button?.font = layout.textFont
+        statusItem.button?.title = usesNativeText ? layout.textCaptions.joined(separator: "  ") : ""
+        statusItem.length = usesNativeText ? NSStatusItem.variableLength : contentView.preferredWidth
+        return true
     }
 }
