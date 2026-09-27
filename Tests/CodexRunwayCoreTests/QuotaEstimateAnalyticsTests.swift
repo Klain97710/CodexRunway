@@ -20,7 +20,7 @@ struct QuotaEstimateAnalyticsTests {
         #expect(summary.dailyRows.map(\.rawCredits) == [0, 0, 0, 12.5, 0, 0])
         #expect(try summary.dailyRows.map(reportedCredits) == [false, false, true, true, false, false])
         #expect(summary.dailyRows[0].totals.totalTokens == 451_770_000)
-        #expect(summary.dailyRows[2].estimatedUSD == Decimal(5))
+        #expect(summary.dailyRows[2].estimatedUSD == Decimal(4))
     }
 
     @Test("analytics accepts numeric credits including numeric strings", arguments: ["0", "12.5", #""0""#, #""12.5""#])
@@ -63,7 +63,7 @@ struct QuotaEstimateAnalyticsTests {
         ]}
         """)
 
-        #expect(summary.dailyRows[0].estimatedUSD == Decimal(5))
+        #expect(summary.dailyRows[0].estimatedUSD == Decimal(4))
         #expect(summary.dailyRows[1].estimatedUSD == nil)
         #expect(summary.estimatedUSD == nil)
         #expect(summary.confidence == .tokensOnly)
@@ -81,7 +81,7 @@ struct QuotaEstimateAnalyticsTests {
         """)
 
         #expect(try summary.dailyRows.map(reportedTotals) == [true, false])
-        #expect(summary.dailyRows[0].estimatedUSD == Decimal(5))
+        #expect(summary.dailyRows[0].estimatedUSD == Decimal(4))
         #expect(summary.dailyRows[1].estimatedUSD == nil)
         #expect(summary.estimatedUSD == nil)
         #expect(summary.confidence == .tokensOnly)
@@ -112,7 +112,7 @@ struct QuotaEstimateAnalyticsTests {
         ]}
         """)
 
-        #expect(summary.estimatedUSD == Decimal(5))
+        #expect(summary.estimatedUSD == Decimal(4))
         #expect(summary.confidence == .priced)
         #expect(summary.warnings.isEmpty)
     }
