@@ -10,11 +10,7 @@ How much longer can your Codex keep running?
 
 CodexRunway is a native macOS menu bar app for checking Codex and Grok quota. It also provides Codex Reset Updates, reset credits, API-equivalent cost, and local sessions, with separate multi-account management for each provider.
 
-<p align="center">
-  <a href="https://github.com/Licoy/CodexRunway/raw/refs/heads/main/docs/codex-runway-promo.mp4"><img src="docs/images/promo-poster.webp" alt="CodexRunway product video" width="720"></a>
-  <br>
-  <sub><a href="https://github.com/Licoy/CodexRunway/raw/refs/heads/main/docs/codex-runway-promo.mp4">▶ Watch the 84-second product video (on-screen text in Simplified Chinese)</a></sub>
-</p>
+https://github.com/user-attachments/assets/76cbc417-b237-42a7-a2a7-a68b18ae21a8
 
 ## Highlights
 

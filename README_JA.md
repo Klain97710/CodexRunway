@@ -10,11 +10,7 @@ Codex はあとどれだけ走り続けられるでしょうか？
 
 CodexRunway は、Codex と Grok のクォータを確認するネイティブ macOS メニューバーアプリです。Codex リセット更新、reset credits、API 換算コスト、ローカルセッションに加え、プロバイダーごとの複数アカウント管理を提供します。
 
-<p align="center">
-  <a href="https://github.com/Licoy/CodexRunway/raw/refs/heads/main/docs/codex-runway-promo.mp4"><img src="docs/images/promo-poster.webp" alt="CodexRunway 紹介動画" width="720"></a>
-  <br>
-  <sub><a href="https://github.com/Licoy/CodexRunway/raw/refs/heads/main/docs/codex-runway-promo.mp4">▶ 84 秒の紹介動画を見る（画面内のテキストは簡体字中国語）</a></sub>
-</p>
+https://github.com/user-attachments/assets/76cbc417-b237-42a7-a2a7-a68b18ae21a8
 
 ## ハイライト
 

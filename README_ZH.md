@@ -10,11 +10,7 @@
 
 CodexRunway 是一个原生 macOS 状态栏应用，帮你在菜单栏查看 Codex 与 Grok 额度，并提供 Codex 重置动态、reset credits、API 等价成本与本机会话能力，以及两个供应商各自独立的多账号管理。
 
-<p align="center">
-  <a href="https://github.com/Licoy/CodexRunway/raw/refs/heads/main/docs/codex-runway-promo.mp4"><img src="docs/images/promo-poster.webp" alt="CodexRunway 产品介绍视频" width="720"></a>
-  <br>
-  <sub><a href="https://github.com/Licoy/CodexRunway/raw/refs/heads/main/docs/codex-runway-promo.mp4">▶ 观看 84 秒产品介绍视频</a></sub>
-</p>
+https://github.com/user-attachments/assets/76cbc417-b237-42a7-a2a7-a68b18ae21a8
 
 ## 亮点
 
