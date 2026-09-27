@@ -187,9 +187,9 @@ struct StatusBarRenderPlanTests {
         #expect(layout.preferredWidth == columnWidth)
     }
 
-    @Test("all status bar styles render weekly-only and model-specific layouts")
+    @Test("custom-drawn status bar styles render weekly-only and model-specific layouts")
     @MainActor
-    func allStylesRenderVariableQuotaCounts() throws {
+    func customStylesRenderVariableQuotaCounts() throws {
         let weekly = meter(title: "每周", usedPercent: 11, windowMinutes: 10_080)
         let fiveHour = meter(title: "5小时", usedPercent: 20, windowMinutes: 300)
         let modelSpecific = meter(
@@ -198,7 +198,7 @@ struct StatusBarRenderPlanTests {
             windowMinutes: 10_080,
             source: .modelSpecific)
 
-        for style in StatusBarDisplayStyle.allCases {
+        for style in StatusBarDisplayStyle.allCases where style != .text {
             let stylePreferences = preferences(style: style)
             let compact = try render(preferences: stylePreferences, meters: [weekly])
             let expanded = try render(
@@ -210,6 +210,46 @@ struct StatusBarRenderPlanTests {
             #expect(expanded.width > compact.width)
             try writeSnapshotIfRequested(compact.data, name: "\(style.rawValue)-weekly-only")
             try writeSnapshotIfRequested(expanded.data, name: "\(style.rawValue)-with-model-specific")
+        }
+    }
+
+    @Test("native percentage titles update and switch back to custom-drawn styles")
+    @MainActor
+    func nativePercentageTitlesFollowState() throws {
+        _ = NSApplication.shared
+        let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        defer { NSStatusBar.system.removeStatusItem(statusItem) }
+        let button = try #require(statusItem.button)
+        let view = StatusBarContentView(frame: .zero)
+        button.addSubview(view)
+        let weekly = meter(title: "每周", usedPercent: 0, windowMinutes: 10_080)
+        let fiveHour = meter(title: "5小时", usedPercent: 20, windowMinutes: 300)
+        let modelSpecific = meter(
+            title: "模型配额",
+            usedPercent: 11,
+            windowMinutes: 10_080,
+            source: .modelSpecific)
+
+        for (meters, title) in [([weekly], "100%"), ([fiveHour, weekly, modelSpecific], "80%  100%  89%"), ([], "--")] {
+            let textState = StatusBarContentState(
+                configuration: .init(preferences: preferences(style: .text), language: .simplifiedChinese),
+                content: .init(text: "6天", meters: meters, displayMinute: 0))
+            for style in StatusBarDisplayStyle.allCases where style != .text {
+                #expect(StatusController.updateStatusBarContent(textState, statusItem: statusItem, contentView: view))
+                #expect(button.title == title)
+                #expect(button.font == NSFont.systemFont(ofSize: 14, weight: .semibold))
+                #expect(view.isHidden)
+                #expect(statusItem.length == NSStatusItem.variableLength)
+                #expect(!StatusController.updateStatusBarContent(textState, statusItem: statusItem, contentView: view))
+
+                let customState = StatusBarContentState(
+                    configuration: .init(preferences: preferences(style: style), language: .simplifiedChinese),
+                    content: textState.content)
+                #expect(StatusController.updateStatusBarContent(customState, statusItem: statusItem, contentView: view))
+                #expect(button.title.isEmpty)
+                #expect(!view.isHidden)
+                #expect(statusItem.length == view.preferredWidth)
+            }
         }
     }
 
