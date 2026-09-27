@@ -2,3 +2,6 @@
 dist/
 .DS_Store
 *.xcuserstate
+
+# Promo video workspace
+video/
