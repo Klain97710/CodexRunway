@@ -167,7 +167,7 @@ bash Scripts/package-app.sh
 - **Codex 重設動態**：資料來自 [Did Codex Reset](https://didcodexreset.com) 的 [https://didcodexreset.com/api/status.json](https://didcodexreset.com/api/status.json)，非官方且僅供參考，可能延遲或暫時無法使用。
 - **配額 / reset credits / 訂閱額度推算 / Token 用量官方統計 / 部分線上用量**：在你已登入的前提下，透過本機憑證存取官方 ChatGPT / Codex 後端介面；官方 Token 統計僅對應目前帳號，並顯示伺服端統計截至日期。訂閱額度推算非正式：用週占用率和每日 Credits 外推本週額度（1000 Credits ≈ $40，版本 `credits-usd-2026-08-26`）。
 - **Grok 額度**：僅由官方 CLI chat-proxy 的 `/v1/billing?format=credits` 回傳（使用本機 OAuth / SuperGrok 登入憑證）。應用程式不提供第二資料源，也不會把 API 帳單或本機工作階段統計混入該額度。
-- **Grok API 等價成本 / 本機工作階段**：根據本機 `~/.grok/sessions` 的 `turn_completed` 用量，按官方 xAI Text API 價目（input / cached / output；prompt ≥ 200k 走長上下文價，價格版本 `xai-builtin-2026-08-13`）逐 turn 估算。未知模型不計精確費用。CLI 的 `costUsdTicks` 是訂閱額度口徑，不用作 API 等價。
+- **Grok API 等價成本 / 本機工作階段**：根據本機 `~/.grok/sessions` 的 `turn_completed` 用量，按官方 xAI Text API 價目（input / cached / output；prompt ≥ 200k 走長上下文價，價格版本 `xai-builtin-2026-09-27`）逐 turn 估算。未知模型不計精確費用。CLI 的 `costUsdTicks` 是訂閱額度口徑，不用作 API 等價。
 - **Token 用量本機日誌 / API 等價成本 / 最近工作階段**：預設基於本機 `~/.codex` 工作階段日誌與本機索引計算。本機歷史日誌沒有可靠的帳號歸屬，因此可能包含多個帳號的資料。
 
 ## 開發與貢獻

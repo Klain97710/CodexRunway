@@ -373,7 +373,7 @@ struct UsageCostRepositoryAggregationTests {
             for: [fullWindowQuery()], calculatedAt: fixedNow, policy: .ifChanged)["full"])
 
         #expect(summary.confidence == .priced)
-        #expect(summary.estimatedUSD == 6.75)
+        #expect(summary.estimatedUSD == 5.75)
         #expect(summary.modelRows.first { $0.name == "gpt-5.3-codex-spark" }?.estimatedUSD == 1.75)
     }
 
@@ -392,8 +392,8 @@ struct UsageCostRepositoryAggregationTests {
             for: [fullWindowQuery()], calculatedAt: fixedNow, policy: .ifChanged)["full"])
 
         #expect(summary.confidence == .priced)
-        #expect(summary.estimatedUSD == 5)
-        #expect(summary.modelRows.first { $0.name == "gpt-5.6-sol" }?.estimatedUSD == 5)
+        #expect(summary.estimatedUSD == 4)
+        #expect(summary.modelRows.first { $0.name == "gpt-5.6-sol" }?.estimatedUSD == 4)
         #expect(summary.modelRows.first { $0.name == "unknown-model" }?.estimatedUSD == nil)
         #expect(summary.modelRows.first { $0.name == "codex-auto-review" }?.estimatedUSD == nil)
         #expect(summary.warnings.contains("unknown-model:unknown-model"))

@@ -346,7 +346,7 @@ extension ApiEquivalentTotals {
 
 public enum PricingTable {
     /// Bundled fallback verified against the official OpenAI pricing documentation.
-    public static let version = "openai-builtin-2026-09-26"
+    public static let version = "openai-builtin-2026-09-27"
 
     public struct Price: Codable, Equatable, Sendable {
         var inputPerMillion: Decimal
@@ -408,23 +408,23 @@ public enum PricingTable {
             longContextCacheWritePerMillion: 0.25,
             longContextOutputPerMillion: 0.75),
         "gpt-5.6": Price(
-            inputPerMillion: 5,
-            cachedInputPerMillion: 0.5,
-            cacheWritePerMillion: 6.25,
-            outputPerMillion: 30,
-            longContextInputPerMillion: 10,
-            longContextCachedInputPerMillion: 1,
-            longContextCacheWritePerMillion: 12.5,
-            longContextOutputPerMillion: 45),
+            inputPerMillion: 4,
+            cachedInputPerMillion: 0.4,
+            cacheWritePerMillion: 5,
+            outputPerMillion: 20,
+            longContextInputPerMillion: 8,
+            longContextCachedInputPerMillion: 0.8,
+            longContextCacheWritePerMillion: 10,
+            longContextOutputPerMillion: 30),
         "gpt-5.6-sol": Price(
-            inputPerMillion: 5,
-            cachedInputPerMillion: 0.5,
-            cacheWritePerMillion: 6.25,
-            outputPerMillion: 30,
-            longContextInputPerMillion: 10,
-            longContextCachedInputPerMillion: 1,
-            longContextCacheWritePerMillion: 12.5,
-            longContextOutputPerMillion: 45),
+            inputPerMillion: 4,
+            cachedInputPerMillion: 0.4,
+            cacheWritePerMillion: 5,
+            outputPerMillion: 20,
+            longContextInputPerMillion: 8,
+            longContextCachedInputPerMillion: 0.8,
+            longContextCacheWritePerMillion: 10,
+            longContextOutputPerMillion: 30),
         "gpt-5.6-terra": Price(
             inputPerMillion: 2,
             cachedInputPerMillion: 0.2,

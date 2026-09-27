@@ -816,6 +816,7 @@ struct CostScannerTests {
 
     @Test("cost cache rejects a stale pricing version", arguments: [
         "stale-pricing-version", "openai-builtin-2026-08-13", "openai-builtin-2026-09-11",
+        "openai-builtin-2026-09-26",
     ])
     func costCacheRejectsStalePricingVersion(pricingVersion: String) throws {
         let root = try TemporaryDirectory()

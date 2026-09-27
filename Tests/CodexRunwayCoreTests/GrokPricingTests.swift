@@ -12,12 +12,23 @@ struct GrokPricingTests {
         #expect(GrokPricingTable.price(for: "grok-4.5-latest")?.outputPerMillion == 6)
         #expect(GrokPricingTable.price(for: "grok-4.5-2026-07-08")?.inputPerMillion == 2)
         #expect(GrokPricingTable.price(for: "grok-4.6-build")?.cachedInputPerMillion == Decimal(string: "0.50"))
+        #expect(GrokPricingTable.price(for: "grok-4.7")?.cachedInputPerMillion == Decimal(string: "0.50"))
+        #expect(GrokPricingTable.price(for: "grok-4.7-build")?.outputPerMillion == 6)
+        #expect(GrokPricingTable.price(for: "grok-4.7-latest")?.inputPerMillion == 2)
+        #expect(GrokPricingTable.price(for: "grok-4.7-fast")?.inputPerMillion == 4)
+        #expect(GrokPricingTable.price(for: "grok-4.7-fast")?.cachedInputPerMillion == 1)
+        #expect(GrokPricingTable.price(for: "grok-4.7-fast")?.outputPerMillion == 12)
+        #expect(GrokPricingTable.price(for: "grok-4.7-fast")?.longContextInputPerMillion == 6)
+        #expect(GrokPricingTable.price(for: "grok-4.7-fast")?.longContextCachedInputPerMillion == Decimal(string: "1.50"))
+        #expect(GrokPricingTable.price(for: "grok-4.7-fast")?.longContextOutputPerMillion == 18)
+        #expect(GrokPricingTable.price(for: "grok-4.7-build-fast")?.inputPerMillion == 4)
+        #expect(GrokPricingTable.price(for: "grok-4.7-fast-build")?.outputPerMillion == 12)
         #expect(GrokPricingTable.price(for: "grok-4.3")?.inputPerMillion == Decimal(string: "1.25"))
         #expect(GrokPricingTable.price(for: "grok-4.20-0309-reasoning")?.outputPerMillion == Decimal(string: "2.50"))
         #expect(GrokPricingTable.price(for: "grok-build-0.1")?.inputPerMillion == 1)
         #expect(GrokPricingTable.price(for: "unknown-model") == nil)
         #expect(GrokPricingTable.price(for: "grok") == nil)
-        #expect(GrokPricingTable.version == "xai-builtin-2026-08-13")
+        #expect(GrokPricingTable.version == "xai-builtin-2026-09-27")
     }
 
     @Test("prices a short-context grok-4.5 request")
@@ -51,6 +62,18 @@ struct GrokPricingTests {
             cachedInputTokens: 200_000,
             outputTokens: 0)
         #expect(longCached == Decimal(string: "0.2"))
+        let fastShort = GrokPricingTable.cost(
+            model: "grok-4.7-build-fast",
+            inputTokens: 199_999,
+            cachedInputTokens: 0,
+            outputTokens: 0)
+        let fastLong = GrokPricingTable.cost(
+            model: "grok-4.7-build-fast",
+            inputTokens: 200_000,
+            cachedInputTokens: 0,
+            outputTokens: 0)
+        #expect(fastShort == Decimal(199_999) / 1_000_000 * 4)
+        #expect(fastLong == Decimal(string: "1.2"))
     }
 
     @Test("does not invent a price for unknown models")

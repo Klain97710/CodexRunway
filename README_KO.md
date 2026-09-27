@@ -167,7 +167,7 @@ bash Scripts/package-app.sh
 - **Codex 초기화 업데이트**: 데이터는 [Did Codex Reset](https://didcodexreset.com)의 [https://didcodexreset.com/api/status.json](https://didcodexreset.com/api/status.json)에서 옵니다. 비공식이며 참고용이고, 지연되거나 일시적으로 없을 수 있습니다.
 - **할당량 / reset credits / 구독 한도 추정 / 공식 토큰 사용량 / 일부 온라인 사용량**: 로그인한 상태에서 로컬 자격 증명으로 공식 ChatGPT / Codex 백엔드 API를 요청합니다. 공식 토큰 사용량은 현재 계정에 속하며 백엔드 통계 날짜를 보여 줍니다. 구독 한도 추정은 비공식으로, 주간 사용률과 일별 Credits로 외삽합니다(1000 Credits ≈ $40, 버전 `credits-usd-2026-08-26`).
 - **Grok 할당량**: 로컬 OAuth / SuperGrok 로그인으로 공식 CLI chat-proxy `/v1/billing?format=credits`만 반환합니다. 보조 출처는 없으며 API 결제나 로컬 세션 통계를 이 할당량에 섞지 않습니다.
-- **Grok API 환산 비용 / 로컬 세션**: 로컬 `~/.grok/sessions`의 `turn_completed` 사용량을 공식 xAI Text API 가격(input / cached / output, prompt ≥ 200k는 긴 컨텍스트 요금, 가격표 `xai-builtin-2026-08-13`)으로 turn마다 계산합니다. 알 수 없는 모델은 정확한 비용으로 만들지 않습니다. CLI `costUsdTicks`는 구독 크레딧 회계이며 API 환산 비용으로 쓰지 않습니다.
+- **Grok API 환산 비용 / 로컬 세션**: 로컬 `~/.grok/sessions`의 `turn_completed` 사용량을 공식 xAI Text API 가격(input / cached / output, prompt ≥ 200k는 긴 컨텍스트 요금, 가격표 `xai-builtin-2026-09-27`)으로 turn마다 계산합니다. 알 수 없는 모델은 정확한 비용으로 만들지 않습니다. CLI `costUsdTicks`는 구독 크레딧 회계이며 API 환산 비용으로 쓰지 않습니다.
 - **로컬 로그 토큰 사용량 / API 환산 비용 / 최근 세션**: 기본적으로 로컬 `~/.codex` 세션 로그와 로컬 인덱스에서 계산합니다. 과거 로컬 로그에는 신뢰할 계정 귀속이 없어 여러 계정이 포함될 수 있습니다.
 
 ## 개발과 기여

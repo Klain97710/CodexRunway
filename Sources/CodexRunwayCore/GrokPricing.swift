@@ -3,11 +3,11 @@ import Foundation
 /// Official xAI Text API token prices for Grok API-equivalent cost.
 ///
 /// Bundled fallback verified against https://docs.x.ai/developers/pricing
-/// on 2026-08-13. Unknown model IDs are not invented as exact costs.
+/// on 2026-09-27. Unknown model IDs are not invented as exact costs.
 /// Long-context rates apply to the whole request when prompt tokens reach
 /// the published threshold (200k).
 public enum GrokPricingTable {
-    public static let version = "xai-builtin-2026-08-13"
+    public static let version = "xai-builtin-2026-09-27"
     public static let longContextThresholdTokens = 200_000
 
     public struct Price: Equatable, Sendable {
@@ -39,6 +39,9 @@ public enum GrokPricingTable {
     }
 
     static let builtInPrices: [String: Price] = [
+        "grok-4.7": flagship45Family(cached: Decimal(string: "0.50")!, longCached: 1),
+        "grok-4.7-fast": fast47,
+        "grok-4.7-build-fast": fast47,
         "grok-4.6": flagship45Family(cached: Decimal(string: "0.50")!, longCached: 1),
         "grok-4.5": flagship45Family(cached: Decimal(string: "0.30")!, longCached: Decimal(string: "0.60")!),
         "grok-4.3": midFamily,
@@ -141,6 +144,16 @@ public enum GrokPricingTable {
             longContextOutputPerMillion: 12)
     }
 
+    /// Grok 4.7 Fast is not 2× the long-context flagship rate. Official long-context
+    /// rates are $6 / $1.50 / $18, while short context is 2× standard.
+    private static let fast47 = Price(
+        inputPerMillion: 4,
+        cachedInputPerMillion: 1,
+        outputPerMillion: 12,
+        longContextInputPerMillion: 6,
+        longContextCachedInputPerMillion: Decimal(string: "1.50")!,
+        longContextOutputPerMillion: 18)
+
     private static let midFamily = Price(
         inputPerMillion: Decimal(string: "1.25")!,
         cachedInputPerMillion: Decimal(string: "0.20")!,
@@ -154,7 +167,8 @@ public enum GrokPricingTable {
     }
 
     /// CLI product SKUs such as `grok-4.5-build` share the `grok-4.5` API price.
-    /// Do not strip the infix in `grok-build-0.1`.
+    /// Do not strip the infix in `grok-build-0.1`. `grok-4.7-build-fast` is its own
+    /// price, so `-build` is only removed when it is the final suffix.
     private static func strippingProductSuffix(_ model: String) -> String? {
         for suffix in ["-build-free", "-build"] where model.hasSuffix(suffix) {
             let base = String(model.dropLast(suffix.count))

@@ -167,7 +167,7 @@ bash Scripts/package-app.sh
 - **Codex リセット更新**: データは [Did Codex Reset](https://didcodexreset.com) の [https://didcodexreset.com/api/status.json](https://didcodexreset.com/api/status.json) からです。非公式で参考用であり、遅延や一時的な欠落があり得ます。
 - **クォータ / reset credits / 週次クォータ推定 / 公式トークン使用量 / 一部のオンライン使用量**: サインイン済みなら、ローカル資格情報で公式 ChatGPT / Codex バックエンド API に要求します。公式トークン使用量は現在アカウントに属し、バックエンド統計日を表示します。週次クォータ推定は非公式で、週次使用率と日次 Credits から外挿します（1000 Credits ≈ $40、バージョン `credits-usd-2026-08-26`）。
 - **Grok クォータ**: ローカル OAuth / SuperGrok ログインで公式 CLI chat-proxy の `/v1/billing?format=credits` だけが返します。第二のデータ源はなく、API 請求やローカルセッション統計をこのクォータに混ぜません。
-- **Grok API 換算コスト / ローカルセッション**: ローカル `~/.grok/sessions` の `turn_completed` 使用量を、公式 xAI Text API 価格（input / cached / output、prompt ≥ 200k は長文脈料金、価格版 `xai-builtin-2026-08-13`）で turn ごとに見積もります。未知モデルを正確な費用として作りません。CLI の `costUsdTicks` はサブスクリプションクレジット会計であり、API 換算には使いません。
+- **Grok API 換算コスト / ローカルセッション**: ローカル `~/.grok/sessions` の `turn_completed` 使用量を、公式 xAI Text API 価格（input / cached / output、prompt ≥ 200k は長文脈料金、価格版 `xai-builtin-2026-09-27`）で turn ごとに見積もります。未知モデルを正確な費用として作りません。CLI の `costUsdTicks` はサブスクリプションクレジット会計であり、API 換算には使いません。
 - **ローカルログのトークン使用量 / API 換算コスト / 最近のセッション**: 既定ではローカル `~/.codex` セッションログとローカルインデックスから計算します。過去のローカルログには信頼できるアカウント帰属がないため、複数アカウントを含むことがあります。
 
 ## 開発と貢献
