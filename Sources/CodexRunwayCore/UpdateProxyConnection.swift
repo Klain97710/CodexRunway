@@ -68,15 +68,16 @@ final class UpdateProxyConnection {
             watchDisconnect()
             var request = URLRequest(url: resource.url)
             request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
-            let (bytes, response) = try await session.bytes(for: request)
-            if (response as? HTTPURLResponse)?.statusCode == 407 { throw NetworkProxyError.authenticationFailed }
-            guard let response = response as? HTTPURLResponse, [200, 206].contains(response.statusCode) else {
+            // AsyncBytes yields one byte at a time; a 256KB body timed out CI.
+            let (response, chunks, task) = try await delegate.load(session: session, request: request)
+            if response.statusCode == 407 { throw NetworkProxyError.authenticationFailed }
+            guard [200, 206].contains(response.statusCode) else {
                 throw UpdateProxyBridgeError.invalidResponse
             }
             let length = Self.contentLength(response)
             try await send(Self.responseHeader(status: response.statusCode, length: length, filename: resource.url.lastPathComponent))
             sentHeaders = true
-            try await stream(bytes, length: length)
+            try await stream(chunks, length: length, task: task)
             resource.report(nil)
         } catch {
             if !Task.isCancelled, let active {
@@ -111,22 +112,30 @@ final class UpdateProxyConnection {
         }
     }
 
-    // Consume bytes on the generic executor; only complete chunks need the connection's actor.
-    nonisolated private func stream(_ bytes: URLSession.AsyncBytes, length: Int64?) async throws {
+    nonisolated private func stream(
+        _ chunks: AsyncThrowingStream<Data, Error>,
+        length: Int64?,
+        task: URLSessionDataTask
+    ) async throws {
         var chunk = Data()
         chunk.reserveCapacity(65_536)
         var total: Int64 = 0
-        for try await byte in bytes {
-            chunk.append(byte)
-            total += 1
-            if let length, total > length { throw UpdateProxyBridgeError.invalidResponse }
-            if chunk.count == 65_536 {
-                try await sendChunk(chunk, task: bytes.task, chunked: length == nil)
-                chunk.removeAll(keepingCapacity: true)
+        for try await incoming in chunks {
+            var rest = incoming
+            while !rest.isEmpty {
+                let take = min(65_536 - chunk.count, rest.count)
+                chunk.append(rest.prefix(take))
+                rest.removeFirst(take)
+                total += Int64(take)
+                if let length, total > length { throw UpdateProxyBridgeError.invalidResponse }
+                if chunk.count == 65_536 {
+                    try await sendChunk(chunk, task: task, chunked: length == nil)
+                    chunk.removeAll(keepingCapacity: true)
+                }
             }
         }
         if let length, total != length { throw UpdateProxyBridgeError.invalidResponse }
-        if !chunk.isEmpty { try await sendChunk(chunk, task: bytes.task, chunked: length == nil) }
+        if !chunk.isEmpty { try await sendChunk(chunk, task: task, chunked: length == nil) }
         if length == nil { try await send(Data("0\r\n\r\n".utf8)) }
     }
 
@@ -196,13 +205,76 @@ final class UpdateProxyConnection {
     }
 }
 
-private final class UpdateProxySessionDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+private final class UpdateProxySessionDelegate: NSObject, URLSessionDataDelegate, @unchecked Sendable {
     private let context: RunwayNetworkContext
     private let lock = NSLock()
     private var storedFailure: NetworkProxyError?
+    private var responseContinuation: CheckedContinuation<HTTPURLResponse, Error>?
+    private var bodyContinuation: AsyncThrowingStream<Data, Error>.Continuation?
+    private var finishedBody = false
     var failure: NetworkProxyError? { lock.withLock { storedFailure } }
 
     init(context: RunwayNetworkContext) { self.context = context }
+
+    func load(
+        session: URLSession,
+        request: URLRequest
+    ) async throws -> (HTTPURLResponse, AsyncThrowingStream<Data, Error>, URLSessionDataTask) {
+        let stream = AsyncThrowingStream<Data, Error> { continuation in
+            self.lock.withLock { self.bodyContinuation = continuation }
+        }
+        let task = session.dataTask(with: request)
+        let response: HTTPURLResponse = try await withCheckedThrowingContinuation { continuation in
+            self.lock.withLock { self.responseContinuation = continuation }
+            task.resume()
+        }
+        return (response, stream, task)
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        dataTask: URLSessionDataTask,
+        didReceive response: URLResponse,
+        completionHandler: @escaping @Sendable (URLSession.ResponseDisposition) -> Void)
+    {
+        guard let http = response as? HTTPURLResponse else {
+            completionHandler(.cancel)
+            finishBody(throwing: URLError(.badServerResponse))
+            return
+        }
+        let waiter = lock.withLock { () -> CheckedContinuation<HTTPURLResponse, Error>? in
+            let waiter = responseContinuation
+            responseContinuation = nil
+            return waiter
+        }
+        completionHandler(.allow)
+        // URLProtocol can deliver this on the caller's stack. Resume later.
+        if let waiter { Task { waiter.resume(returning: http) } }
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        let body = lock.withLock { finishedBody ? nil : bodyContinuation }
+        body?.yield(data)
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        finishBody(throwing: error)
+    }
+
+    private func finishBody(throwing error: Error?) {
+        let (waiter, body) = lock.withLock { () -> (CheckedContinuation<HTTPURLResponse, Error>?, AsyncThrowingStream<Data, Error>.Continuation?) in
+            let waiter = responseContinuation
+            responseContinuation = nil
+            guard !finishedBody else { return (waiter, nil) }
+            finishedBody = true
+            return (waiter, bodyContinuation)
+        }
+        if let waiter {
+            let failure = error ?? URLError(.unknown)
+            Task { waiter.resume(throwing: failure) }
+        }
+        if let error { body?.finish(throwing: error) } else { body?.finish() }
+    }
 
     func urlSession(
         _ session: URLSession,
