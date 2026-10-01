@@ -170,7 +170,6 @@ cp "$ROOT/Resources/Info.plist" "$CONTENTS/Info.plist"
   -c "Set :CFBundleVersion $BUILD_NUMBER" \
   -c "Add :RunwayWidgetStorageMode string local" \
   "$CONTENTS/Info.plist"
-cp "$ROOT/Resources/AppIcon.svg" "$RESOURCES/AppIcon.svg"
 cp "$ROOT/Resources/AppIcon.png" "$RESOURCES/AppIcon.png"
 cp "$ROOT/Resources/AppIcon.icns" "$RESOURCES/AppIcon.icns"
 for lproj in "$ROOT/Resources"/*.lproj; do

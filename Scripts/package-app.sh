@@ -63,7 +63,6 @@ if [[ -n "${EXPECTED_MACOS_SDK_MAJOR:-}" ]]; then
 fi
 cp "$ROOT/Resources/Info.plist" "$CONTENTS/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $RUNWAY_BUNDLE_ID" "$CONTENTS/Info.plist"
-cp "$ROOT/Resources/AppIcon.svg" "$RESOURCES/AppIcon.svg"
 cp "$ROOT/Resources/AppIcon.png" "$RESOURCES/AppIcon.png"
 cp "$ROOT/Resources/AppIcon.icns" "$RESOURCES/AppIcon.icns"
 for lproj in "$ROOT/Resources"/*.lproj; do
