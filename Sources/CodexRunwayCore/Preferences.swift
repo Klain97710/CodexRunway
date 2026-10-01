@@ -284,8 +284,9 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case planEnterprise
     case planFree
     case planPlus
-    case planPro5x
-    case planPro20x
+    case planPro100
+    case planPro200
+    case planPro500
     case planTeam
     case planUnknown
     case plannedEntries

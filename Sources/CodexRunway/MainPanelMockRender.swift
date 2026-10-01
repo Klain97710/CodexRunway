@@ -253,7 +253,7 @@ enum MainPanelMockRender {
         let day: TimeInterval = 24 * 3_600
 
         model.accountDisplay = RunwayPreviewFixtures.accountDisplay(
-            tier: .pro20x,
+            tier: .pro200,
             displayName: "dev@example.com",
             email: "dev@example.com",
             expiresAt: now.addingTimeInterval(26 * day))

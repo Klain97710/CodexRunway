@@ -251,10 +251,26 @@ struct AuthTests {
     func mapsSubscriptionTiers() {
         #expect(CodexSubscriptionTier.resolve(planType: "free", fallbackPlanType: nil) == .free)
         #expect(CodexSubscriptionTier.resolve(planType: "plus", fallbackPlanType: nil) == .plus)
-        #expect(CodexSubscriptionTier.resolve(planType: "pro", fallbackPlanType: nil) == .pro20x)
-        #expect(CodexSubscriptionTier.resolve(planType: "prolite", fallbackPlanType: nil) == .pro5x)
-        #expect(CodexSubscriptionTier.resolve(planType: "codex-pro-5x", fallbackPlanType: nil) == .pro5x)
-        #expect(CodexSubscriptionTier.resolve(planType: "pro-20x", fallbackPlanType: nil) == .pro20x)
+        #expect(CodexSubscriptionTier.resolve(planType: "prolite", fallbackPlanType: nil) == .pro100)
+        #expect(CodexSubscriptionTier.resolve(planType: "pro-lite", fallbackPlanType: nil) == .pro100)
+        #expect(CodexSubscriptionTier.resolve(planType: "pro-5x", fallbackPlanType: nil) == .pro100)
+        #expect(CodexSubscriptionTier.resolve(planType: "codex-pro-5x", fallbackPlanType: nil) == .pro100)
+        #expect(CodexSubscriptionTier.resolve(planType: "pro-100", fallbackPlanType: nil) == .pro100)
+        #expect(CodexSubscriptionTier.resolve(planType: "pro100", fallbackPlanType: nil) == .pro100)
+        #expect(CodexSubscriptionTier.resolve(planType: "pro", fallbackPlanType: nil) == .pro200)
+        #expect(CodexSubscriptionTier.resolve(planType: "pro-20x", fallbackPlanType: nil) == .pro200)
+        #expect(CodexSubscriptionTier.resolve(planType: "codex-pro-20x", fallbackPlanType: nil) == .pro200)
+        #expect(CodexSubscriptionTier.resolve(planType: "pro-200", fallbackPlanType: nil) == .pro200)
+        #expect(CodexSubscriptionTier.resolve(planType: "pro200", fallbackPlanType: nil) == .pro200)
+        #expect(CodexSubscriptionTier.resolve(planType: "pro-custom", fallbackPlanType: nil) == .pro200)
+        #expect(CodexSubscriptionTier.resolve(planType: "promax", fallbackPlanType: nil) == .pro500)
+        #expect(CodexSubscriptionTier.resolve(planType: "pro-max", fallbackPlanType: nil) == .pro500)
+        #expect(CodexSubscriptionTier.resolve(planType: "pro_500", fallbackPlanType: nil) == .pro500)
+        #expect(CodexSubscriptionTier.resolve(planType: "pro 500", fallbackPlanType: nil) == .pro500)
+        #expect(CodexSubscriptionTier.resolve(planType: "pro500", fallbackPlanType: nil) == .pro500)
+        #expect(CodexSubscriptionTier.resolve(planType: "codex-pro-500", fallbackPlanType: nil) == .pro500)
+        #expect(CodexSubscriptionTier.resolve(planType: "promax", fallbackPlanType: nil) != .pro200)
+        #expect(CodexSubscriptionTier.resolve(planType: "self-serve-business-prolite", fallbackPlanType: nil) == .business)
         #expect(CodexSubscriptionTier.resolve(planType: "business", fallbackPlanType: nil) == .business)
         #expect(CodexSubscriptionTier.resolve(planType: "team", fallbackPlanType: nil) == .team)
         #expect(CodexSubscriptionTier.resolve(planType: "enterprise", fallbackPlanType: nil) == .enterprise)
@@ -292,7 +308,7 @@ struct AuthTests {
         #expect(display.displayName == "person@example.com")
         #expect(display.email == "person@example.com")
         #expect(display.accountId == "acct_123456789")
-        #expect(display.subscriptionTier == .pro20x)
+        #expect(display.subscriptionTier == .pro200)
         #expect(display.subscriptionExpiresAt == RunwayDates.parse("2026-08-01T00:00:00Z"))
     }
 
@@ -303,10 +319,12 @@ struct AuthTests {
         let raw = RunwayDates.parse("2026-06-20T11:08:02+00:00")!
         let projected = CodexAccountDisplay.resolvedSubscriptionExpiresAt(
             raw: raw,
-            tier: .pro5x,
+            tier: .pro100,
             now: now)
         let expected = RunwayDates.parse("2026-07-20T11:08:02+00:00")
         #expect(projected == expected)
+        #expect(
+            CodexAccountDisplay.resolvedSubscriptionExpiresAt(raw: raw, tier: .pro500, now: now) == expected)
         #expect(!SubscriptionDateFormatter.isExpired(projected!, now: now))
 
         // Free / unknown keep the past claim as truly expired.
@@ -320,7 +338,7 @@ struct AuthTests {
         let now = RunwayDates.parse("2026-07-19T14:00:00Z")!
         let raw = RunwayDates.parse("2026-08-20T11:08:02+00:00")!
         #expect(
-            CodexAccountDisplay.resolvedSubscriptionExpiresAt(raw: raw, tier: .pro5x, now: now) == raw)
+            CodexAccountDisplay.resolvedSubscriptionExpiresAt(raw: raw, tier: .pro100, now: now) == raw)
     }
 
     @Test("account display falls back to username and account id")

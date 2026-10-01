@@ -9,8 +9,9 @@ struct DevTierBadgeGallery: View {
     private static let tiers: [CodexSubscriptionTier] = [
         .free,
         .plus,
-        .pro5x,
-        .pro20x,
+        .pro100,
+        .pro200,
+        .pro500,
         .business,
         .team,
         .enterprise,
@@ -120,8 +121,9 @@ struct DevTierBadgeGallery: View {
         switch tier {
         case .free: return "free"
         case .plus: return "plus"
-        case .pro5x: return "pro5x"
-        case .pro20x: return "pro20x"
+        case .pro100: return "pro100"
+        case .pro200: return "pro200"
+        case .pro500: return "pro500"
         case .business: return "business"
         case .team: return "team"
         case .enterprise: return "enterprise"

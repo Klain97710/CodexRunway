@@ -2244,7 +2244,7 @@ final class RunwayModel: ObservableObject {
             let nextAccountId = accountIdentityKey(for: auth)
             latestAuth = auth
             // Only attach quota plan when it belongs to the same account identity.
-            // Otherwise a switch leaves the previous tier (e.g. Pro 5X) painted on Free.
+            // Otherwise a switch leaves the previous tier (e.g. Pro 100) painted on Free.
             let planHint = (previousAccountId != nil && previousAccountId == nextAccountId)
                 ? latestQuota?.plan
                 : nil

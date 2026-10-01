@@ -82,7 +82,7 @@ struct SubscriptionTierLook: Equatable {
                 shimmer: Color.white.opacity(light ? 0.72 : 0.55),
                 shimmerEnabled: true,
                 textGradient: textGradient)
-        case .pro5x:
+        case .pro100:
             // Classic gold — text gradient stays readable on both schemes.
             let textGradient: [Color] = light
                 ? [
@@ -118,7 +118,7 @@ struct SubscriptionTierLook: Equatable {
                 shimmer: Color(red: 1.0, green: 0.96, blue: 0.78).opacity(light ? 0.78 : 0.62),
                 shimmerEnabled: true,
                 textGradient: textGradient)
-        case .pro20x:
+        case .pro200:
             // Black-gold identity text uses bright gold gradient (not the dark capsule fill).
             let textGradient: [Color] = light
                 ? [
@@ -148,6 +148,40 @@ struct SubscriptionTierLook: Equatable {
                     ],
                 stroke: Color(red: 0.78, green: 0.62, blue: 0.24).opacity(light ? 0.92 : 0.75),
                 shimmer: Color(red: 1.0, green: 0.88, blue: 0.48).opacity(0.70),
+                shimmerEnabled: true,
+                textGradient: textGradient)
+        case .pro500:
+            // Platinum on a dark base, brighter edge than Pro 200. Identity text stays light.
+            let textGradient: [Color] = light
+                ? [
+                    Color(red: 0.32, green: 0.30, blue: 0.24),
+                    Color(red: 0.52, green: 0.48, blue: 0.36),
+                    Color(red: 0.74, green: 0.68, blue: 0.50),
+                    Color(red: 0.40, green: 0.36, blue: 0.26),
+                ]
+                : [
+                    Color(red: 0.82, green: 0.78, blue: 0.68),
+                    Color(red: 0.96, green: 0.93, blue: 0.84),
+                    Color(red: 1.0, green: 0.98, blue: 0.94),
+                    Color(red: 0.88, green: 0.82, blue: 0.68),
+                ]
+            return SubscriptionTierLook(
+                foreground: Color(red: 0.98, green: 0.94, blue: 0.82),
+                fill: light
+                    ? [
+                        Color(red: 0.08, green: 0.08, blue: 0.10),
+                        Color(red: 0.72, green: 0.68, blue: 0.58),
+                        Color(red: 0.14, green: 0.13, blue: 0.12),
+                    ]
+                    : [
+                        Color(red: 0.05, green: 0.05, blue: 0.07),
+                        Color(red: 0.62, green: 0.58, blue: 0.50),
+                        Color(red: 0.10, green: 0.09, blue: 0.08),
+                    ],
+                stroke: light
+                    ? Color(red: 0.93, green: 0.84, blue: 0.62).opacity(0.95)
+                    : Color(red: 0.96, green: 0.90, blue: 0.72).opacity(0.85),
+                shimmer: Color(red: 1.0, green: 0.96, blue: 0.82).opacity(0.75),
                 shimmerEnabled: true,
                 textGradient: textGradient)
         case .business:
@@ -728,8 +762,9 @@ extension SubscriptionTierBadge {
         switch tier {
         case .free: return l10n.text(.planFree)
         case .plus: return l10n.text(.planPlus)
-        case .pro5x: return l10n.text(.planPro5x)
-        case .pro20x: return l10n.text(.planPro20x)
+        case .pro100: return l10n.text(.planPro100)
+        case .pro200: return l10n.text(.planPro200)
+        case .pro500: return l10n.text(.planPro500)
         case .business: return l10n.text(.planBusiness)
         case .team: return l10n.text(.planTeam)
         case .enterprise: return l10n.text(.planEnterprise)

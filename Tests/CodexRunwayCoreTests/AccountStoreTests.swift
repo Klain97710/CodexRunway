@@ -430,7 +430,7 @@ struct AccountStoreTests {
     func withIdentityPrefersLivePlan() {
         let proAuth = sampleAuth(accountId: "acct", email: "a@example.com", refresh: "r1", plan: "pro")
         var account = ManagedAccount.make(auth: proAuth, sortIndex: 0)
-        #expect(account.subscriptionTier == .pro20x || account.planType?.contains("pro") == true)
+        #expect(account.subscriptionTier == .pro200)
 
         let freeAuth = sampleAuth(accountId: "acct", email: "a@example.com", refresh: "r2", plan: "free")
         account = account.withIdentity(from: freeAuth, quotaPlan: nil)

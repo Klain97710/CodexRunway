@@ -287,8 +287,9 @@ public struct CodexIdentityClaims: Sendable, Equatable {
 public enum CodexSubscriptionTier: Sendable, Equatable {
     case free
     case plus
-    case pro5x
-    case pro20x
+    case pro100
+    case pro200
+    case pro500
     case business
     case team
     case enterprise
@@ -296,25 +297,34 @@ public enum CodexSubscriptionTier: Sendable, Equatable {
     case api
     case unknown
 
+    /// Official wire values stay `prolite` / `pro` / `promax`. Display names are Pro 100 / 200 / 500.
+    /// More specific Pro tiers are matched before the generic `pro` fallback.
+    private static let pro500PlanTypes: Set<String> = [
+        "promax", "pro-max", "pro-500", "pro500", "codex-pro-500",
+    ]
+    private static let pro100PlanTypes: Set<String> = [
+        "prolite", "pro-lite", "pro-5x", "codex-pro-5x", "pro-100", "pro100",
+    ]
+    private static let pro200PlanTypes: Set<String> = [
+        "pro", "pro-20x", "codex-pro-20x", "pro-200", "pro200",
+    ]
+
     public static func resolve(planType: String?, fallbackPlanType: String?) -> CodexSubscriptionTier {
         guard let raw = firstNonEmpty(planType, fallbackPlanType)?.lowercased()
             .replacingOccurrences(of: "_", with: "-")
             .replacingOccurrences(of: " ", with: "-")
         else { return .unknown }
 
-        if raw == "prolite" || raw == "pro-lite" || raw == "pro-5x" || raw == "codex-pro-5x" {
-            return .pro5x
-        }
-        if raw == "promax" || raw == "pro-max" || raw == "pro-20x" || raw == "codex-pro-20x" {
-            return .pro20x
-        }
+        if pro500PlanTypes.contains(raw) { return .pro500 }
+        if pro100PlanTypes.contains(raw) { return .pro100 }
+        if pro200PlanTypes.contains(raw) { return .pro200 }
         if raw.contains("enterprise") { return .enterprise }
         if raw.contains("business") { return .business }
         if raw.contains("team") { return .team }
         if raw.contains("edu") { return .edu }
         if raw.contains("api") { return .api }
         if raw.contains("plus") { return .plus }
-        if raw.contains("pro") { return .pro20x }
+        if raw.contains("pro") { return .pro200 }
         if raw.contains("free") { return .free }
         return .unknown
     }
@@ -409,7 +419,7 @@ extension CodexSubscriptionTier {
     /// Paid ChatGPT-style plans renew monthly; free/API/unknown should not invent future dates.
     fileprivate var projectsBillingCycleWhenStale: Bool {
         switch self {
-        case .plus, .pro5x, .pro20x, .business, .team, .enterprise, .edu:
+        case .plus, .pro100, .pro200, .pro500, .business, .team, .enterprise, .edu:
             return true
         case .free, .api, .unknown:
             return false
