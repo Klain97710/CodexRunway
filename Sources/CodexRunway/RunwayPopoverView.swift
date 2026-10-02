@@ -231,14 +231,7 @@ struct RunwayPopoverView: View {
                 },
                 onOpenEvidence: { url in
                     ExternalURLLauncher.open(url)
-                },
-                reaction: model.rateLimitResetTodayReaction,
-                isReactionBusy: model.isRateLimitResetTodayReactionBusy,
-                isReactionLoading: model.isRateLimitResetTodayReactionLoading,
-                isReactionFresh: model.isRateLimitResetTodayReactionFresh,
-                reactionDelta: model.rateLimitResetTodayReactionDelta,
-                onReactionClick: { model.clickRateLimitResetTodayReaction() },
-                onReactionPollingEnabledChange: { model.setRateLimitResetTodayReactionPollingEnabled($0) })
+                })
         case .codexQuotaEstimate:
             QuotaEstimateSummaryView(
                 snapshot: model.quotaEstimate,

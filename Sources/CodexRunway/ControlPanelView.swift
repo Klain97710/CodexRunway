@@ -595,8 +595,6 @@ struct ControlPanelView: View {
                 settings.updateShowsRateLimitResetToday(enabled)
                 if enabled {
                     model.refreshRateLimitResetToday(force: true)
-                } else {
-                    model.setRateLimitResetTodayReactionPollingEnabled(false)
                 }
             })
     }

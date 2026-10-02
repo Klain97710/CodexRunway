@@ -11,20 +11,17 @@ enum RateLimitResetTodayMockRender {
         var width: CGFloat
         var colorScheme: ColorScheme
         var confidence: Double? = nil
-        var reactionCount: Int = 266
-        var usesLegacyHeroLayout: Bool = false
     }
 
     static let qaCases: [QACase] = [
         QACase(name: "completed-en-light-280", kind: .completed, language: .english, width: 280, colorScheme: .light),
         QACase(
-            name: "inline-six-digit-zh-hans-dark-358",
+            name: "scheduled-zh-hans-dark-358",
             kind: .explicitScheduled,
             language: .simplifiedChinese,
             width: 358,
             colorScheme: .dark,
-            confidence: 0.88,
-            reactionCount: 107_516),
+            confidence: 0.88),
         QACase(name: "inferred-zh-hant-light-400", kind: .inferredScheduled, language: .traditionalChinese, width: 400, colorScheme: .light),
         QACase(
             name: "grace-ja-dark-280",
@@ -32,38 +29,12 @@ enum RateLimitResetTodayMockRender {
             language: .japanese,
             width: 280,
             colorScheme: .dark,
-            confidence: 0.92,
-            reactionCount: 107_516),
+            confidence: 0.92),
         QACase(name: "expired-ko-light-358", kind: .expired, language: .korean, width: 358, colorScheme: .light),
         QACase(name: "unavailable-fr-dark-400", kind: .unavailable, language: .french, width: 400, colorScheme: .dark),
         QACase(name: "no-ru-light-280", kind: .no, language: .russian, width: 280, colorScheme: .light),
         QACase(name: "unavailable-ja-dark-280", kind: .unavailable, language: .japanese, width: 280, colorScheme: .dark),
         QACase(name: "unavailable-fr-light-280", kind: .unavailable, language: .french, width: 280, colorScheme: .light),
-        QACase(
-            name: "legacy-inline-six-digit-zh-hans-dark-358",
-            kind: .explicitScheduled,
-            language: .simplifiedChinese,
-            width: 358,
-            colorScheme: .dark,
-            confidence: 0.88,
-            reactionCount: 107_516,
-            usesLegacyHeroLayout: true),
-        QACase(
-            name: "legacy-grace-ja-dark-280",
-            kind: .grace,
-            language: .japanese,
-            width: 280,
-            colorScheme: .dark,
-            confidence: 0.92,
-            reactionCount: 107_516,
-            usesLegacyHeroLayout: true),
-        QACase(
-            name: "legacy-unavailable-fr-light-280",
-            kind: .unavailable,
-            language: .french,
-            width: 280,
-            colorScheme: .light,
-            usesLegacyHeroLayout: true),
     ]
 
     @MainActor
@@ -73,10 +44,7 @@ enum RateLimitResetTodayMockRender {
         width: CGFloat = 358,
         resetType: RateLimitResetType = .global,
         colorScheme: ColorScheme = .light,
-        showsReaction: Bool = true,
-        confidence: Double? = nil,
-        reactionCount: Int = 266,
-        usesLegacyHeroLayout: Bool = false) throws -> Data
+        confidence: Double? = nil) throws -> Data
     {
         let host = NSHostingView(rootView: root(
             kind: kind,
@@ -84,10 +52,7 @@ enum RateLimitResetTodayMockRender {
             width: width,
             resetType: resetType,
             colorScheme: colorScheme,
-            showsReaction: showsReaction,
-            confidence: confidence,
-            reactionCount: reactionCount,
-            usesLegacyHeroLayout: usesLegacyHeroLayout))
+            confidence: confidence))
         layout(host, width: width)
 
         guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else {
@@ -107,10 +72,7 @@ enum RateLimitResetTodayMockRender {
         width: CGFloat,
         resetType: RateLimitResetType,
         colorScheme: ColorScheme,
-        showsReaction: Bool = true,
-        confidence: Double? = nil,
-        reactionCount: Int = 266,
-        usesLegacyHeroLayout: Bool = false) -> CGSize
+        confidence: Double? = nil) -> CGSize
     {
         let host = NSHostingView(rootView: root(
             kind: kind,
@@ -118,10 +80,7 @@ enum RateLimitResetTodayMockRender {
             width: width,
             resetType: resetType,
             colorScheme: colorScheme,
-            showsReaction: showsReaction,
-            confidence: confidence,
-            reactionCount: reactionCount,
-            usesLegacyHeroLayout: usesLegacyHeroLayout))
+            confidence: confidence))
         layout(host, width: width)
         return host.frame.size
     }
@@ -133,10 +92,7 @@ enum RateLimitResetTodayMockRender {
         width: CGFloat,
         resetType: RateLimitResetType,
         colorScheme: ColorScheme,
-        showsReaction: Bool,
-        confidence: Double?,
-        reactionCount: Int,
-        usesLegacyHeroLayout: Bool) -> some View
+        confidence: Double?) -> some View
     {
         var snapshot = RateLimitResetTodaySnapshot.devMock(kind: kind)
         if !snapshot.events.isEmpty {
@@ -154,12 +110,7 @@ enum RateLimitResetTodayMockRender {
             isRefreshing: false,
             onRefresh: {},
             onOpenSource: {},
-            onOpenEvidence: { _ in },
-            reaction: showsReaction
-                ? RateLimitResetTodayReactionSnapshot.devMock(kind: kind, count: reactionCount)
-                : nil,
-            usesLegacyHeroLayoutForTesting: usesLegacyHeroLayout,
-            legacyHeroAvailableWidthForTesting: usesLegacyHeroLayout ? width - 56 : nil)
+            onOpenEvidence: { _ in })
             .padding(16)
             .frame(width: width)
             .background(Color(nsColor: .windowBackgroundColor))
@@ -206,9 +157,7 @@ enum RateLimitResetTodayMockRender {
                 language: item.language,
                 width: item.width,
                 colorScheme: item.colorScheme,
-                confidence: item.confidence,
-                reactionCount: item.reactionCount,
-                usesLegacyHeroLayout: item.usesLegacyHeroLayout)
+                confidence: item.confidence)
             let url = root.appendingPathComponent("\(item.name).png")
             try data.write(to: url)
             print("wrote \(url.path) (\(data.count) bytes)")

@@ -414,11 +414,6 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case rateLimitResetTodayPlanUnknown
     case rateLimitResetTodayPlans
     case rateLimitResetTodayRefreshInterval
-    case rateLimitResetTodayReactionPlease
-    case rateLimitResetTodayReactionThank
-    case rateLimitResetTodayReactionPleaseAria
-    case rateLimitResetTodayReactionThankAria
-    case rateLimitResetTodayReactionLimitReached
     case rateLimitResetTodaySeen
     case rateLimitResetTodaySource
     case rateLimitResetTodaySourceInfo

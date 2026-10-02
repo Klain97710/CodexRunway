@@ -30,7 +30,8 @@ public struct RateLimitResetTodayClient: Sendable {
         request.timeoutInterval = 20
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.cachePolicy = .reloadIgnoringLocalCacheData
-        let (data, response) = try await RunwayNetwork.data(for: request, session: session)
+        request.httpShouldHandleCookies = false
+        let (data, response) = try await RunwayNetwork.data(for: request, session: session, policy: .withoutCookies)
         guard let http = response as? HTTPURLResponse, 200..<300 ~= http.statusCode else {
             throw URLError(.badServerResponse)
         }

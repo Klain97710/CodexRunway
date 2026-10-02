@@ -2,11 +2,6 @@ import AppKit
 import CodexRunwayCore
 import SwiftUI
 
-private struct ResetHeroAvailableWidthKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-
 struct QuotaMetersView: View {
     var title: String
     var meters: [QuotaMeter]
@@ -284,19 +279,6 @@ struct RateLimitResetTodayView: View {
     var onRefresh: () -> Void
     var onOpenSource: () -> Void
     var onOpenEvidence: ((URL) -> Void)?
-    var reaction: RateLimitResetTodayReactionSnapshot? = nil
-    var isReactionBusy: Bool = false
-    var isReactionLoading: Bool = false
-    var isReactionFresh: Bool = true
-    var reactionDelta: RateLimitResetTodayReactionDelta = .none
-    var onReactionClick: () -> Void = {}
-    var onReactionPollingEnabledChange: (Bool) -> Void = { _ in }
-    var usesLegacyHeroLayoutForTesting = false
-    var legacyHeroAvailableWidthForTesting: CGFloat? = nil
-
-    @Environment(\.runwayPanelVisible) private var panelVisible
-    @State private var heroAvailableWidth: CGFloat = 0
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             TimelineView(.periodic(from: .now, by: Self.countdownRefreshInterval)) { context in
@@ -343,13 +325,6 @@ struct RateLimitResetTodayView: View {
             .frame(maxWidth: .infinity)
             .runwayCard(.raised)
         }
-        .onAppear { onReactionPollingEnabledChange(panelVisible) }
-        .onChange(of: panelVisible) { onReactionPollingEnabledChange($0) }
-        .onDisappear { onReactionPollingEnabledChange(false) }
-    }
-
-    private var isReactionAwaitingCount: Bool {
-        isReactionLoading || (panelVisible && !isReactionFresh)
     }
 
     /// Hairline only — spacing is owned by `dividedSection`.
@@ -368,135 +343,12 @@ struct RateLimitResetTodayView: View {
         .padding(.top, 8)
     }
 
-    /// Keep the verdict and reaction inline whenever their natural widths fit.
     private func hero(now: Date) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            adaptiveHeroControls(now: now)
-
+            heroTitleView(now: now)
             heroSubtitleView(now: now)
-                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            GeometryReader { proxy in
-                Color.clear.preference(key: ResetHeroAvailableWidthKey.self, value: proxy.size.width)
-            })
-        .onPreferenceChange(ResetHeroAvailableWidthKey.self) { heroAvailableWidth = $0 }
-    }
-
-    @ViewBuilder
-    private func adaptiveHeroControls(now: Date) -> some View {
-        if #available(macOS 13.0, *), !usesLegacyHeroLayoutForTesting {
-            ViewThatFits(in: .horizontal) {
-                inlineHeroControls(now: now)
-                stackedHeroControls(now: now)
-            }
-        } else if stacksHeroTrailing(now: now) {
-            stackedHeroControls(now: now)
-        } else {
-            inlineHeroControls(now: now)
-        }
-    }
-
-    private func inlineHeroControls(now: Date) -> some View {
-        HStack(alignment: .center, spacing: 0) {
-            measuredHeroTitle(now: now)
-                .fixedSize(horizontal: true, vertical: false)
-                .layoutPriority(1)
-            Spacer(minLength: 10)
-            measuredHeroTrailing
-        }
-    }
-
-    private func stackedHeroControls(now: Date) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            measuredHeroTitle(now: now)
-            HStack {
-                Spacer(minLength: 0)
-                measuredHeroTrailing
-            }
-        }
-    }
-
-    private func stacksHeroTrailing(now: Date) -> Bool {
-        let availableWidth = legacyHeroAvailableWidthForTesting ?? heroAvailableWidth
-        let trailingWidth = heroTrailingNaturalWidth
-        return availableWidth > 0
-            && trailingWidth > 0
-            && heroTitleNaturalWidth(now: now) + trailingWidth + 10 > availableWidth
-    }
-
-    private func measuredHeroTitle(now: Date) -> some View {
-        heroTitleView(now: now)
-    }
-
-    private func heroTitleNaturalWidth(now: Date) -> CGFloat {
-        let presentation = snapshot?.verdictPresentation(now: now)
-        let answer = presentation?.answerText(l10n: l10n)
-            ?? (isRefreshing ? "…" : l10n.text(.rateLimitResetUnavailable))
-        let answerWidth = measuredTextWidth(
-            answer,
-            font: roundedSystemFont(size: 28, weight: .semibold))
-        guard let percent = presentation?.percentText(l10n: l10n) else { return answerWidth }
-        return measuredTextWidth(
-            percent,
-            font: roundedSystemFont(size: 22, weight: .semibold)) + 4 + answerWidth
-    }
-
-    private func roundedSystemFont(size: CGFloat, weight: NSFont.Weight) -> NSFont {
-        let base = NSFont.systemFont(ofSize: size, weight: weight)
-        guard let descriptor = base.fontDescriptor.withDesign(.rounded),
-              let rounded = NSFont(descriptor: descriptor, size: size)
-        else { return base }
-        return rounded
-    }
-
-    private func measuredTextWidth(_ text: String, font: NSFont) -> CGFloat {
-        ceil((text as NSString).size(withAttributes: [.font: font]).width)
-    }
-
-    private var heroTrailingNaturalWidth: CGFloat {
-        let font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .semibold)
-        if let reaction, reaction.isVisible {
-            let label = l10n.text(reaction.polarity == .yes
-                ? .rateLimitResetTodayReactionThank
-                : .rateLimitResetTodayReactionPlease)
-            let count = RateLimitResetTodayReaction.formatCount(
-                reaction.count ?? 0,
-                language: l10n.language)
-            let iconWidth = NSFont.smallSystemFontSize + 1
-            return iconWidth
-                + measuredTextWidth(label, font: font)
-                + measuredTextWidth(count, font: NSFont.monospacedDigitSystemFont(
-                    ofSize: NSFont.smallSystemFontSize,
-                    weight: .semibold))
-                + 24
-        }
-        return isReactionAwaitingCount ? NSFont.smallSystemFontSize + 16 : 0
-    }
-
-    @ViewBuilder
-    private var measuredHeroTrailing: some View {
-        if let reaction, reaction.isVisible {
-            RateLimitResetTodayReactionButton(
-                snapshot: reaction,
-                l10n: l10n,
-                isBusy: isReactionBusy,
-                isLoading: isReactionAwaitingCount,
-                delta: reactionDelta,
-                onClick: onReactionClick)
-                .fixedSize()
-        } else if isReactionAwaitingCount {
-            ProgressView()
-                .controlSize(.mini)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(RunwaySurface.raised, in: Capsule())
-                .overlay(
-                    Capsule()
-                        .strokeBorder(RunwaySurface.hairline, lineWidth: 1))
-                .fixedSize()
-        }
     }
 
     @ViewBuilder

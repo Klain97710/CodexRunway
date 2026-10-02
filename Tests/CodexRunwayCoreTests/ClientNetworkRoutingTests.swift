@@ -41,23 +41,19 @@ struct ClientNetworkRoutingTests {
         }
     }
 
-    @Test("reaction GET and POST use the current context with automatic cookies disabled")
-    func reactionsKeepCookiePolicyWhenContextChanges() async throws {
-        let root = routingTemporaryDirectory()
-        defer { try? FileManager.default.removeItem(at: root) }
-        let client = RateLimitResetTodayReactionClient(
-            cookieStore: .init(fileURL: root.appendingPathComponent("visitor.json")),
-            devMockKind: nil)
+    @Test("reset status refresh sends only public GETs without cookies or reaction requests")
+    func resetStatusHasNoInteractionRequests() async throws {
+        let client = RateLimitResetTodayClient(devMockKind: nil)
         for route in ["first", "second"] {
             let context = try routingContext(route: route)
             try await RunwayNetwork.$scopedContext.withValue(context) { () async throws -> Void in
-                let snapshot = try await client.fetch()
-                let result = try await client.click()
-                #expect(snapshot.count == (route == "first" ? 1 : 2))
-                #expect(result.ok)
-                #expect(result.data?.count == snapshot.count)
+                let snapshot = try await client.fetchStatus()
+                #expect(snapshot.events.isEmpty)
             }
         }
+        let requests = ClientRoutingURLProtocol.statusRequests
+        #expect(requests.count == 2)
+        #expect(requests.allSatisfy { $0.url == RateLimitResetTodayClient.statusURL && $0.httpMethod == "GET" })
     }
 
     @Test("Codex OAuth and the default pricing fetcher use the current network context")
@@ -125,6 +121,10 @@ private func routingSession(
 }
 
 private final class ClientRoutingURLProtocol: URLProtocol, @unchecked Sendable {
+    private static let statusLock = NSLock()
+    nonisolated(unsafe) private static var recordedStatusRequests: [URLRequest] = []
+    static var statusRequests: [URLRequest] { statusLock.withLock { recordedStatusRequests } }
+
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
@@ -161,13 +161,17 @@ private final class ClientRoutingURLProtocol: URLProtocol, @unchecked Sendable {
             return "{\"subscription_tier_display\":\"\(route)\"}"
         case "/prod_mc_billing.ConsumerUiSvc/GetRemainingResets":
             return "{}"
-        case "/api/reaction":
-            guard request.value(forHTTPHeaderField: "X-Test-Cookies") == "disabled" else {
-                throw URLError(.badServerResponse)
-            }
+        case "/api/status.json":
+            statusLock.withLock { recordedStatusRequests.append(request) }
+            #expect(request.value(forHTTPHeaderField: "X-Test-Cookies") == "disabled")
+            #expect(request.value(forHTTPHeaderField: "Cookie") == nil)
+            #expect(!request.httpShouldHandleCookies)
             return """
-            {"ok":true,"data":{"enabled":true,"ready":true,"polarity":"no","epochId":"fixture","seed":0,"count":\(route == "first" ? 1 : 2),"remaining":null,"dailyLimit":0,"pollMs":5000}}
+            {"schemaVersion":1,"generatedAt":"2026-10-02T00:00:00Z","lastSuccessfulCheckAt":"2026-10-02T00:00:00Z","monitor":{"status":"ok"},"events":[]}
             """
+        case "/api/reaction":
+            Issue.record("The personal edition must never request the interaction endpoint")
+            throw URLError(.unsupportedURL)
         case "/oauth/token", "/oauth2/token":
             return """
             {"access_token":"\(route)-access","refresh_token":"fixture-refresh","email":"\(route)@example.com","sub":"fixture-user","expires_in":3600}
