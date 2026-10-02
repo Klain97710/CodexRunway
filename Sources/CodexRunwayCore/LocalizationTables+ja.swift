@@ -527,6 +527,8 @@ extension L10n {
         .statusBarBatteryScopeFiveHour: "5時間",
         .statusBarBatteryScopeWeekly: "週間",
         .statusBarCountdown: "カウントダウン",
+        .statusBarFiveHourShort: "5h",
+        .statusBarWeeklyShort: "7d",
         .statusBarMetersDetailResetTime: "リセット時刻",
         .statusBarMetersDetailRemainingPercent: "残りのパーセント",
         .statusBarMetersDetailBoth: "両方",

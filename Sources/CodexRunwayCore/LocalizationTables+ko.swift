@@ -527,6 +527,8 @@ extension L10n {
         .statusBarBatteryScopeFiveHour: "5시간",
         .statusBarBatteryScopeWeekly: "주간",
         .statusBarCountdown: "카운트다운",
+        .statusBarFiveHourShort: "5h",
+        .statusBarWeeklyShort: "7d",
         .statusBarMetersDetailResetTime: "리셋 시각",
         .statusBarMetersDetailRemainingPercent: "남은 비율",
         .statusBarMetersDetailBoth: "둘 다",

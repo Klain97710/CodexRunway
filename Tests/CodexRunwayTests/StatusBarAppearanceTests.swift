@@ -27,9 +27,13 @@ struct StatusBarAppearanceTests {
             let appearance = try #require(NSAppearance(named: name))
             var preferences = RunwayPreferences()
             preferences.statusBarDisplayStyle = .meters
-            let meters = [20, 51, 90].map { used in
-                QuotaMeter(title: "每周", window: RateWindow(usedPercent: used, windowMinutes: 10_080, resetsAt: nil))
-            }
+            let meters = StatusBarMeterSelection.codexMeters(
+                from: [
+                    QuotaMeter(title: "5小时", window: RateWindow(usedPercent: 95, windowMinutes: 300, resetsAt: nil)),
+                    QuotaMeter(title: "每周", window: RateWindow(usedPercent: 68, windowMinutes: 10_080, resetsAt: nil)),
+                ],
+                subscriptionTier: .plus,
+                l10n: L10n(language: .simplifiedChinese))
             let view = StatusBarContentView(frame: .zero)
             view.appearance = appearance
             view.update(StatusBarContentState(

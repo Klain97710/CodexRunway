@@ -1,12 +1,35 @@
 import CodexRunwayCore
 import Foundation
 
-/// Picks the highest-priority window per provider for dual status-bar display.
+/// Selects quota windows and compact labels for the menu bar.
 enum StatusBarMeterSelection {
     /// Codex priority: 5h → weekly → first standard meter.
     static let codexPreferredWindowMinutes: [Int] = [300, 10_080]
     /// Grok priority: weekly → monthly → first included meter.
     static let grokPreferredWindowMinutes: [Int] = [10_080, 30 * 24 * 60]
+
+    static func codexMeters(
+        from meters: [QuotaMeter],
+        subscriptionTier: CodexSubscriptionTier,
+        l10n: L10n)
+        -> [QuotaMeter]
+    {
+        let hidesFiveHour: Bool = switch subscriptionTier {
+        case .pro100, .pro200, .pro500: true
+        default: false
+        }
+        return meters.compactMap { meter in
+            guard meter.source == .standard else { return meter }
+            if hidesFiveHour, meter.windowMinutes == 300 { return nil }
+            var copy = meter
+            switch meter.windowMinutes {
+            case 300: copy.title = l10n.text(.statusBarFiveHourShort)
+            case 10_080: copy.title = l10n.text(.statusBarWeeklyShort)
+            default: break
+            }
+            return copy
+        }
+    }
 
     static func primaryStandardMeter(
         from meters: [QuotaMeter],

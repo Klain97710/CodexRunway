@@ -527,6 +527,8 @@ extension L10n {
         .statusBarBatteryScopeFiveHour: "5 часов",
         .statusBarBatteryScopeWeekly: "Неделя",
         .statusBarCountdown: "Обратный отсчёт",
+        .statusBarFiveHourShort: "5h",
+        .statusBarWeeklyShort: "7d",
         .statusBarMetersDetailResetTime: "Время сброса",
         .statusBarMetersDetailRemainingPercent: "Оставшийся процент",
         .statusBarMetersDetailBoth: "Оба",

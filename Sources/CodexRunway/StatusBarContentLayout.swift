@@ -106,7 +106,7 @@ struct StatusBarContentLayout {
     }
 
     var meterTextFont: NSFont {
-        .systemFont(ofSize: 8.5, weight: .semibold)
+        .monospacedDigitSystemFont(ofSize: 8.5, weight: .semibold)
     }
 
     var meterBarWidth: CGFloat {
@@ -150,15 +150,21 @@ struct StatusBarContentLayout {
 
     var meterColumnWidths: [CGFloat] {
         renderPlan.columns.map { column in
-            let maximumContentWidth = column.map { meterContentWidth(for: $0) }.max() ?? 0
-            return min(166, max(64, maximumContentWidth))
+            min(166, max(64, meterContentWidth(for: column)))
         }
     }
 
-    func meterContentWidth(for meter: QuotaMeter) -> CGFloat {
-        meterBarWidth
-            + meterTextGap
-            + textWidth(meterCaption(for: meter), font: meterTextFont)
+    func meterContentWidth(for column: [QuotaMeter]) -> CGFloat {
+        let detailWidth = column.map { textWidth(meterDetail(for: $0), font: meterTextFont) }.max() ?? 0
+        let minimumDetailWidth = metersDetailStyle == .resetTime ? 0 : textWidth("100%", font: meterTextFont)
+        return meterTitleWidth(in: column)
+            + meterTextGap * 2
+            + meterBarWidth
+            + ceil(max(minimumDetailWidth, detailWidth))
+    }
+
+    func meterTitleWidth(in column: [QuotaMeter]) -> CGFloat {
+        min(64, ceil(column.map { textWidth($0.title, font: meterTextFont) }.max() ?? 0))
     }
 
     func countdownCaption(for meter: QuotaMeter) -> String {
@@ -173,13 +179,6 @@ struct StatusBarContentLayout {
             return "\(batteryDetail(for: meter)) \(meter.title)"
         }
         return "\(meter.title) \(batteryDetail(for: meter))"
-    }
-
-    func meterCaption(for meter: QuotaMeter) -> String {
-        if meter.source == .modelSpecific {
-            return "\(meterDetail(for: meter)) \(meter.title)"
-        }
-        return "\(meter.title) \(meterDetail(for: meter))"
     }
 
     func ringText(for meter: QuotaMeter?) -> String {
@@ -220,7 +219,7 @@ struct StatusBarContentLayout {
         }
     }
 
-    private func meterDetail(for meter: QuotaMeter) -> String {
+    func meterDetail(for meter: QuotaMeter) -> String {
         switch metersDetailStyle {
         case .remainingPercent:
             return "\(meter.remainingPercent)%"

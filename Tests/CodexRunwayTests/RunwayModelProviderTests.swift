@@ -6,6 +6,45 @@ import Testing
 @Suite("Runway provider routing")
 @MainActor
 struct RunwayModelProviderTests {
+    @Test("Pro hides the five-hour menu-bar quota and other plans restore it without changing panel data")
+    func statusBarQuotaFollowsSubscriptionTier() {
+        let suite = "StatusBarPlan-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let settings = RunwaySettings(store: PreferencesStore(defaults: defaults))
+        let store = isolatedAccountStore()
+        defer { try? FileManager.default.removeItem(at: store.rootURL.deletingLastPathComponent()) }
+        let model = RunwayModel(
+            settings: settings,
+            services: testServices(),
+            accountStore: store,
+            costCacheStore: UsageCostCacheStore(cacheURL: store.rootURL.appendingPathComponent("cost.json")))
+        let fiveHour = QuotaMeter(
+            title: "5小时", window: RateWindow(usedPercent: 95, windowMinutes: 300, resetsAt: nil))
+        let weekly = QuotaMeter(
+            title: "每周", window: RateWindow(usedPercent: 68, windowMinutes: 10_080, resetsAt: nil))
+        model.quotaMeters = [fiveHour, weekly]
+
+        for tier in [CodexSubscriptionTier.pro100, .pro200, .pro500] {
+            model.accountDisplay.subscriptionTier = tier
+            #expect(model.selectedQuotaMeters.map(\.windowMinutes) == [10_080])
+            #expect(model.selectedQuotaMeters.map(\.title) == ["7d"])
+            #expect(model.selectedQuotaMeters.first?.remainingPercent == 32)
+            #expect(model.quotaMeters == [fiveHour, weekly])
+        }
+        for tier in [CodexSubscriptionTier.plus, .free, .business, .team, .enterprise, .edu, .api, .unknown] {
+            model.accountDisplay.subscriptionTier = tier
+            #expect(model.selectedQuotaMeters.map(\.windowMinutes) == [300, 10_080])
+            #expect(model.selectedQuotaMeters.map(\.title) == ["5h", "7d"])
+            #expect(model.selectedQuotaMeters.map(\.remainingPercent) == [5, 32])
+        }
+        model.accountDisplay.subscriptionTier = .pro200
+        model.quotaMeters = [weekly]
+        #expect(model.selectedQuotaMeters.map(\.title) == ["7d"])
+        model.quotaMeters = [fiveHour]
+        #expect(model.selectedQuotaMeters.isEmpty)
+    }
+
     @Test("production never locates Grok or runs retained Grok commands, including for widgets")
     func productionDisablesAllGrokWork() async throws {
         let fixture = try GrokModelFixture(cachedPercent: 17.5)

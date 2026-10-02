@@ -527,6 +527,8 @@ extension L10n {
         .statusBarBatteryScopeFiveHour: "5 heures",
         .statusBarBatteryScopeWeekly: "Hebdomadaire",
         .statusBarCountdown: "Compte à rebours",
+        .statusBarFiveHourShort: "5h",
+        .statusBarWeeklyShort: "7d",
         .statusBarMetersDetailResetTime: "Heure de réinit.",
         .statusBarMetersDetailRemainingPercent: "Pourcentage restant",
         .statusBarMetersDetailBoth: "Les deux",

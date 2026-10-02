@@ -56,10 +56,14 @@ extension RunwayModel {
     }
 
     var selectedQuotaMeters: [QuotaMeter] {
+        let codexMeters = StatusBarMeterSelection.codexMeters(
+            from: quotaMeters,
+            subscriptionTier: accountDisplay.subscriptionTier,
+            l10n: l10n)
         switch settings.preferences.statusBarProviderScope {
         case .both:
             return StatusBarMeterSelection.dualProviderMeters(
-                codexMeters: quotaMeters,
+                codexMeters: codexMeters,
                 grokMeters: grokPanelState.quota?.meters ?? [],
                 codexLabel: l10n.text(.providerCodex),
                 grokLabel: l10n.text(.providerGrok),
@@ -68,7 +72,7 @@ extension RunwayModel {
             // Status bar keeps the overall included-quota meter; product breakdown is panel-only.
             // Grok panel titles are long ("周度包含额度"); menu bar uses Codex-style short windows.
             if selectedProvider == .codex {
-                return quotaMeters
+                return codexMeters
             }
             return Array((grokPanelState.quota?.meters ?? []).prefix(1)).map {
                 StatusBarMeterSelection.withShortStatusBarTitle($0, l10n: l10n)

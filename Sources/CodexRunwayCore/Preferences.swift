@@ -530,6 +530,8 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case statusBarBatteryScopeFiveHour
     case statusBarBatteryScopeWeekly
     case statusBarCountdown
+    case statusBarFiveHourShort
+    case statusBarWeeklyShort
     case statusBarMetersDetailResetTime
     case statusBarMetersDetailRemainingPercent
     case statusBarMetersDetailBoth

@@ -183,7 +183,7 @@ struct StatusBarRenderPlanTests {
                 displayMinute: displayMinute)))
 
         let columnWidth = try #require(layout.meterColumnWidths.first)
-        #expect(abs(columnWidth - layout.meterContentWidth(for: weekly)) < 0.001)
+        #expect(abs(columnWidth - layout.meterContentWidth(for: [weekly])) < 0.001)
         #expect(layout.preferredWidth == columnWidth)
     }
 
@@ -330,7 +330,10 @@ struct StatusBarRenderPlanTests {
                 language: .simplifiedChinese),
             content: StatusBarContentState.Content(
                 text: "6天23小时",
-                meters: meters,
+                meters: StatusBarMeterSelection.codexMeters(
+                    from: meters,
+                    subscriptionTier: .plus,
+                    l10n: L10n(language: .simplifiedChinese)),
                 displayMinute: displayMinute)))
         let width = ceil(view.preferredWidth)
         view.frame = NSRect(x: 0, y: 0, width: width, height: 22)

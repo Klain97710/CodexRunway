@@ -525,6 +525,8 @@ extension L10n {
         .statusBarBatteryScopeFiveHour: "5小時",
         .statusBarBatteryScopeWeekly: "每週",
         .statusBarCountdown: "倒計時",
+        .statusBarFiveHourShort: "5h",
+        .statusBarWeeklyShort: "7d",
         .statusBarMetersDetailResetTime: "重置時間",
         .statusBarMetersDetailRemainingPercent: "剩餘百分比",
         .statusBarMetersDetailBoth: "两者都顯示",

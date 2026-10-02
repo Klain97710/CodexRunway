@@ -161,15 +161,21 @@ final class StatusBarContentView: NSView {
         let frames = layout.columnFrames(widths: layout.meterColumnWidths, gap: 6, in: bounds)
         for (column, frame) in zip(renderPlan.columns, frames) {
             let rows = layout.rowFrames(count: column.count, in: frame, height: 10)
+            let titleWidth = layout.meterTitleWidth(in: column)
             for (meter, row) in zip(column, rows) {
-                drawMeter(meter, row: row)
+                drawMeter(meter, row: row, titleWidth: titleWidth)
             }
         }
     }
 
-    private func drawMeter(_ meter: QuotaMeter, row: NSRect) {
-        let barWidth = min(layout.meterBarWidth, row.width)
-        let barRect = NSRect(x: row.minX, y: row.midY - 2.5, width: barWidth, height: 5)
+    private func drawMeter(_ meter: QuotaMeter, row: NSRect, titleWidth: CGFloat) {
+        let titleRect = NSRect(x: row.minX, y: row.minY, width: titleWidth, height: row.height)
+        drawLine(meter.title, rect: titleRect)
+        let barRect = NSRect(
+            x: titleRect.maxX + layout.meterTextGap,
+            y: row.midY - 2.5,
+            width: layout.meterBarWidth,
+            height: 5)
         let background = NSBezierPath(roundedRect: barRect, xRadius: 2.5, yRadius: 2.5)
         palette.track.setFill()
         background.fill()
@@ -186,7 +192,7 @@ final class StatusBarContentView: NSView {
             y: row.minY,
             width: max(0, row.maxX - barRect.maxX - layout.meterTextGap),
             height: row.height)
-        drawLine(layout.meterCaption(for: meter), rect: textRect)
+        drawLine(layout.meterDetail(for: meter), rect: textRect, alignment: .right)
     }
 
     private func drawRings() {
@@ -399,8 +405,9 @@ final class StatusBarContentView: NSView {
         text.draw(in: NSRect(x: rect.minX, y: y, width: rect.width, height: size.height), withAttributes: attributes)
     }
 
-    private func drawLine(_ text: String, rect: NSRect) {
+    private func drawLine(_ text: String, rect: NSRect, alignment: NSTextAlignment = .left) {
         let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = alignment
         paragraph.lineBreakMode = .byTruncatingTail
         let attributes: [NSAttributedString.Key: Any] = [
             .font: layout.meterTextFont,
