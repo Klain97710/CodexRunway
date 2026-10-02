@@ -1,3 +1,5 @@
+[English](./README.md) · [简体中文](./README_ZH.md) · [繁體中文](./README_ZH_HANT.md) · 한국어 · [日本語](./README_JA.md) · [Русский](./README_RU.md) · [Français](./README_FR.md)
+
 # CodexRunway · Klain97710 맞춤 버전
 
 [Licoy/CodexRunway](https://github.com/Licoy/CodexRunway)를 기반으로 한 지인용 **0.1.0 (1000)** 버전입니다. Codex만 활성화하며 한국어 UI를 지원합니다.

@@ -1,3 +1,5 @@
+[English](./README.md) · [简体中文](./README_ZH.md) · 繁體中文 · [한국어](./README_KO.md) · [日本語](./README_JA.md) · [Русский](./README_RU.md) · [Français](./README_FR.md)
+
 # CodexRunway · Klain97710 定製版
 
 基於 [Licoy/CodexRunway](https://github.com/Licoy/CodexRunway) 的親友使用版，版本 **0.1.0（1000）**，僅啟用 Codex。介面保留繁體中文支援。
