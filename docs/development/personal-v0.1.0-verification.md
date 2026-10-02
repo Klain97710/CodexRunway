@@ -6,6 +6,8 @@
 
 环境：macOS 15.7.3 / Apple Silicon，Xcode 16.4，Swift 6.1.2，macOS SDK 15.5。
 
+远端采用 Swift 6.3.3。首次 CI 揭示新 Foundation SDK 将 URLProtocol 的 Sendable 声明设为不可用；三个异步测试替身改为仅捕获独立回调目标，兼容新旧 SDK。本机相关 39 项测试通过，最终远端结论见 Release 的验收补充。
+
 | 项目 | 结果 |
 | --- | --- |
 | 全量 `swift test` | 766 项通过；保留 Grok 底层测试，删除互动专用测试 |

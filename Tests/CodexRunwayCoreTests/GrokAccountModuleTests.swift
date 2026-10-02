@@ -964,7 +964,7 @@ private actor TokenRefreshHitCounter {
     func increment() { count += 1 }
 }
 
-private final class MockGrokModuleTokenURLProtocol: URLProtocol, @unchecked Sendable {
+private final class MockGrokModuleTokenURLProtocol: URLProtocol {
     nonisolated(unsafe) static var handler: (@Sendable (URLRequest) async throws -> (HTTPURLResponse, Data))?
 
     static func session() -> URLSession {
@@ -996,17 +996,13 @@ private enum NonisolatedModuleTokenURLProtocolResponder {
         handler: @escaping @Sendable (URLRequest) async throws -> (HTTPURLResponse, Data),
         protocol urlProtocol: MockGrokModuleTokenURLProtocol)
     {
-        let client = urlProtocol.client
-        // The concrete mock is explicitly @unchecked Sendable and the suite is serialised.
-        let protocolInstance = urlProtocol
+        let target = MockURLProtocolResponse(urlProtocol)
         Task {
             do {
                 let (response, data) = try await handler(request)
-                client?.urlProtocol(protocolInstance, didReceive: response, cacheStoragePolicy: .notAllowed)
-                client?.urlProtocol(protocolInstance, didLoad: data)
-                client?.urlProtocolDidFinishLoading(protocolInstance)
+                target.receive(response, data: data)
             } catch {
-                client?.urlProtocol(protocolInstance, didFailWithError: error)
+                target.fail(error)
             }
         }
     }
