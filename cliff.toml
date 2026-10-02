@@ -4,7 +4,7 @@ body = """
 {% for group, commits in commits | group_by(attribute="group") %}
 ### {{ group | upper_first }}
 {% for commit in commits %}
-- {% if commit.scope %}**{{ commit.scope }}**: {% endif %}{{ commit.message | split(pat="\n") | first | trim }} ([{{ commit.id | truncate(length=7, end="") }}](https://github.com/Licoy/codex-runway/commit/{{ commit.id }}))
+- {% if commit.scope %}**{{ commit.scope }}**: {% endif %}{{ commit.message | split(pat="\n") | first | trim }} ([{{ commit.id | truncate(length=7, end="") }}](https://github.com/Klain97710/CodexRunway/commit/{{ commit.id }}))
 {%- endfor %}
 {% endfor %}
 """
@@ -30,5 +30,5 @@ commit_parsers = [
   { message = ".*", group = "Other" },
 ]
 filter_commits = false
-tag_pattern = "v[0-9].*"
+tag_pattern = "^personal-v[0-9].*"
 sort_commits = "newest"

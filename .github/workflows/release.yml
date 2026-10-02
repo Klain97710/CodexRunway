@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      - "personal-v*"
 
 permissions:
   contents: write
@@ -15,6 +15,10 @@ jobs:
       - uses: actions/checkout@v7
       - name: Test
         run: swift test
+      - name: Verify release version
+        run: |
+          version="$(plutil -extract CFBundleShortVersionString raw Resources/Info.plist)"
+          test "$GITHUB_REF_NAME" = "personal-v$version"
 
   package:
     needs: test
@@ -38,6 +42,7 @@ jobs:
           INCLUDE_WIDGET: "1"
           RUNWAY_WIDGET_STORAGE_MODE: local
           SPARKLE_PUBLIC_KEY: ${{ secrets.SPARKLE_PUBLIC_KEY }}
+          RUNWAY_RELEASE: "1"
         run: ARCH=${{ matrix.arch }} bash Scripts/package-app.sh
       - name: Verify embedded widget ${{ matrix.arch }}
         run: bash Scripts/verify-packaged-app.sh dist/CodexRunway.app ${{ matrix.arch }} local
@@ -49,7 +54,7 @@ jobs:
           cp "dist/CodexRunway-macos-${{ matrix.arch }}.zip" "dist/appcast-${{ matrix.arch }}/"
           printf '%s' "$SPARKLE_PRIVATE_KEY" | .build/artifacts/sparkle/Sparkle/bin/generate_appcast \
             --ed-key-file - \
-            --download-url-prefix "https://github.com/Licoy/codex-runway/releases/download/${GITHUB_REF_NAME}/" \
+            --download-url-prefix "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/" \
             -o "dist/appcast-${{ matrix.arch }}.xml" \
             "dist/appcast-${{ matrix.arch }}"
       - uses: actions/upload-artifact@v7
@@ -85,7 +90,7 @@ jobs:
           fi
           cat >> release-notes.md <<'EOF'
 
-          These builds are ad-hoc signed and not notarized. Prefer the .dmg download for manual install; if macOS blocks the app, use right-click Open or Privacy & Security > Open Anyway.
+          Klain97710 custom edition. Install this edition manually once to switch to its signed update channel. These builds are ad-hoc signed and not notarized. Prefer the .dmg download; if macOS blocks the app, use right-click Open or Privacy & Security > Open Anyway.
           Desktop widgets are included and require macOS 14 or later.
           EOF
       - uses: actions/upload-artifact@v7
@@ -110,6 +115,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="${GITHUB_REF_NAME}"
+          (cd dist && shasum -a 256 CodexRunway-macos-* appcast-*.xml > SHA256SUMS)
           gh release create "$tag" \
             --repo "$GITHUB_REPOSITORY" \
             dist/CodexRunway-macos-arm64.zip \
@@ -120,5 +126,7 @@ jobs:
             dist/CodexRunway-macos-x86_64.dmg \
             dist/appcast-arm64.xml \
             dist/appcast-x86_64.xml \
+            dist/SHA256SUMS \
+            --draft \
             --title "$tag" \
             --notes-file release-notes.md

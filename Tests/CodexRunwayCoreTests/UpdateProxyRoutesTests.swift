@@ -4,21 +4,22 @@ import Testing
 
 @Suite("Update proxy capability routes")
 struct UpdateProxyRoutesTests {
-    private let source = URL(string: "https://github.com/Licoy/CodexRunway/releases/download/v1/CodexRunway.zip")!
+    private let source = URL(string: "https://github.com/Klain97710/CodexRunway/releases/download/v1/CodexRunway.zip")!
 
     @Test("only official repository release URLs can be registered")
     func sourceAllowlist() {
         #expect(UpdateProxyRoutes.isAllowedSource(source))
-        #expect(UpdateProxyRoutes.isAllowedSource(URL(string: "https://github.com/Licoy/codex-runway/releases/latest/download/appcast-arm64.xml")!))
+        #expect(UpdateProxyRoutes.isAllowedSource(URL(string: "https://github.com/Klain97710/CodexRunway/releases/latest/download/appcast-arm64.xml")!))
         for value in [
+            "https://github.com/Licoy/CodexRunway/releases/download/v1/app.zip",
             "http://github.com/Licoy/CodexRunway/releases/download/v1/app.zip",
             "https://github.com/other/CodexRunway/releases/download/v1/app.zip",
             "https://github.com/Licoy/other/releases/download/v1/app.zip",
             "https://github.com.evil.invalid/Licoy/CodexRunway/releases/download/v1/app.zip",
             "https://user:password@github.com/Licoy/CodexRunway/releases/download/v1/app.zip",
             "https://github.com:8443/Licoy/CodexRunway/releases/download/v1/app.zip",
-            "https://github.com/Licoy/CodexRunway/releases/download/%2e%2e/app.zip",
-            "https://github.com/Licoy/CodexRunway/releases/download/v1/app.zip#fragment",
+            "https://github.com/Klain97710/CodexRunway/releases/download/%2e%2e/app.zip",
+            "https://github.com/Klain97710/CodexRunway/releases/download/v1/app.zip#fragment",
             "https://release-assets.githubusercontent.com/asset",
             "file:///tmp/app.zip",
         ] {

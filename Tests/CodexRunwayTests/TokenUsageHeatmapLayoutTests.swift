@@ -8,7 +8,7 @@ import Testing
 /// Guards the token-usage heatmap section against the locale layout leak: when the
 /// localized header strings exceed the panel content width, the section used to lay
 /// out at its ideal width, which pushed the heatmap grid (and the header controls)
-/// outside the popover. Regression: https://github.com/Licoy/codex-runway (heatmap).
+/// outside the popover. Regression: https://github.com/Klain97710/CodexRunway (heatmap).
 @Suite("Token usage heatmap locale layout")
 struct TokenUsageHeatmapLayoutTests {
     /// Popover content width: 400 panel − 2×16 padding − 4 scroll trailing padding.

@@ -40,7 +40,7 @@ final class UpdaterService: NSObject, SPUUpdaterDelegate {
 
     func checkForUpdates() {
         prepareUpdater()
-        if isAppBundle, hasSparklePublicKey, updater == nil {
+        if updatesEnabled, isAppBundle, hasSparklePublicKey, updater == nil {
             showAlert(title: settings.l10n.text(.updateCheckFailed), message: settings.l10n.text(.updateProxyUnavailable))
             return
         }
@@ -107,7 +107,7 @@ final class UpdaterService: NSObject, SPUUpdaterDelegate {
     }
 
     private func prepareUpdater() {
-        guard !stopped, isAppBundle, hasSparklePublicKey, proxyPreparation == nil else { return }
+        guard !stopped, updatesEnabled, isAppBundle, hasSparklePublicKey, proxyPreparation == nil else { return }
         let context: RunwayNetworkContext
         do { context = try RunwayNetwork.context() } catch {
             NSLog("CodexRunway: update network configuration is unavailable.")
@@ -149,7 +149,7 @@ final class UpdaterService: NSObject, SPUUpdaterDelegate {
     }
 
     private func configureSparkle() throws {
-        guard isAppBundle, hasSparklePublicKey else { return }
+        guard updatesEnabled, isAppBundle, hasSparklePublicKey else { return }
         let userDriver = RunwaySparkleUserDriver(settings: settings)
         userDriver.proxyErrorMessage = { [weak self] in
             guard let self, let error = proxyBridge?.lastError else { return nil }
@@ -185,7 +185,8 @@ final class UpdaterService: NSObject, SPUUpdaterDelegate {
         UpdateInstallEnvironment(
             bundlePathExtension: Bundle.main.bundleURL.pathExtension,
             sparklePublicKey: sparklePublicKey,
-            hasUpdater: updater != nil)
+            hasUpdater: updater != nil,
+            updatesEnabled: updatesEnabled)
     }
 
     private func checkForUpdatesOnLaunch() {
@@ -197,6 +198,10 @@ final class UpdaterService: NSObject, SPUUpdaterDelegate {
 
     private var isAppBundle: Bool {
         Bundle.main.bundleURL.pathExtension.lowercased() == "app"
+    }
+
+    private var updatesEnabled: Bool {
+        Bundle.main.object(forInfoDictionaryKey: RunwayDistribution.updatesEnabledInfoKey) as? Bool == true
     }
 
     private var sparklePublicKey: String? {
@@ -212,6 +217,6 @@ final class UpdaterService: NSObject, SPUUpdaterDelegate {
     }
 
     private static var appcastURL: URL {
-        URL(string: "https://github.com/Licoy/codex-runway/releases/latest/download/appcast-\(architecture).xml")!
+        RunwayDistribution.appcastURL(architecture: architecture)
     }
 }

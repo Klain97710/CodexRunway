@@ -93,7 +93,7 @@ def create_signed_feed(case, key_file, invalid_archive):
 <channel><title>Update proxy fixture</title><item><title>Version 2</title>
 <sparkle:version>2</sparkle:version><sparkle:shortVersionString>2</sparkle:shortVersionString>
 <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
-<enclosure url="https://github.com/Licoy/codex-runway/releases/download/fixture/UpdateProxyFixture.zip"
+<enclosure url="https://github.com/Klain97710/CodexRunway/releases/download/fixture/UpdateProxyFixture.zip"
 sparkle:edSignature="{signature}" length="{archive.stat().st_size}" type="application/octet-stream"/>
 </item></channel></rss>
 ''')

@@ -168,7 +168,7 @@ private final class UpdateProxyFixture: NSObject, NSApplicationDelegate, SPUUpda
 /// All upstream URLs are consumed by this fixture; unmatched URLs fail instead of reaching the network.
 private final class FixtureURLProtocol: URLProtocol {
     static func upstream(_ name: String) -> URL {
-        URL(string: "https://github.com/Licoy/codex-runway/releases/download/fixture/\(name)")!
+        URL(string: "https://github.com/Klain97710/CodexRunway/releases/download/fixture/\(name)")!
     }
 
     override class func canInit(with request: URLRequest) -> Bool { true }

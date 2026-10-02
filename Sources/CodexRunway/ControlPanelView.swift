@@ -46,9 +46,9 @@ enum ControlPanelTab: String, Hashable, CaseIterable {
 }
 
 struct ControlPanelView: View {
-    static let githubURL = URL(string: "https://github.com/Licoy/codex-runway")!
+    static let githubURL = RunwayDistribution.repositoryURL
     nonisolated static let panelHeight: CGFloat = ControlPanelLayout.panelHeight
-    private static let feedbackURL = URL(string: "https://github.com/Licoy/codex-runway/issues/new")!
+    private static let feedbackURL = RunwayDistribution.issuesURL
 
     @ObservedObject var settings: RunwaySettings
     @ObservedObject var model: RunwayModel
@@ -403,7 +403,7 @@ struct ControlPanelView: View {
                     action: checkForUpdates)
                 ActionRow(
                     title: "GitHub",
-                    subtitle: "github.com/Licoy/codex-runway",
+                    subtitle: "github.com/\(RunwayDistribution.repository)",
                     button: l10n.text(.openGithub)) {
                         ExternalURLLauncher.open(Self.githubURL)
                     }

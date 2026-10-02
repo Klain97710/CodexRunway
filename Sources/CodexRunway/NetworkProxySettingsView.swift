@@ -218,12 +218,7 @@ struct NetworkProxySettingsView: View {
     }
 
     private static var testURL: URL {
-        #if arch(arm64)
-        let architecture = "arm64"
-        #else
-        let architecture = "x86_64"
-        #endif
-        return URL(string: "https://github.com/Licoy/codex-runway/releases/latest/download/appcast-\(architecture).xml")!
+        RunwayDistribution.repositoryURL
     }
 }
 

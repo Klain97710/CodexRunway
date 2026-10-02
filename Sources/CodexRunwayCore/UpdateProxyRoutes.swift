@@ -40,7 +40,7 @@ struct UpdateProxyRoutes {
         guard hasAllowedAuthority(url), url.host?.lowercased() == "github.com" else { return false }
         let parts = url.path.split(separator: "/", omittingEmptySubsequences: false)
         guard parts.count == 7, parts[0].isEmpty,
-              parts[1].lowercased() == "licoy", ["codex-runway", "codexrunway"].contains(parts[2].lowercased()),
+              "\(parts[1])/\(parts[2])".lowercased() == RunwayDistribution.repository.lowercased(),
               parts[3] == "releases", !parts[5].isEmpty, !parts[6].isEmpty,
               !parts.contains("."), !parts.contains(".."), !url.path.contains("\\")
         else { return false }

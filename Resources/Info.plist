@@ -46,6 +46,12 @@
   <string>CodexRunway reads local Codex and Grok configuration to show quota, reset credits, and API-equivalent cost.</string>
   <key>SUEnableAutomaticChecks</key>
   <true/>
+  <key>RunwayUpdatesEnabled</key>
+  <false/>
+  <key>SURequireSignedFeed</key>
+  <true/>
+  <key>SUVerifyUpdateBeforeExtraction</key>
+  <true/>
   <key>SUScheduledCheckInterval</key>
   <integer>3600</integer>
   <key>SUPublicEDKey</key>

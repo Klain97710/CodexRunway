@@ -111,7 +111,7 @@ struct UpdateProxyBridgeTests {
     }
 
     private func upstream(_ name: String) -> URL {
-        URL(string: "https://github.com/Licoy/CodexRunway/releases/download/test/\(name)")!
+        URL(string: "https://github.com/Klain97710/CodexRunway/releases/download/test/\(name)")!
     }
 
     private func localSession() -> URLSession {

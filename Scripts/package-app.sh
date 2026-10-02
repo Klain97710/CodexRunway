@@ -24,6 +24,27 @@ RUNWAY_BUNDLE_ID="${RUNWAY_BUNDLE_ID:-com.github.codex-runway}"
 RUNWAY_APP_GROUP_ID="${RUNWAY_APP_GROUP_ID:-group.com.github.codex-runway}"
 RUNWAY_WIDGET_BUNDLE_ID="${RUNWAY_WIDGET_BUNDLE_ID:-${RUNWAY_BUNDLE_ID}.widget}"
 RUNWAY_WIDGET_STORAGE_MODE="${RUNWAY_WIDGET_STORAGE_MODE:-local}"
+RUNWAY_RELEASE="${RUNWAY_RELEASE:-0}"
+case "$RUNWAY_RELEASE" in
+  0|1) ;;
+  *) printf 'RUNWAY_RELEASE must be 0 or 1.\n' >&2; exit 2 ;;
+esac
+if [[ "$RUNWAY_RELEASE" == "1" ]]; then
+  [[ "$RUNWAY_BUNDLE_ID" == "com.github.codex-runway" ]] || {
+    printf 'Release builds require the replacement app identifier.\n' >&2; exit 1;
+  }
+  python3 - <<'PY'
+import base64
+import os
+import sys
+try:
+    valid = len(base64.b64decode(os.environ.get("SPARKLE_PUBLIC_KEY", ""), validate=True)) == 32
+except ValueError:
+    valid = False
+if not valid:
+    sys.exit("Release builds require a valid SPARKLE_PUBLIC_KEY (32-byte Ed25519 public key).")
+PY
+fi
 DIST="$ROOT/dist"
 APP="$DIST/CodexRunway.app"
 CONTENTS="$APP/Contents"
@@ -69,8 +90,9 @@ for lproj in "$ROOT/Resources"/*.lproj; do
   [[ -d "$lproj" ]] || continue
   /usr/bin/ditto "$lproj" "$RESOURCES/$(basename "$lproj")"
 done
-if [[ -n "${SPARKLE_PUBLIC_KEY:-}" ]]; then
+if [[ "$RUNWAY_RELEASE" == "1" ]]; then
   /usr/libexec/PlistBuddy -c "Set :SUPublicEDKey ${SPARKLE_PUBLIC_KEY}" "$CONTENTS/Info.plist"
+  /usr/libexec/PlistBuddy -c "Set :RunwayUpdatesEnabled true" "$CONTENTS/Info.plist"
 fi
 if [[ -d "$BIN_DIR/Sparkle.framework" ]]; then
   /usr/bin/ditto "$BIN_DIR/Sparkle.framework" "$FRAMEWORKS/Sparkle.framework"
