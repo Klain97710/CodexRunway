@@ -171,6 +171,8 @@ final class RunwayModel: ObservableObject {
     @Published var sessionLines: [DetailLine] = []
     @Published var recentSessionLines: [DetailLine] = []
     @Published var quotaMeters: [QuotaMeter] = []
+    @Published var quotaRefreshError: String?
+    @Published var resetCreditsRefreshError: String?
     @Published var resetCreditSummary: ResetCreditSummary?
     @Published var resetCreditDetails: [ResetCreditDetail] = []
     @Published var quotaEstimate: QuotaEstimateSnapshot?
@@ -704,6 +706,7 @@ final class RunwayModel: ObservableObject {
     }
 
     var l10n: L10n { settings.l10n }
+    var quotaUpdatedAt: Date? { latestQuota?.updatedAt }
 
     func selectProvider(_ provider: RunwayProvider) {
         guard selectedProvider != provider else { return }
@@ -1204,9 +1207,9 @@ final class RunwayModel: ObservableObject {
             async let resetErrorTask = refreshResetCreditsForFullRefresh(auth: auth)
             let quotaResult = await quotaResultTask
             if case .success(let quotaSnapshot) = quotaResult {
-                if settings.preferences.showsQuotaEstimateSummary {
-                    await loadQuotaEstimate(auth: auth, quota: quotaSnapshot)
-                }
+                let refreshGeneration = generation
+                async let estimate: Void = refreshQuotaEstimateForFullRefresh(
+                    auth: auth, quota: quotaSnapshot, generation: refreshGeneration)
                 guard isCurrentAccount(auth, generation: generation) else { return }
                 let needsCost =
                     (settings.preferences.showsCostSummary || widgetRequirements.contains(.cost))
@@ -1234,6 +1237,7 @@ final class RunwayModel: ObservableObject {
                         }
                     }
                 }
+                await estimate
             }
             if case .failure(let error) = quotaResult {
                 remoteError = error
@@ -1247,6 +1251,10 @@ final class RunwayModel: ObservableObject {
             remoteError = error
             if generation == accountStateGeneration {
                 statusText = l10n.text(.statusError)
+                if !Task.isCancelled, latestAuth == nil {
+                    quotaRefreshError = humanizeAuthError(error)
+                    resetCreditsRefreshError = humanizeAuthError(error)
+                }
             }
         }
         _ = await (sessionReport, recentSessions)
@@ -1277,6 +1285,8 @@ final class RunwayModel: ObservableObject {
         clearAccountScopedState(keepingAuth: nil)
         quotaText = l10n.text(.statusLogin)
         resetCreditsText = l10n.text(.statusLogin)
+        quotaRefreshError = message
+        resetCreditsRefreshError = message
         lastError = message
         exportStatusIfNeeded()
         return true
@@ -1342,13 +1352,13 @@ final class RunwayModel: ObservableObject {
             do {
                 let snapshot = try await services.fetchQuota(auth)
                 guard isCurrentAccount(auth, generation: generation) else { return }
-                latestQuota = snapshot
-                applyQuota(snapshot)
+                acceptQuota(snapshot)
                 deliverAlerts(RunwayAlertDecider.quotaAlerts(snapshot), enabled: settings.preferences.quotaAlertsEnabled)
                 result = .success(snapshot)
             } catch {
                 guard isCurrentAccount(auth, generation: generation) else { return }
                 if !handleAuthenticationFailure(error) {
+                    quotaRefreshError = error.localizedDescription
                     statusText = l10n.text(.statusError)
                     quotaText = l10n.text(.statusError)
                     quotaLines = [DetailLine(title: l10n.text(.error), value: error.localizedDescription)]
@@ -1368,11 +1378,13 @@ final class RunwayModel: ObservableObject {
                 let snapshot = try await services.fetchResetCredits(auth)
                 guard isCurrentAccount(auth, generation: generation) else { return }
                 latestResetCredits = snapshot
+                resetCreditsRefreshError = nil
                 applyResetCredits(snapshot)
                 deliverAlerts(RunwayAlertDecider.resetCreditAlerts(snapshot), enabled: settings.preferences.resetCreditAlertsEnabled)
             } catch {
                 guard isCurrentAccount(auth, generation: generation) else { return }
                 if !handleAuthenticationFailure(error) {
+                    resetCreditsRefreshError = error.localizedDescription
                     resetCreditsText = l10n.text(.statusError)
                     resetCreditLines = [DetailLine(title: l10n.text(.error), value: error.localizedDescription)]
                 }
@@ -1392,15 +1404,15 @@ final class RunwayModel: ObservableObject {
                 generation = accountStateGeneration
                 let quotaSnapshot = try await services.fetchQuota(auth)
                 guard isCurrentAccount(auth, generation: generation) else { return }
-                latestQuota = quotaSnapshot
-                applyQuota(quotaSnapshot)
+                acceptQuota(quotaSnapshot)
                 deliverAlerts(RunwayAlertDecider.quotaAlerts(quotaSnapshot), enabled: settings.preferences.quotaAlertsEnabled)
                 lastError = nil
                 exportStatusIfNeeded()
             } catch {
-                guard generation == accountStateGeneration else { return }
+                guard !Task.isCancelled, generation == accountStateGeneration else { return }
                 if let expectedAuth, !isCurrentAccount(expectedAuth, generation: generation) { return }
                 if handleAuthenticationFailure(error) { return }
+                quotaRefreshError = error.localizedDescription
                 statusText = l10n.text(.statusError)
                 quotaText = l10n.text(.statusError)
                 quotaLines = [DetailLine(title: l10n.text(.error), value: error.localizedDescription)]
@@ -1426,8 +1438,7 @@ final class RunwayModel: ObservableObject {
             if quota == nil {
                 let snapshot = try await services.fetchQuota(auth)
                 guard isCurrentAccount(auth, generation: expectedGeneration) else { return }
-                latestQuota = snapshot
-                applyQuota(snapshot)
+                acceptQuota(snapshot)
                 quota = snapshot
             }
             guard let quota else { return }
@@ -1440,8 +1451,14 @@ final class RunwayModel: ObservableObject {
         }
     }
 
-    private func loadQuotaEstimate(auth: CodexAuth, quota: QuotaSnapshot) async {
-        let expectedGeneration = accountStateGeneration
+    private func refreshQuotaEstimateForFullRefresh(auth: CodexAuth, quota: QuotaSnapshot, generation: Int) async {
+        guard settings.preferences.showsQuotaEstimateSummary else { return }
+        await loadQuotaEstimate(auth: auth, quota: quota, generation: generation)
+    }
+
+    private func loadQuotaEstimate(auth: CodexAuth, quota: QuotaSnapshot, generation: Int? = nil) async {
+        let expectedGeneration = generation ?? accountStateGeneration
+        guard !Task.isCancelled, isCurrentAccount(auth, generation: expectedGeneration) else { return }
         await withRefresh([.quotaEstimate]) {
             do {
                 let range = QuotaEstimateCalculator.analyticsRange()
@@ -1451,14 +1468,14 @@ final class RunwayModel: ObservableObject {
                     range.end,
                     range.window,
                     Date())
-                guard isCurrentAccount(auth, generation: expectedGeneration) else { return }
+                guard !Task.isCancelled, isCurrentAccount(auth, generation: expectedGeneration) else { return }
                 latestQuotaEstimateDaily = summary
                 applyQuotaEstimate(quota: quota, daily: summary, persist: true)
                 quotaEstimateError = nil
             } catch is CancellationError {
                 return
             } catch {
-                guard isCurrentAccount(auth, generation: expectedGeneration) else { return }
+                guard !Task.isCancelled, isCurrentAccount(auth, generation: expectedGeneration) else { return }
                 if handleAuthenticationFailure(error) { return }
                 quotaEstimateError = error.localizedDescription
             }
@@ -1495,14 +1512,16 @@ final class RunwayModel: ObservableObject {
                 let snapshot = try await services.fetchResetCredits(auth)
                 guard isCurrentAccount(auth, generation: generation) else { return }
                 latestResetCredits = snapshot
+                resetCreditsRefreshError = nil
                 applyResetCredits(snapshot)
                 deliverAlerts(RunwayAlertDecider.resetCreditAlerts(snapshot), enabled: settings.preferences.resetCreditAlertsEnabled)
                 lastError = nil
                 exportStatusIfNeeded()
             } catch {
-                guard generation == accountStateGeneration else { return }
+                guard !Task.isCancelled, generation == accountStateGeneration else { return }
                 if let expectedAuth, !isCurrentAccount(expectedAuth, generation: generation) { return }
                 if handleAuthenticationFailure(error) { return }
+                resetCreditsRefreshError = error.localizedDescription
                 resetCreditsText = l10n.text(.statusError)
                 resetCreditLines = [DetailLine(title: l10n.text(.error), value: error.localizedDescription)]
                 lastError = error.localizedDescription
@@ -1838,8 +1857,7 @@ final class RunwayModel: ObservableObject {
             generation = accountStateGeneration
             let quotaSnapshot = try await services.fetchQuota(auth)
             guard isCurrentAccount(auth, generation: generation) else { return }
-            latestQuota = quotaSnapshot
-            applyQuota(quotaSnapshot)
+            acceptQuota(quotaSnapshot)
             await scanCostAndHeatmap(
                 quotaSnapshot,
                 auth: auth,
@@ -2119,8 +2137,7 @@ final class RunwayModel: ObservableObject {
             throw error
         }
         guard isCurrentAccount(auth, generation: generation) else { throw CancellationError() }
-        latestQuota = quotaSnapshot
-        applyQuota(quotaSnapshot)
+        acceptQuota(quotaSnapshot)
         if let windows = currentCycleWindows(from: quotaSnapshot, now: now) {
             latestCurrentCycleFullWindow = windows.full
             return windows
@@ -2287,7 +2304,10 @@ final class RunwayModel: ObservableObject {
         } catch RunwayModelAuthError.load(let error) {
             guard generation == accountStateGeneration else { throw CancellationError() }
             clearAccountScopedState(keepingAuth: nil)
-            lastError = humanizeAuthError(error)
+            let message = humanizeAuthError(error)
+            quotaRefreshError = message
+            resetCreditsRefreshError = message
+            lastError = message
             exportStatusIfNeeded()
             throw error
         } catch {
@@ -2302,6 +2322,8 @@ final class RunwayModel: ObservableObject {
         accountStateGeneration += 1
         latestQuota = nil
         latestResetCredits = nil
+        quotaRefreshError = nil
+        resetCreditsRefreshError = nil
         latestQuotaEstimateDaily = nil
         quotaEstimate = nil
         quotaEstimateError = nil
@@ -2342,6 +2364,12 @@ final class RunwayModel: ObservableObject {
     private func isCurrentAccount(_ auth: CodexAuth, generation: Int) -> Bool {
         generation == accountStateGeneration
             && accountIdentityKey(for: auth) == accountIdentityKey(for: latestAuth)
+    }
+
+    private func acceptQuota(_ quota: QuotaSnapshot) {
+        latestQuota = quota
+        quotaRefreshError = nil
+        applyQuota(quota)
     }
 
     private func applyQuota(_ quota: QuotaSnapshot) {

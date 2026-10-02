@@ -245,6 +245,8 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case languageFrench
     case lastReset
     case lastUpdated
+    case refreshFailed
+    case refreshShowingPreviousData
     case later
     case left
     case minutes

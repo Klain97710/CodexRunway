@@ -6,6 +6,27 @@ import Testing
 @Suite("Quota estimate refresh")
 @MainActor
 struct QuotaEstimateRefreshTests {
+    @Test("a pending quota estimate does not block local cost and token data")
+    func pendingEstimateDoesNotBlockLocalData() async throws {
+        let fixture = QuotaEstimateRefreshFixture()
+        fixture.blocksUsage = true
+        let model = fixture.makeModel()
+        model.settings.updateShowsCostSummary(true)
+        model.settings.updateShowsTokenUsageHeatmap(true)
+        defer { fixture.releaseUsage() }
+
+        model.refresh()
+        try await waitUntil { fixture.isUsagePending }
+        try await waitUntil { model.costDetail != nil && model.tokenHeatmapCalculatedAt != nil }
+
+        #expect(model.isRefreshing(.quotaEstimate))
+        #expect(model.quotaEstimate == nil)
+        #expect(model.costDetail?.estimatedUSD == 1)
+        fixture.releaseUsage()
+        try await waitUntil { !model.isRefreshingAll }
+        #expect(model.quotaEstimate != nil)
+    }
+
     @Test("reported zero credits with substantial usage remain unavailable without history")
     func zeroCreditsWithUsageDoesNotCreateEstimate() async throws {
         let fixture = QuotaEstimateRefreshFixture()
@@ -24,6 +45,22 @@ struct QuotaEstimateRefreshTests {
         #expect(snapshot.estimatedUSD == nil)
         #expect(model.quotaEstimateError == nil)
         #expect(fixture.history.load(accountKey: fixture.accountKey).isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: fixture.history.fileURL.path))
+    }
+
+    @Test("cancelling a delayed estimate prevents a late snapshot or history write")
+    func cancelledEstimateDoesNotPublish() async throws {
+        let fixture = QuotaEstimateRefreshFixture()
+        fixture.blocksUsage = true
+        let model = fixture.makeModel()
+        defer { fixture.releaseUsage() }
+        let work = Task { await model.refreshQuotaEstimateNow() }
+        try await waitUntil { fixture.isUsagePending }
+        work.cancel()
+        fixture.releaseUsage()
+        await work.value
+        #expect(model.quotaEstimate == nil)
+        #expect(model.quotaEstimateError == nil)
         #expect(!FileManager.default.fileExists(atPath: fixture.history.fileURL.path))
     }
 
@@ -167,7 +204,17 @@ private final class QuotaEstimateRefreshFixture {
             fetchQuota: { auth in try await self.fetchQuota(auth) },
             fetchResetCredits: { _ in throw URLError(.unsupportedURL) },
             fetchRateLimitResetToday: { throw URLError(.unsupportedURL) },
-            scanAPIEquivalent: { _, _, _, _ in throw URLError(.unsupportedURL) },
+            scanAPIEquivalent: { queries, now, _, _ in
+                Dictionary(uniqueKeysWithValues: queries.map {
+                    ($0.id, ApiEquivalentSummary(
+                        source: .localSessions, confidence: .priced, window: $0.window,
+                        estimatedUSD: 1,
+                        totals: ApiEquivalentTotals(totalTokens: 10, uncachedInputTokens: 5,
+                            cachedInputTokens: 2, outputTokens: 3, turns: 1, threads: 1),
+                        dailyRows: [], modelRows: [], clientRows: [], rawCredits: 0,
+                        warnings: [], pricingVersion: "test", calculatedAt: now))
+                })
+            },
             fetchDailyWorkspaceUsage: { _, _, _, window, _ in
                 try await self.fetchUsage(window: window)
             },

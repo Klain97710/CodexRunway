@@ -1,5 +1,7 @@
 extension L10n {
     static let zhHant: [L10nKey: String] = [
+        .refreshFailed: "重新整理失敗",
+        .refreshShowingPreviousData: "重新整理失敗，正在顯示上次取得的資料",
         .networkProxy: "網路",
         .networkProxyMode: "代理模式",
         .networkProxySystem: "跟隨系統",

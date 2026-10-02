@@ -202,6 +202,8 @@ struct RunwayPopoverView: View {
             QuotaMetersView(
                 title: l10n.text(.quota),
                 meters: model.quotaMeters,
+                error: model.quotaRefreshError,
+                updatedAt: model.quotaUpdatedAt,
                 l10n: l10n,
                 isRefreshing: model.isRefreshing(.quota),
                 onRefresh: { model.refreshQuota() })
@@ -248,6 +250,7 @@ struct RunwayPopoverView: View {
         case .codexResetCredits:
             ResetCreditsSummaryView(
                 summary: model.resetCreditSummary,
+                error: model.resetCreditsRefreshError,
                 l10n: l10n,
                 isRefreshing: model.isRefreshing(.resetCredits),
                 onRefresh: { model.refreshResetCredits() },

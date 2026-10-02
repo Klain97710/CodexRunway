@@ -1,5 +1,7 @@
 extension L10n {
     static let ru: [L10nKey: String] = [
+        .refreshFailed: "Не удалось обновить",
+        .refreshShowingPreviousData: "Не удалось обновить; показаны предыдущие данные",
         .networkProxy: "Сеть",
         .networkProxyMode: "Режим прокси",
         .networkProxySystem: "Системные настройки",

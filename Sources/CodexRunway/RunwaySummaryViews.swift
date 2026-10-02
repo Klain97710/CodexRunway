@@ -10,6 +10,8 @@ private struct ResetHeroAvailableWidthKey: PreferenceKey {
 struct QuotaMetersView: View {
     var title: String
     var meters: [QuotaMeter]
+    var error: String? = nil
+    var updatedAt: Date? = nil
     var l10n: L10n
     var isRefreshing: Bool
     var onRefresh: () -> Void
@@ -22,15 +24,20 @@ struct QuotaMetersView: View {
                 isRefreshing: isRefreshing,
                 onRefresh: onRefresh)
             if meters.isEmpty {
-                Text(l10n.text(isRefreshing ? .calculating : .notLoaded))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                if error == nil {
+                    Text(l10n.text(isRefreshing ? .calculating : .notLoaded))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
             } else {
                 VStack(alignment: .leading, spacing: 12) {
                     ForEach(meters) { meter in
                         quotaRow(meter)
                     }
                 }
+            }
+            if let error {
+                RefreshFailureView(error: error, updatedAt: updatedAt, l10n: l10n)
             }
         }
     }
@@ -1058,6 +1065,7 @@ private struct QuotaEstimateInfoPopover: View {
 
 struct ResetCreditsSummaryView: View {
     var summary: ResetCreditSummary?
+    var error: String? = nil
     var l10n: L10n
     var isRefreshing: Bool
     var onRefresh: () -> Void
@@ -1095,12 +1103,35 @@ struct ResetCreditsSummaryView: View {
                 SidePanelDisclosureRow(
                     title: "\(summary.availableCount) \(l10n.text(.availableResets))",
                     action: onDetailsSelect)
-            } else {
+            } else if error == nil {
                 Text(l10n.text(isRefreshing ? .calculating : .notLoaded))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+            if let error {
+                RefreshFailureView(error: error, updatedAt: summary?.updatedAt, l10n: l10n)
+            }
         }
+    }
+}
+
+struct RefreshFailureView: View {
+    var error: String
+    var updatedAt: Date?
+    var l10n: L10n
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(l10n.text(updatedAt == nil ? .refreshFailed : .refreshShowingPreviousData))
+            Text(error)
+            if let updatedAt {
+                Text("\(l10n.text(.lastUpdated)) \(ResetCreditDateFormatter.updatedAt(updatedAt, language: l10n.language))")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(Color(nsColor: .systemRed))
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 

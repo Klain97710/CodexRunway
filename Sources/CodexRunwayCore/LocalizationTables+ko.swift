@@ -1,5 +1,7 @@
 extension L10n {
     static let ko: [L10nKey: String] = [
+        .refreshFailed: "새로고침 실패",
+        .refreshShowingPreviousData: "새로고침에 실패하여 이전 데이터를 표시합니다",
         .networkProxy: "네트워크",
         .networkProxyMode: "프록시 모드",
         .networkProxySystem: "시스템 설정 사용",
