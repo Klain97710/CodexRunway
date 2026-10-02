@@ -23,13 +23,13 @@ targets:
         CODE_SIGNING_ALLOWED: NO
         CODE_SIGN_ENTITLEMENTS: CodexRunwayWidget.entitlements
         CODE_SIGN_STYLE: Manual
-        CURRENT_PROJECT_VERSION: 40
+        CURRENT_PROJECT_VERSION: 1000
         ENABLE_APP_SANDBOX: YES
         ENABLE_DEBUG_DYLIB: NO
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Info.plist
         MACOSX_DEPLOYMENT_TARGET: "14.0"
-        MARKETING_VERSION: 0.0.40
+        MARKETING_VERSION: 0.1.0
         PRODUCT_BUNDLE_IDENTIFIER: $(RUNWAY_WIDGET_BUNDLE_ID)
         PRODUCT_NAME: CodexRunwayWidget
         RUNWAY_APP_GROUP_ID: group.com.github.codex-runway

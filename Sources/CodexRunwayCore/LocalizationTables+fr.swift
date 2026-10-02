@@ -43,6 +43,8 @@ extension L10n {
         .appearanceSystem: "Système",
         .auto: "Auto",
         .about: "À propos",
+        .customEdition: "Édition personnalisée",
+        .originalProject: "Projet d’origine",
         .advanced: "Avancé",
         .account: "Compte",
         .accounts: "Comptes",

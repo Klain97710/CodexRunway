@@ -43,6 +43,8 @@ extension L10n {
         .appearanceSystem: "跟隨系統",
         .auto: "自動",
         .about: "關於",
+        .customEdition: "自訂版",
+        .originalProject: "原始專案",
         .advanced: "進階",
         .account: "帳號",
         .accounts: "多帳號",

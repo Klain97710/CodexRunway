@@ -43,6 +43,8 @@ extension L10n {
         .appearanceSystem: "システム",
         .auto: "自動",
         .about: "情報",
+        .customEdition: "カスタム版",
+        .originalProject: "元のプロジェクト",
         .advanced: "詳細",
         .account: "アカウント",
         .accounts: "アカウント",

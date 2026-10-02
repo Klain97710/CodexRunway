@@ -43,6 +43,8 @@ extension L10n {
         .appearanceSystem: "시스템",
         .auto: "자동",
         .about: "정보",
+        .customEdition: "사용자 지정 버전",
+        .originalProject: "원본 프로젝트",
         .advanced: "고급",
         .account: "계정",
         .accounts: "계정",

@@ -43,6 +43,8 @@ extension L10n {
         .appearanceSystem: "Системная",
         .auto: "Авто",
         .about: "О программе",
+        .customEdition: "Пользовательская версия",
+        .originalProject: "Исходный проект",
         .advanced: "Дополнительно",
         .account: "Аккаунт",
         .accounts: "Аккаунты",

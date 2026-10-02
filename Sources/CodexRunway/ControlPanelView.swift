@@ -391,7 +391,8 @@ struct ControlPanelView: View {
             SettingsSection {
                 AboutLogoView()
                 SectionLabel(l10n.text(.about))
-                InfoRow(title: l10n.text(.version), subtitle: appVersion, value: "CodexRunway")
+                InfoRow(title: l10n.text(.version), subtitle: appVersion,
+                        value: "\(RunwayDistribution.maintainer) \(l10n.text(.customEdition))")
                 PreferenceToggleRow(
                     title: l10n.text(.automaticallyCheckForUpdates),
                     subtitle: l10n.text(.checkForUpdates),
@@ -412,6 +413,12 @@ struct ControlPanelView: View {
                     subtitle: "GitHub Issues",
                     button: l10n.text(.feedbackIssue)) {
                         ExternalURLLauncher.open(Self.feedbackURL)
+                    }
+                ActionRow(
+                    title: l10n.text(.originalProject),
+                    subtitle: "Licoy/CodexRunway",
+                    button: l10n.text(.openGithub)) {
+                        ExternalURLLauncher.open(RunwayDistribution.upstreamURL)
                     }
             }
         }
