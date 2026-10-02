@@ -6,9 +6,13 @@ import Testing
 struct UpdateProxyRoutesTests {
     private let source = URL(string: "https://github.com/Klain97710/CodexRunway/releases/download/v1/CodexRunway.zip")!
 
-    @Test("only official repository release URLs can be registered")
+    @Test("direct and proxy updates accept only personal repository releases")
     func sourceAllowlist() {
         #expect(UpdateProxyRoutes.isAllowedSource(source))
+        #expect(RunwayDistribution.isAllowedUpdateURL(source))
+        for architecture in ["arm64", "x86_64"] {
+            #expect(RunwayDistribution.isAllowedUpdateURL(RunwayDistribution.appcastURL(architecture: architecture)))
+        }
         #expect(UpdateProxyRoutes.isAllowedSource(URL(string: "https://github.com/Klain97710/CodexRunway/releases/latest/download/appcast-arm64.xml")!))
         for value in [
             "https://github.com/Licoy/CodexRunway/releases/download/v1/app.zip",
@@ -24,6 +28,7 @@ struct UpdateProxyRoutesTests {
             "file:///tmp/app.zip",
         ] {
             #expect(!UpdateProxyRoutes.isAllowedSource(URL(string: value)!))
+            #expect(!RunwayDistribution.isAllowedUpdateURL(URL(string: value)!))
         }
     }
 

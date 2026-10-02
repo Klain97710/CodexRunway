@@ -1,192 +1,84 @@
 [English](./README.md) · 简体中文 · [繁體中文](./README_ZH_HANT.md) · [한국어](./README_KO.md) · [日本語](./README_JA.md) · [Русский](./README_RU.md) · [Français](./README_FR.md)
 
-<p align="center">
-  <img src="Resources/AppIcon.png" alt="CodexRunway logo" width="128" height="128">
-</p>
+<p align="center"><img src="Resources/AppIcon.png" alt="CodexRunway" width="128" height="128"></p>
 
-# CodexRunway
+# CodexRunway · Klain97710 定制版
 
-你的 Codex 还可以跑多久？
+面向亲友使用的 macOS 菜单栏 Codex 工具。基于 [Licoy/CodexRunway](https://github.com/Licoy/CodexRunway)，首版 **0.1.0（1000）**，只启用 Codex，保留原有界面和本地数据格式。
 
-CodexRunway 是一个原生 macOS 状态栏应用，帮你在菜单栏查看 Codex 与 Grok 额度，并提供 Codex 重置动态、reset credits、API 等价成本与本机会话能力，以及两个供应商各自独立的多账号管理。
+本版用于**覆盖原版**：继续使用 `CodexRunway.app`、原应用和 Widget 标识、URL scheme、Keychain 项目及 `~/.codex-runway` 数据目录。首次手动替换，后续从本仓库的签名更新源更新。
 
-https://github.com/user-attachments/assets/76cbc417-b237-42a7-a2a7-a68b18ae21a8
+## 安装与首次使用
 
-## 亮点
+1. 从 [个人仓库 Releases](https://github.com/Klain97710/CodexRunway/releases/latest) 下载 DMG：Apple Silicon 选 `CodexRunway-macos-arm64.dmg`，Intel 选 `CodexRunway-macos-x86_64.dmg`。主应用需要 macOS 12+，桌面组件需要 macOS 14+。
+2. 退出正在运行的 CodexRunway。已有用户先备份旧应用与偏好，再将 DMG 内的应用覆盖到**原安装位置**；新用户拖到 Applications。
+3. Homebrew 用户先执行 `brew uninstall --cask codex-runway`，**不要加 `--zap`**，然后手动安装本版，以免原渠道覆盖定制版。
+4. 本版免费采用 ad-hoc 签名，未做 Apple 公证。首次打开可右键选择“打开”，或到“系统设置 → 隐私与安全性 → 仍要打开”。仅对来源和 SHA256 已核验的下载处理安全提示。
+5. 点击菜单栏图标打开面板。已有账号自动沿用；新用户进入设置的账号页面，选择“导入当前登录”，或通过浏览器登录、导入文件、粘贴凭据添加账号。刷新后查看配额。API Key 账号不提供 ChatGPT 订阅额度。
 
-- 菜单栏查看 Codex 剩余额度。
-- 在常驻的 `Codex | Grok` 页签间切换，菜单栏和右键菜单同步展示所选供应商。
-- 通过官方 CLI chat-proxy 额度接口查看包含额度、产品拆分（Build / Imagine / Chat）、周/月周期、预付余额和按需使用情况。
-- Grok 主面板与 Codex 一致：展示 Token 用量多图表（热力图 / 折线 / 柱状）与 API 等价成本（本机会话日志），以及最近对话。
-- 管理多个 Grok OAuth / SuperGrok 账号：隔离登录、导入当前登录、粘贴 Token / JSON、刷新、别名、排序、删除和显式切号。
-- 查看 5 小时、每周和附加额度窗口。
-- 查看今日速率限制是否已重置（数据来自 [Did Codex Reset](https://didcodexreset.com)），并可跳转到相关公开动态。
-- 设置中可开关「Codex 重置动态」栏目，并单独配置其刷新间隔（默认开启、每 5 分钟）。
-- 管理多个 Codex 账号：浏览器登录、导入本机 `auth.json`、粘贴 token / JSON（含 `/auth/session`）、导入文件或 API Key。
-- 确认后安全切号，原子写回 `~/.codex/auth.json`，可选立即重启 Codex，使 CLI / IDE 同步。
-- 显示当前账号、订阅类型与到期信息。
-- 用官方周占用率和每日 Credits 推算本周额度，并与历史推算对比，便于发现是否被下调；设置中可开关，默认开启。
-- 查看 reset credits 数量、状态和到期时间。
-- 查看 API 等价成本与 token 用量：今日、本周期、上周期、本月或自定义范围；设置可改主弹窗默认范围。
-- 主弹窗配额下方显示本年 token 用量图表（热力图 / 折线图 / 柱状图，每日 / 每周 / 累计），设置中可切换样式或关闭；默认热力图。
-- 本机会话增量索引，加速成本扫描。
-- 查看最近 Codex 会话、项目、状态和用量摘要。
-- 修复本机会话索引。
-- 支持浅色、深色、跟随系统，以及 English、简体中文、繁體中文、한국어、日本語、Русский、Français 界面。
-- 支持内置更新检测。
-- 提供 macOS 14+ 桌面组件：额度总览、Token 趋势、关键指标和 Codex 重置动态。
-
-## 截图
-
-<p align="center">
-  <img src="docs/images/1.webp" alt="CodexRunway 配额概览" width="260">
-  <img src="docs/images/2.webp" alt="CodexRunway 重置次数详情" width="260">
-  <img src="docs/images/3.webp" alt="CodexRunway API 等价成本" width="260">
-  <img src="docs/images/4.webp" alt="CodexRunway 设置页面" width="260">
-  <img src="docs/images/5.webp" alt="CodexRunway 多账号" width="260">
-  <img src="docs/images/6.webp" alt="CodexRunway Grok 配额" width="260">
-</p>
-
-## 安装
-
-### Homebrew（推荐）
-
-通过项目维护的 [Licoy Homebrew Tap](https://github.com/Licoy/homebrew-tap) 安装：
+应用没有 Dock 图标。若菜单栏被隐藏，可执行：
 
 ```bash
-brew install --cask licoy/tap/codex-runway
+open -a /Applications/CodexRunway.app 'codex-runway://widget?provider=codex&section=overview'
 ```
 
-CodexRunway 同时支持应用内更新；如希望通过 Homebrew 强制检查并升级，请使用：
+应用装在 `~/Applications` 时使用对应路径。首次安装的开机启动按 macOS 授权处理；已有用户的设置会保留。
 
-```bash
-brew upgrade --cask --greedy codex-runway
-```
+详细步骤：[安装、覆盖升级与回退](docs/development/install-upgrade.md)。
 
-卸载应用时默认保留设置和托管账号副本；添加 `--zap` 会同时移除 `~/.codex-runway` 下的数据，但不会删除官方 `~/.codex`、`~/.grok` 目录或会话：
+## 保留的能力
 
-```bash
-brew uninstall --cask codex-runway
-brew uninstall --cask --zap codex-runway
-```
+- Codex 登录与多账号管理、别名、导入、显式切号及配额刷新。
+- 5 小时、每周及附加额度、官方 reset credits、额度估算与提醒。
+- API 等价成本、Token 热力图 / 折线图 / 柱状图、最近会话和会话索引修复。
+- Codex 重置动态：默认开启，每 5 分钟查询公开状态；保留提醒、来源链接及 Widget。已关闭过的用户仍保持关闭。
+- macOS 14+ 桌面组件：额度、Token 趋势、关键指标、重置动态。
+- 七种界面语言、浅色 / 深色 / 跟随系统、HTTP / SOCKS5 / 系统代理。
+- 慢请求与本地统计并发；失败提示、旧数据时间戳及默认关闭的脱敏网络诊断。
 
-### 手动安装
+Grok 的实现、数据类型和测试保留在源码中，但正式版没有开启入口，不探测 CLI、不读取其凭据或会话、不发起其网络请求。旧 Grok / Both 选择转为 Codex，其他偏好不变，旧数据不删除。重置动态的“求重置 / 感谢”按钮、计数和互动请求已删除。
 
-从 [GitHub Releases](https://github.com/Licoy/codex-runway/releases) 下载与你的 Mac 匹配的 DMG：
+## 更新与回退
 
-- Apple Silicon：`CodexRunway-macos-arm64.dmg`
-- Intel：`CodexRunway-macos-x86_64.dmg`
+- 正式版默认自动检查，用户确认后才下载安装。应用主页、反馈、下载白名单和 Sparkle 更新清单均指向 `Klain97710/CodexRunway`。
+- 首次从原版切换必须手动安装。签名错误、下载损坏或代理不可用时，当前应用保留，不改用原作者更新源。
+- 开发包禁用在线更新。正式包必须包含有效公钥，发布前还会验证私钥与公钥匹配。
+- 回退时退出应用，将备份应用放回原位置；需要时恢复备份偏好。账号库与会话保留原地。回退到原作者应用后，其更新源也随之恢复。
 
-打开 DMG 后把 `CodexRunway.app` 拖入 `Applications`，也可以下载同架构的 ZIP 后手动解压。
+发布包含 DMG、ZIP、app.tar.gz、签名 appcast、SHA256SUMS 和对应源码标签。首版标签为 `personal-v0.1.0`。
 
-安装版首次启动时默认请求开启开机自启，可在 **控制面板 → 通用 → 开机自启** 中关闭或开启；若 macOS 要求批准，点击 **打开登录项设置** 后允许该应用；后续启动会尊重系统设置中的更改，命令行和开发运行不会注册登录项
+## 网络与隐私
 
-### macOS 安全阻挡
+在“控制面板 → 通用 → 网络”设置代理，保存后生效。测试连接只读取本仓库公共页面，不依赖首个 Release 或 appcast，不发送账号凭据。自定义代理失败时不自动直连，代理密码单独保存在 Keychain。
 
-当前 Release 是 ad-hoc signed，未 notarized。首次打开如果提示“无法验证开发者”或“未经安全验证”，请右键点击 `CodexRunway.app`，选择“打开”，或在“系统设置 > 隐私与安全性”中点击“仍要打开”。
+- 官方凭据来自本机 `~/.codex/auth.json`；托管副本位于 `~/.codex-runway/accounts/<id>/auth.json`，目录权限 0700、文件权限 0600，账号索引不含 token。
+- 安装迁移本身不写官方认证文件。运行中仅在 OAuth 刷新或用户主动切号时，按原有规则更新官方认证；刷新非当前托管账号时只写其副本。
+- Token、API Key、认证 JSON 不进入日志或发布包。会话内容不上传，缓存和派生索引保存在 `~/.codex-runway`。
+- 会话修复只重建 `~/.codex/session_index.jsonl`，先备份，不删除会话文件。
+- 重置动态只请求 [Did Codex Reset 公开状态](https://didcodexreset.com/api/status.json)，不附带账号、token、会话、访客标识，不发送 `/api/reaction` 请求，也不读写旧访客文件。第三方状态可能延迟或不可用，AI 分析仅供参考。
+- 配额、reset credits、额度估算及官方 Token 统计访问 ChatGPT / Codex 后端。官方数据仅对应当前账号；本机日志可能跨账号，不能把两者直接相减。
+- 额度估算采用派生 Credits 与周占用率外推（1000 Credits ≈ $40，规则版本 `credits-usd-2026-08-26`），不是官方承诺。API 价格按随包价目及在线价格源计算，未知模型不显示精确费用。
+- Widget 只读权限 0600 的 `~/.codex-runway/widget-snapshot.json`，只发布 Codex 派生数据，不含邮箱、账号 ID 或密钥。
 
-如果提示“CodexRunway.app 已损坏，无法打开。您应该将它移到废纸篓”，通常是下载隔离属性导致的。把 app 放入 `Applications` 后运行：
+## 本地开发与打包
 
-```bash
-xattr -dr com.apple.quarantine /Applications/CodexRunway.app
-```
-
-然后再次打开应用。
-
-## 使用前提
-
-- macOS 12+
-- 推荐已安装并使用过 Codex
-- 可通过本机 `~/.codex/auth.json` 导入，或在应用内添加账号（浏览器登录、粘贴凭据、导入文件等）
-- 使用 Grok 面板前，请先安装[官方 Grok CLI](https://docs.x.ai/build/overview)：
-
-  ```bash
-  curl -fsSL https://x.ai/cli/install.sh | bash
-  ```
-
-- Grok 多账号与额度仅支持 OAuth / SuperGrok 及兼容 legacy session。可先运行 `grok login --oauth`，也可在应用内登录、导入当前登录，或粘贴 `~/.grok/auth.json` / 凭据 JSON；仅有 API Key 的登录不会加入托管账号。
-- 如果设置了 `GROK_HOME`，应用会沿用该目录；否则使用 `~/.grok`。详见 [xAI Settings](https://docs.x.ai/build/settings)。
-
-## 本地运行
-
-```bash
-swift run CodexRunway
-```
-
-在 macOS 14+，该命令会自动构建并注册独立的 `CodexRunway Dev` 应用和 Widget 扩展，然后启动它；开发应用位于 `.build/codex-runway-widget-dev/CodexRunway-dev.app`，可直接从系统组件库添加。启动前请先退出其他正在运行的 CodexRunway 实例。若只需运行未打包的命令行进程，可设置 `CODEX_RUNWAY_DISABLE_DEV_APP=1`。
-
-自检命令：
-
-```bash
-swift run CodexRunway --self-check
-```
-
-自检只读取本地状态，不请求网络；它会输出脱敏的 Codex 诊断，以及 Grok CLI 版本、凭据状态和账号身份。任何 token 或 API Key 都不会打印。
-
-## 桌面组件
-
-桌面组件要求 macOS 14+。从包含此修复的版本起，正式 Release 和本地开发构建都会包含 Widget 扩展。每个组件可在系统的“编辑组件”中独立选择 Codex、Grok 或两者；“Codex 重置动态”仅支持 Codex。升级后，macOS 会从应用包的 `Contents/PlugIns` 注册正式版组件。
-
-`swift run CodexRunway` 使用独立的 `swift-dev` 标识，不会覆盖现有安装。也可使用 `.dev` 标识手动生成带组件的应用：
-
-```bash
-INCLUDE_WIDGET=1 \
-RUNWAY_BUNDLE_ID=com.github.codex-runway.dev \
-RUNWAY_APP_GROUP_ID=group.com.github.codex-runway.dev \
-RUNWAY_WIDGET_STORAGE_MODE=local \
-bash Scripts/package-app.sh
-```
-
-生成的应用位于 `dist/CodexRunway.app`。包含此修复的正式 Release 和本地 ad-hoc 构建默认从 `~/.codex-runway/widget-snapshot.json` 读取权限为 `0600` 的版本化派生快照；已注册 App Group 的 Developer ID 构建可改用 `RUNWAY_WIDGET_STORAGE_MODE=app-group`。快照不含邮箱、账号 ID、token、认证 JSON 或外部事件原文。后续仍可接入 Developer ID、App Group 注册与公证。
-
-## 网络代理
-
-在 **控制面板 → 通用 → 网络** 中选择 **跟随系统**、**HTTP 代理** 或 **SOCKS5 代理**，自定义代理支持用户名和密码认证；设置覆盖 Codex 请求、应用发起的 Grok 请求和 CLI 操作、公开状态与价格源，以及软件更新检查、更新说明和安装包下载；浏览器登录页面与已经运行的外部 CLI 进程沿用各自的网络设置，不修改系统代理
-
-修改须点击 **保存代理设置** 后生效，进行中的更新沿用开始时的配置；**测试连接** 仅用当前草稿读取公开更新源，不发送账号凭据，也不保存草稿；代理凭据保存在 macOS 钥匙串，与非密钥设置分开存放；配置损坏、凭据不可用或自定义代理失败时不会自动直连，请修复设置或主动改回 **跟随系统**
-
-## 隐私
-
-- token 从本机 `~/.codex/auth.json` 读取；多账号凭据仅保存在 `~/.codex-runway/accounts/<id>/auth.json`（目录 `0700`、文件 `0600`）。账号索引 `index.json` 不含 token。
-- Grok 官方凭据从 `$GROK_HOME/auth.json` 读取（未设置时为 `~/.grok/auth.json`）；托管副本保存在 `~/.codex-runway/accounts/grok-<stable-id>/auth.json`（目录 `0700`、文件 `0600`），独立索引 `~/.codex-runway/accounts/grok-index.json` 不含 token。
-- Grok 额度使用本机 OAuth 凭据，向官方 CLI chat-proxy 的 `/v1/billing?format=credits` 请求（与本机 Grok CLI 相同的官方接口）。应用不读取浏览器 Cookie，也不会用本机会话推算伪额度。
-- 刷新 Grok 额度时读取对应账号 home 下的 `auth.json`；当前账号使用官方 `$GROK_HOME`，非当前托管账号使用隔离账号目录，不会写官方凭据。
-- 切换 Grok 账号只替换官方凭据中的 OAuth / 兼容 legacy 登录 scope，保留 API Key 和未知 scope。切换只保证新会话使用新账号；已运行的 Grok 进程不会被强制终止，并可能把旧账号重新写回，因此继续切换前会显示强警告。
-- 用户主动切号时，才会将选中凭据原子写回 `~/.codex/auth.json`，以便 Codex CLI / IDE 同步使用。
-- 刷新非当前托管账号 token 时只更新账号库副本，不写官方 `auth.json`；刷新当前账号时同步官方 auth 与副本。
-- 无效或 mock 凭据不会写回官方 `~/.codex/auth.json`。
-- access token、refresh token、id token、API key 不会写入日志、README、issue 模板或自检输出。
-- API 等价成本默认来自本机会话 JSONL 日志，并在 `~/.codex-runway/` 下维护本地增量索引等派生数据；不上传会话内容。
-- 订阅额度推算只把派生的 Credits 合计与占用率写入 `~/.codex-runway/quota-estimate-history.json`，不含 token 或密钥。
-- API 等价成本的在线用量只在本地没有可用 token 数据时作为补全。Token 图表的“官方统计（多端）”来自当前账号的官方资料统计，可能延迟或后续修订；“本机日志（全部本机会话）”扫描本机现有会话，历史记录可能跨账号。按日数据使用 UTC 日期，以便两边使用同一日界。两者口径不同，不能视为包含关系或直接相减。
-- 会话修复只处理 `~/.codex/session_index.jsonl`，写入前会创建备份，不删除会话文件。
-- 「Codex 重置动态」只从 [Did Codex Reset](https://didcodexreset.com) 下载公开状态源，不附带 Codex 账号、token 或本机会话内容。
-- 更新检测只访问版本信息，不上传 Codex 账号或会话数据。
-- 桌面组件快照存储仅保存额度、余额、派生成本、Token 日序列和重置状态等非密钥数据；主应用是唯一写入者，组件只读。
-
-## 数据来源
-
-- **Codex 重置动态**：数据来源于 [Did Codex Reset](https://didcodexreset.com) 的 [https://didcodexreset.com/api/status.json](https://didcodexreset.com/api/status.json)，非官方且仅供参考，可能延迟或暂时不可用。
-- 排期进入等待确认阶段后，应用采用公开接口为该排期提供的缓和时长；旧接口未提供时按 3 小时处理；24 或 72 小时等较长时长可以跨本地日期，期间仍表示“等待确认”，不表示重置已经完成，到真实期限才退出；网络刷新失败时保留最近一次有效状态，并在重置详情中显示错误；公开状态超过 30 小时未更新后仍按不可用处理。
-- **配额 / reset credits / 订阅额度推算 / Token 用量官方统计 / 部分在线用量**：在你已登录的前提下，通过本机凭据访问官方 ChatGPT / Codex 后端接口；官方 Token 统计仅对应当前账号，并显示服务端统计截至日期。订阅额度推算非正式：用周占用率和每日 Credits 外推本周额度（1000 Credits ≈ $40，版本 `credits-usd-2026-08-26`）。
-- **Grok 额度**：仅由官方 CLI chat-proxy 的 `/v1/billing?format=credits` 返回（使用本机 OAuth / SuperGrok 登录凭据）。应用不提供第二数据源，也不会把 API 账单或本机会话统计混入该额度。
-- **Grok API 等价成本 / 本机会话**：根据本机 `~/.grok/sessions` 的 `turn_completed` 用量，按官方 xAI Text API 价目（input / cached / output；prompt ≥ 200k 走长上下文价，价格版本 `xai-builtin-2026-09-27`）逐 turn 估算。未知模型不计精确费用。CLI 的 `costUsdTicks` 是订阅额度口径，不用作 API 等价。
-- **Token 用量本机日志 / API 等价成本 / 最近会话**：默认基于本机 `~/.codex` 会话日志与本地索引计算。本机历史日志没有可靠的账号归属，因此可能包含多个账号的数据。
-
-## 开发与贡献
+需要 Swift 6 / Xcode；本机已验证 Xcode 16.4、Swift 6.1.2。先退出安装版，再运行：
 
 ```bash
 swift test
 swift build
-swift build -c release
+swift run CodexRunway
+swift run CodexRunway --self-check
+ARCH=arm64 bash Scripts/package-app.sh
+bash Scripts/verify-packaged-app.sh dist/CodexRunway.app arm64 local
 ```
 
-贡献说明见 [CONTRIBUTORS.md](CONTRIBUTORS.md)。
+macOS 14+ 的开发启动会组装带 Widget 的独立 Dev app，保留单实例约束，并共享现有账号目录；它并不隔离真实用户数据。自检只输出本地 Codex 脱敏诊断，不访问 Grok。
 
-## 社区支持
+默认打包为禁用更新的开发包。正式签名、双架构打包和发布步骤见 [发布维护](docs/development/personal-release.md)。历史本机启动记录见 [local-run](docs/development/local-run.md)，本次验收见 [首版验收](docs/development/personal-v0.1.0-verification.md)。
 
-- [LinuxDO](https://linux.do/)
+`personal/main` 用于定制版集成和发布；`main` 保留上游基线。只推送 `personal-v*` 发布标签，先形成草稿、验收后再公开。后续同步上游重点复核发布地址、功能限制和偏好迁移。
 
-## 许可证
+## 来源与许可
 
-本项目遵循仓库中的 [LICENSE](LICENSE)。
+原项目：[Licoy/CodexRunway](https://github.com/Licoy/CodexRunway)。定制维护：[Klain97710/CodexRunway](https://github.com/Klain97710/CodexRunway)。保留原作者署名、[贡献者](CONTRIBUTORS.md)及 [AGPL-3.0 许可证](LICENSE)，各发布版本源码通过对应标签公开。

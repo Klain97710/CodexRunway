@@ -29,3 +29,22 @@
 - 账号、代理、显示设置可用；旧 Grok 选择归一化为 Codex。
 - 菜单栏只有一个实例；原有 Widget 能读取 Codex 数据。
 - 开机启动沿用既有偏好；首次安装按 macOS 设置授权。
+
+## English
+
+This is the Klain97710 custom edition of Licoy/CodexRunway, under AGPL-3.0. It replaces the upstream app and preserves its application/Widget identifiers, URL scheme, Keychain services, single-instance lock and data locations.
+
+1. Download the matching DMG from [this repository](https://github.com/Klain97710/CodexRunway/releases/latest): arm64 for Apple Silicon, x86_64 for Intel. macOS 12+ is required; Widgets need macOS 14+.
+2. Quit CodexRunway. Copy the old app to a private backup directory outside the repository. Export preferences with `defaults export com.github.codex-runway /absolute/backup/preferences.plist` and restrict access to that backup.
+3. Homebrew users must first run `brew uninstall --cask codex-runway` **without `--zap`**, preserving app data. Install this edition manually afterward and stop using the upstream cask for updates.
+4. Copy the new app to the same installation path, usually `/Applications/CodexRunway.app` or `~/Applications/CodexRunway.app`. First-time users can drag it to Applications.
+5. The app is ad-hoc signed, without Apple notarization. Use right-click → Open or System Settings → Privacy & Security → Open Anyway after verifying the source and SHA256. If macOS specifically reports a damaged app despite a matching checksum, remove quarantine only from this verified app: `xattr -dr com.apple.quarantine /Applications/CodexRunway.app` (adjust the path if needed).
+6. Open the menu bar panel. Existing accounts remain available. New users can import the current Codex login or sign in through the browser in Accounts settings, then refresh quota. API-key accounts do not provide ChatGPT subscription quota.
+
+Installation migration itself never writes `~/.codex/auth.json`. Runtime OAuth refresh and explicit account switching retain their existing behavior. Do not include account files, sessions or credentials in releases or shared diagnostics.
+
+After the first manual replacement, updates use only this repository's signed Sparkle feed. Checks are automatic by default; downloads and installation need user confirmation. Signature, download and proxy failures preserve the installed app. Development packages disable online updates.
+
+To roll back, quit the app and copy the backup application to its previous path. If necessary, restore preferences while the app is stopped using `defaults import com.github.codex-runway /absolute/backup/preferences.plist`. Keep account and session data in place. Restoring the upstream app also restores its update channel.
+
+Verify version 0.1.0 (1000), the Klain97710 label in About, account availability, proxy behavior, login-at-startup preferences, a single menu bar instance and existing Widgets. Legacy Grok / Both selections become Codex; unrelated preferences remain unchanged.

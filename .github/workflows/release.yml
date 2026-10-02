@@ -36,6 +36,7 @@ jobs:
         run: |
           test -n "$SPARKLE_PUBLIC_KEY" || { echo "Missing SPARKLE_PUBLIC_KEY secret"; exit 1; }
           test -n "$SPARKLE_PRIVATE_KEY" || { echo "Missing SPARKLE_PRIVATE_KEY secret"; exit 1; }
+          printf '%s' "$SPARKLE_PRIVATE_KEY" | swift Scripts/verify-update-key.swift
       - name: Package ${{ matrix.arch }}
         env:
           EXPECTED_MACOS_SDK_MAJOR: "26"
@@ -45,7 +46,7 @@ jobs:
           RUNWAY_RELEASE: "1"
         run: ARCH=${{ matrix.arch }} bash Scripts/package-app.sh
       - name: Verify embedded widget ${{ matrix.arch }}
-        run: bash Scripts/verify-packaged-app.sh dist/CodexRunway.app ${{ matrix.arch }} local
+        run: bash Scripts/verify-packaged-app.sh dist/CodexRunway.app ${{ matrix.arch }} local release
       - name: Generate appcast ${{ matrix.arch }}
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
@@ -73,6 +74,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Generate release notes
+        if: ${{ hashFiles(format('docs/releases/{0}.md', github.ref_name)) == '' }}
         uses: orhun/git-cliff-action@v4
         id: cliff
         with:
@@ -81,18 +83,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Write release notes
+        env:
+          CLIFF_CONTENT: ${{ steps.cliff.outputs.content }}
         run: |
-          cat > release-notes.md <<'EOF'
-          ${{ steps.cliff.outputs.content }}
-          EOF
-          if ! grep -q '[^[:space:]]' release-notes.md; then
-            printf 'macOS builds for Apple Silicon and Intel.\n' > release-notes.md
-          fi
-          cat >> release-notes.md <<'EOF'
+          if [[ -f "docs/releases/${GITHUB_REF_NAME}.md" ]]; then
+            cp "docs/releases/${GITHUB_REF_NAME}.md" release-notes.md
+          else
+            printf '%s\n' "$CLIFF_CONTENT" > release-notes.md
+            if ! grep -q '[^[:space:]]' release-notes.md; then
+              printf 'macOS builds for Apple Silicon and Intel.\n' > release-notes.md
+            fi
+            cat >> release-notes.md <<'EOF'
 
           Klain97710 custom edition. Install this edition manually once to switch to its signed update channel. These builds are ad-hoc signed and not notarized. Prefer the .dmg download; if macOS blocks the app, use right-click Open or Privacy & Security > Open Anyway.
           Desktop widgets are included and require macOS 14 or later.
           EOF
+          fi
       - uses: actions/upload-artifact@v7
         with:
           name: release-notes

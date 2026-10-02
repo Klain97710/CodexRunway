@@ -32,12 +32,19 @@ private final class UpdateProxyFixture: NSObject, NSApplicationDelegate, SPUUpda
         }
         Task {
             do {
-                let context = try RunwayNetworkContext(sessionFactory: { configuration, delegate in
-                    configuration.protocolClasses = [FixtureURLProtocol.self]
-                    configuration.connectionProxyDictionary = [:]
-                    configuration.urlCredentialStorage = nil
-                    return URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
-                })
+                let context: RunwayNetworkContext
+                if let port = Bundle.main.object(forInfoDictionaryKey: "FixtureProxyPort") as? Int {
+                    record("proxy-unavailable")
+                    context = try RunwayNetworkContext(configuration:
+                        NetworkProxyConfiguration(mode: .http, host: "127.0.0.1", port: port))
+                } else {
+                    context = try RunwayNetworkContext(sessionFactory: { configuration, delegate in
+                        configuration.protocolClasses = [FixtureURLProtocol.self]
+                        configuration.connectionProxyDictionary = [:]
+                        configuration.urlCredentialStorage = nil
+                        return URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
+                    })
+                }
                 let bridge = UpdateProxyBridge()
                 try await bridge.start()
                 self.bridge = bridge

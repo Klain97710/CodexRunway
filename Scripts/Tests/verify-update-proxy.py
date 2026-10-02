@@ -13,6 +13,7 @@ from pathlib import Path
 import plistlib
 import shutil
 import signal
+import socket
 import subprocess
 import tempfile
 import time
@@ -74,6 +75,10 @@ def make_app(case, executable, framework, key, version, identifier):
         "SUEnableAutomaticChecks": False,
         "NSAppTransportSecurity": {"NSAllowsLocalNetworking": True}, "FixtureRoot": str(case),
     }
+    if case.name == "proxy-unavailable":
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            info["FixtureProxyPort"] = listener.getsockname()[1]
     (contents / "Info.plist").write_bytes(plistlib.dumps(info))
     entitlements = case / "entitlements.plist"
     entitlements.write_bytes(plistlib.dumps({"com.apple.security.cs.disable-library-validation": True}))
@@ -156,6 +161,9 @@ def test_case(name, work, executable, framework, public_key, timeout):
     payload = make_app(case, executable, framework, public_key, "2", identifier)
     archive = case / "UpdateProxyFixture.zip"
     run(["ditto", "-c", "-k", "--keepParent", payload, archive])
+    if name == "corrupt-archive":
+        # Sign the damaged payload so this tests extraction failure after valid signatures.
+        archive.write_bytes(b"PK\x03\x04truncated fixture archive")
     signature = create_signed_feed(case, work / "fixture.key", name == "bad-archive")
     feed = case / "appcast.xml"
     if name == "bad-feed":
@@ -165,6 +173,7 @@ def test_case(name, work, executable, framework, public_key, timeout):
     if feed_valid != (name != "bad-feed") or archive_valid != (name != "bad-archive"):
         raise AssertionError("Fixture signature precondition failed")
     before = hashlib.sha256(feed.read_bytes()).hexdigest()
+    installed_before = bundle_fingerprint(app)
     started = time.monotonic()
     result = exercise(case, app, timeout)
     installed = plistlib.loads((app / "Contents/Info.plist").read_bytes())["CFBundleVersion"]
@@ -178,14 +187,19 @@ def test_case(name, work, executable, framework, public_key, timeout):
     else:
         passed &= result.get("domain") == "SUSparkleErrorDomain"
         passed &= result.get("event") == "update-error"
+        passed &= bundle_fingerprint(app) == installed_before
         if name == "bad-feed":
             passed &= result.get("code") == "1000" and "archive-routed" not in names
-        else:
+        elif name == "bad-archive":
             # Sparkle's installer wraps SUValidationError inside SUInstallationError.
             chain = [value for key, value in result.items() if key.startswith("underlying-")]
             signature_error = result.get("code") in ["3001", "3002"] or (
                 result.get("code") == "4005" and "SUSparkleErrorDomain:3002" in chain)
             passed &= signature_error and "archive-routed" in names
+        elif name == "corrupt-archive":
+            passed &= "archive-routed" in names and "extracting" in names
+        elif name == "proxy-unavailable":
+            passed &= "proxy-unavailable" in names and "archive-routed" not in names
         passed &= "ready-to-install" not in names
     report = {
         "case": name, "passed": bool(passed), "signedFeedValid": feed_valid, "signedArchiveValid": archive_valid,
@@ -195,6 +209,17 @@ def test_case(name, work, executable, framework, public_key, timeout):
     (case / "report.json").write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report), flush=True)
     return report
+
+
+def bundle_fingerprint(app):
+    digest = hashlib.sha256()
+    for path in sorted(app.rglob("*")):
+        digest.update(str(path.relative_to(app)).encode())
+        if path.is_symlink():
+            digest.update(os.readlink(path).encode())
+        elif path.is_file():
+            digest.update(path.read_bytes())
+    return digest.hexdigest()
 
 
 def main():
@@ -208,7 +233,7 @@ def main():
         executable = compile_fixture(args.build_dir, work)
         public_key = create_keys(work)
         reports = [test_case(name, work, executable, args.build_dir / "Sparkle.framework", public_key, args.timeout)
-                   for name in ["valid", "bad-feed", "bad-archive"]]
+                   for name in ["valid", "bad-feed", "bad-archive", "corrupt-archive", "proxy-unavailable"]]
         (work / "report.json").write_text(json.dumps(reports, indent=2) + "\n")
         return 0 if all(report["passed"] for report in reports) else 1
     finally:

@@ -89,10 +89,14 @@ final class UpdaterService: NSObject, SPUUpdaterDelegate {
     }
 
     func updater(_ updater: SPUUpdater, willDownloadUpdate item: SUAppcastItem, with request: NSMutableURLRequest) {
-        guard cycleFeedURL != nil else { return }
         do {
-            guard let upstream = request.url, let proxyBridge else { throw UpdateProxyBridgeError.unavailable }
-            request.url = try proxyBridge.register(upstream)
+            guard let upstream = request.url, RunwayDistribution.isAllowedUpdateURL(upstream) else {
+                throw UpdateProxyBridgeError.unsupportedResource
+            }
+            if cycleFeedURL != nil {
+                guard let proxyBridge else { throw UpdateProxyBridgeError.unavailable }
+                request.url = try proxyBridge.register(upstream)
+            }
         } catch {
             proxyBridge?.recordFailure(.invalidUpdateURL)
             // Sparkle rejects unsupported schemes before making a request; never leave the remote URL in place.

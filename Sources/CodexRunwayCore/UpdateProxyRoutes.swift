@@ -37,14 +37,7 @@ struct UpdateProxyRoutes {
     }
 
     static func isAllowedSource(_ url: URL) -> Bool {
-        guard hasAllowedAuthority(url), url.host?.lowercased() == "github.com" else { return false }
-        let parts = url.path.split(separator: "/", omittingEmptySubsequences: false)
-        guard parts.count == 7, parts[0].isEmpty,
-              "\(parts[1])/\(parts[2])".lowercased() == RunwayDistribution.repository.lowercased(),
-              parts[3] == "releases", !parts[5].isEmpty, !parts[6].isEmpty,
-              !parts.contains("."), !parts.contains(".."), !url.path.contains("\\")
-        else { return false }
-        return parts[4] == "download" || (parts[4] == "latest" && parts[5] == "download")
+        RunwayDistribution.isAllowedUpdateURL(url)
     }
 
     static func isAllowedRedirect(_ url: URL) -> Bool {
