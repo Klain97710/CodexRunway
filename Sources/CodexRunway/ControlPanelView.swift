@@ -213,13 +213,15 @@ struct ControlPanelView: View {
                     }
                     .pickerStyle(.menu)
                 }
-                PickerRow(title: l10n.text(.statusBarProviderScope), subtitle: l10n.text(.display)) {
-                    Picker(l10n.text(.statusBarProviderScope), selection: statusBarProviderScopeBinding) {
-                        ForEach(StatusBarProviderScope.allCases, id: \.self) { scope in
-                            Text(scope.title(l10n)).tag(scope)
+                if settings.features.grokEnabled {
+                    PickerRow(title: l10n.text(.statusBarProviderScope), subtitle: l10n.text(.display)) {
+                        Picker(l10n.text(.statusBarProviderScope), selection: statusBarProviderScopeBinding) {
+                            ForEach(StatusBarProviderScope.allCases, id: \.self) { scope in
+                                Text(scope.title(l10n)).tag(scope)
+                            }
                         }
+                        .pickerStyle(.menu)
                     }
-                    .pickerStyle(.menu)
                 }
                 if settings.preferences.statusBarDisplayStyle == .meters {
                     PickerRow(title: l10n.text(.statusBarMetersDetailStyle), subtitle: l10n.text(.statusBarMeters)) {
@@ -266,7 +268,7 @@ struct ControlPanelView: View {
                         MainPanelModuleCard(
                             title: module.title(l10n),
                             subtitle: module.subtitle(l10n),
-                            platform: module.platformTitle(l10n),
+                            platform: settings.features.grokEnabled ? module.platformTitle(l10n) : l10n.text(.moduleAppliesCodex),
                             systemImage: module.systemImage,
                             visibleTitle: l10n.text(.moduleVisible),
                             hiddenTitle: l10n.text(.moduleHidden),

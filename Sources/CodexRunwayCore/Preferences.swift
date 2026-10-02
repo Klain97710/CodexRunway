@@ -14,6 +14,7 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case about
     case customEdition
     case originalProject
+    case codexOnlyImport
     case advanced
     case account
     case accounts

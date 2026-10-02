@@ -11,8 +11,8 @@
 "Codex Reset Updates" = "Codex 초기화 업데이트";
 "Shows the Codex reset status and next expected reset." = "Codex 초기화 상태와 다음 예상 초기화를 표시합니다.";
 "Quota Overview" = "할당량 개요";
-"Codex and Grok quota, cost, tokens, and balances." = "Codex와 Grok의 할당량, 비용, 토큰, 잔액.";
+"Codex quota, cost, tokens, and balances." = "Codex의 할당량, 비용, 토큰, 잔액.";
 "Token Trend" = "토큰 추세";
-"Recent Codex and Grok token activity." = "최근 Codex와 Grok 토큰 사용량.";
+"Recent Codex token activity." = "최근 Codex 토큰 사용량.";
 "One focused quota, cost, token, or balance metric." = "할당량, 비용, 토큰 또는 잔액 중 하나의 지표.";
 "Codex reset status and next expected reset." = "Codex 초기화 상태와 다음 예상 초기화.";

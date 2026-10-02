@@ -180,16 +180,18 @@ struct AccountsSettingsPane: View {
 
     private var platformToolbar: some View {
         HStack(spacing: 8) {
-            Picker("", selection: Binding(
-                get: { model.selectedProvider },
-                set: { model.selectProvider($0) }))
-            {
-                Text(l10n.text(.providerCodex)).tag(RunwayProvider.codex)
-                Text(l10n.text(.providerGrok)).tag(RunwayProvider.grok)
+            if model.features.grokEnabled {
+                Picker("", selection: Binding(
+                    get: { model.selectedProvider },
+                    set: { model.selectProvider($0) }))
+                {
+                    Text(l10n.text(.providerCodex)).tag(RunwayProvider.codex)
+                    Text(l10n.text(.providerGrok)).tag(RunwayProvider.grok)
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .fixedSize()
             }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .fixedSize()
 
             Spacer(minLength: 8)
 
@@ -521,6 +523,10 @@ struct AccountsSettingsPane: View {
             } else {
                 let preview = model.previewAccountImport(urls: urls)
                 if preview.routedProvider == .grok {
+                    guard model.features.grokEnabled else {
+                        model.lastError = l10n.text(.codexOnlyImport)
+                        return
+                    }
                     let grokPreview = await model.previewGrokAccountImport(urls: urls)
                     presentGrokImportPreview(grokPreview, switchProvider: true)
                     return

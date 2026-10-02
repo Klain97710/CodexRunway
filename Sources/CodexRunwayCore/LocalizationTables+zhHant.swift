@@ -44,6 +44,7 @@ extension L10n {
         .auto: "自動",
         .about: "關於",
         .customEdition: "自訂版",
+        .codexOnlyImport: "本版本僅支援匯入 Codex 帳號。",
         .originalProject: "原始專案",
         .advanced: "進階",
         .account: "帳號",

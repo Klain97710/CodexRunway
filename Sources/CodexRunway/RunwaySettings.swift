@@ -10,6 +10,7 @@ final class RunwaySettings: ObservableObject {
     @Published private(set) var loginItemStatus: LoginItemStatus = .unavailable
 
     var onChange: (() -> Void)?
+    let features: RunwayFeatures
 
     private let store: PreferencesStore
     private let networkProxyStore: NetworkProxyStore
@@ -21,13 +22,17 @@ final class RunwaySettings: ObservableObject {
         store: PreferencesStore = PreferencesStore(),
         networkProxyStore: NetworkProxyStore = NetworkProxyStore(),
         proxyCredentialStore: ProxyCredentialStore = ProxyCredentialStore(),
-        loginItemApplier: LoginItemApplier = .production())
+        loginItemApplier: LoginItemApplier = .production(),
+        features: RunwayFeatures = .production)
     {
         self.store = store
         self.networkProxyStore = networkProxyStore
         self.proxyCredentialStore = proxyCredentialStore
         self.loginItemApplier = loginItemApplier
-        self.preferences = store.load()
+        self.features = features
+        let saved = store.load()
+        self.preferences = features.preferences(saved)
+        if preferences != saved { store.save(preferences) }
         do {
             networkProxy = try networkProxyStore.load()
             hasValidProxyConfiguration = true
@@ -132,7 +137,7 @@ final class RunwaySettings: ObservableObject {
     }
 
     func updateSelectedProvider(_ provider: RunwayProvider) {
-        update { $0.selectedProvider = provider }
+        update { $0.selectedProvider = features.provider(provider) }
     }
 
     func updateLanguage(_ language: LanguagePreference) {
@@ -164,7 +169,7 @@ final class RunwaySettings: ObservableObject {
     }
 
     func updateStatusBarProviderScope(_ scope: StatusBarProviderScope) {
-        update { $0.statusBarProviderScope = scope }
+        update { $0.statusBarProviderScope = features.grokEnabled ? scope : .selected }
     }
 
     func updateRefreshInterval(_ seconds: Int) {

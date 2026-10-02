@@ -6,13 +6,60 @@ import Testing
 @Suite("Runway provider routing")
 @MainActor
 struct RunwayModelProviderTests {
+    @Test("production never locates Grok or runs retained Grok commands, including for widgets")
+    func productionDisablesAllGrokWork() async throws {
+        let fixture = try GrokModelFixture(cachedPercent: 17.5)
+        defer { fixture.remove() }
+        let beforeIndex = try Data(contentsOf: fixture.store.indexURL)
+        let beforeAuth = try Data(contentsOf: fixture.store.officialAuthURL)
+        let suite = "CodexOnlyProvider-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let settings = RunwaySettings(store: PreferencesStore(defaults: defaults))
+        let calls = InvocationCounter()
+        let module = GrokAccountModule(
+            store: fixture.store,
+            cli: GrokCLIClient(
+                billing: { _ in await calls.increment(); return fixture.quota(percent: 42) },
+                loginOAuth: { _ in await calls.increment() },
+                version: { await calls.increment(); return "grok 0.2.114" }),
+            runningProcessIDs: { await calls.increment(); return [] })
+        var locatorCalls = 0
+        let codexStore = isolatedAccountStore()
+        defer { try? FileManager.default.removeItem(at: codexStore.rootURL.deletingLastPathComponent()) }
+        let model = RunwayModel(
+            settings: settings, services: testServices(), accountStore: codexStore,
+            costCacheStore: UsageCostCacheStore(cacheURL: fixture.root.appendingPathComponent("cost.json")),
+            grokModule: module, locateGrokCLI: { locatorCalls += 1; return true })
+        model.widgetRequirements = .allWidgetData
+        model.selectProvider(.grok)
+        model.bootstrapGrokAccounts()
+        model.refreshGrok(.all)
+        model.refreshGrokLocalUsage()
+        model.startGrokOAuthLogin()
+        model.importOfficialGrokAccount()
+        #expect(!(await model.importPastedGrokCredentials("{}")))
+        let snapshot = model.makeWidgetSnapshot()
+        await Task.yield()
+
+        #expect(model.selectedProvider == .codex)
+        #expect(model.grokModule == nil)
+        #expect(!model.needsGrokStatusBarData)
+        #expect(!model.grokPanelState.isRefreshingLocalUsage)
+        #expect(locatorCalls == 0)
+        #expect(await calls.value == 0)
+        #expect(snapshot.providers.map(\.provider) == [.codex])
+        #expect(try Data(contentsOf: fixture.store.indexURL) == beforeIndex)
+        #expect(try Data(contentsOf: fixture.store.officialAuthURL) == beforeAuth)
+    }
+
     @Test("provider selection is persisted")
     func providerSelectionIsPersisted() {
         let suite = "RunwayModelProviderTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
         let store = PreferencesStore(defaults: defaults)
-        let settings = RunwaySettings(store: store)
+        let settings = RunwaySettings(store: store, features: .allProviders)
         let accountStore = isolatedAccountStore()
         let model = RunwayModel(
             settings: settings,
@@ -426,7 +473,7 @@ struct RunwayModelProviderTests {
     private func runwaySettings(selectedProvider: RunwayProvider) -> RunwaySettings {
         let suite = "RunwayModelProviderSettings-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
-        let settings = RunwaySettings(store: PreferencesStore(defaults: defaults))
+        let settings = RunwaySettings(store: PreferencesStore(defaults: defaults), features: .allProviders)
         settings.updateSelectedProvider(selectedProvider)
         return settings
     }

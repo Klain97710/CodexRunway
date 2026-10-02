@@ -2,17 +2,21 @@ import CodexRunwayCore
 import Foundation
 
 enum SelfCheck {
-    static func run() async {
-        let store = CodexAuthStore()
+    static func run(
+        store: CodexAuthStore = CodexAuthStore(),
+        sessionRepair: SessionRepairService = SessionRepairService(),
+        features: RunwayFeatures = .production,
+        inspectGrok: @Sendable () async -> Void = { await printGrokSummary() }) async
+    {
         do {
             let auth = try store.load()
             print(auth.redactedDescription)
             print(TokenInspector.isExpired(auth.tokens.accessToken) ? "token: expired" : "token: valid")
-            print(sessionSummary())
+            print(sessionSummary(service: sessionRepair))
         } catch {
             print("auth: unavailable (\(error.localizedDescription))")
         }
-        await printGrokSummary()
+        if features.grokEnabled { await inspectGrok() }
     }
 
     static func sanitizedGrokVersion(_ rawValue: String) -> String? {
@@ -34,9 +38,9 @@ enum SelfCheck {
         return "grok \(candidate)"
     }
 
-    private static func sessionSummary() -> String {
+    private static func sessionSummary(service: SessionRepairService) -> String {
         do {
-            let report = try SessionRepairService().dryRun()
+            let report = try service.dryRun()
             return "sessions: \(report.plannedEntries), missing: \(report.missingIndexIDs.count), orphan: \(report.orphanIndexIDs.count)"
         } catch {
             return "sessions: unavailable"

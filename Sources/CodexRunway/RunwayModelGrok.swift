@@ -78,7 +78,8 @@ extension RunwayModel {
 
     /// True when the status bar (or panel) needs a fresh Grok quota snapshot.
     var needsGrokStatusBarData: Bool {
-        settings.preferences.statusBarProviderScope == .both
+        guard features.grokEnabled else { return false }
+        return settings.preferences.statusBarProviderScope == .both
             || selectedProvider == .grok
             || widgetRequirements.contains(.providerQuota)
             || widgetRequirements.contains(.tokenTrend)
@@ -177,6 +178,7 @@ extension RunwayModel {
     }
 
     func refreshGrokLocalUsage() {
+        guard features.grokEnabled else { return }
         guard selectedProvider == .grok
             || widgetRequirements.contains(.tokenTrend)
             || widgetRequirements.contains(.cost)

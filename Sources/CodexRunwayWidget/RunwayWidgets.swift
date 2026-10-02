@@ -27,7 +27,7 @@ struct RunwayOverviewWidget: Widget {
             RunwayOverviewWidgetView(entry: entry)
         }
         .configurationDisplayName("Quota Overview")
-        .description("Codex and Grok quota, cost, tokens, and balances.")
+        .description("Codex quota, cost, tokens, and balances.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
@@ -43,7 +43,7 @@ struct RunwayTokenTrendWidget: Widget {
             RunwayTokenTrendWidgetView(entry: entry)
         }
         .configurationDisplayName("Token Trend")
-        .description("Recent Codex and Grok token activity.")
+        .description("Recent Codex token activity.")
         .supportedFamilies([.systemMedium, .systemLarge])
     }
 }

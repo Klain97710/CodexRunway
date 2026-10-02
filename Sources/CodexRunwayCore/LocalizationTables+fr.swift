@@ -44,6 +44,7 @@ extension L10n {
         .auto: "Auto",
         .about: "À propos",
         .customEdition: "Édition personnalisée",
+        .codexOnlyImport: "Cette édition importe uniquement les comptes Codex.",
         .originalProject: "Projet d’origine",
         .advanced: "Avancé",
         .account: "Compte",

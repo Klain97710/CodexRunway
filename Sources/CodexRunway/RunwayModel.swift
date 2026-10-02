@@ -233,6 +233,7 @@ final class RunwayModel: ObservableObject {
     private let notificationService = RunwayNotificationService()
     let settings: RunwaySettings
     let grokModule: GrokAccountModule?
+    var features: RunwayFeatures { settings.features }
     let grokCLIAvailable: Bool
     private let costProgressReporter = CostScanProgressReporter()
     let accountStore: AccountStore
@@ -289,15 +290,16 @@ final class RunwayModel: ObservableObject {
         costCacheStore: UsageCostCacheStore = UsageCostCacheStore(),
         quotaEstimateHistoryStore: QuotaEstimateHistoryStore = QuotaEstimateHistoryStore(),
         grokModule: GrokAccountModule? = nil,
-        grokCLIAvailable: Bool = GrokExecutableLocator.locate() != nil)
+        grokCLIAvailable: Bool? = nil,
+        locateGrokCLI: () -> Bool = { GrokExecutableLocator.locate() != nil })
     {
         self.settings = settings
         self.services = services
         self.accountStore = accountStore
         self.costCacheStore = costCacheStore
         self.quotaEstimateHistoryStore = quotaEstimateHistoryStore
-        self.grokModule = grokModule
-        self.grokCLIAvailable = grokCLIAvailable
+        self.grokModule = settings.features.grokEnabled ? grokModule : nil
+        self.grokCLIAvailable = settings.features.grokEnabled && (grokCLIAvailable ?? locateGrokCLI())
         self.accountSwitcher = AccountSwitcher(store: accountStore, fetchQuota: services.fetchQuota)
         self.accountImporter = AccountImporter(store: accountStore)
         self.accountQuotaRefresher = AccountQuotaRefresher(
@@ -320,7 +322,7 @@ final class RunwayModel: ObservableObject {
             currentAccountID: nil,
             accounts: [])
         self.grokPanelState = GrokPanelViewState(
-            availability: grokModule == nil || !grokCLIAvailable ? .cliUnavailable : .loading)
+            availability: self.grokModule == nil || !self.grokCLIAvailable ? .cliUnavailable : .loading)
         if let cached = costCacheStore.load() {
             applyCurrentCost(cached)
             if settings.preferences.apiCostSummaryRange == .current {
@@ -709,6 +711,7 @@ final class RunwayModel: ObservableObject {
     var quotaUpdatedAt: Date? { latestQuota?.updatedAt }
 
     func selectProvider(_ provider: RunwayProvider) {
+        let provider = features.provider(provider)
         guard selectedProvider != provider else { return }
         let previous = selectedProvider
         selectedProvider = provider
@@ -1091,7 +1094,8 @@ final class RunwayModel: ObservableObject {
     }
 
     func makeWidgetSnapshot(now: Date = Date()) -> RunwayWidgetSnapshot {
-        let providers = [makeCodexWidgetProvider(), makeGrokWidgetProvider()]
+        var providers = [makeCodexWidgetProvider()]
+        if features.grokEnabled { providers.append(makeGrokWidgetProvider()) }
         return RunwayWidgetSnapshot(
             generatedAt: now,
             language: l10n.language,
@@ -2101,6 +2105,7 @@ final class RunwayModel: ObservableObject {
     }
 
     private func queryGrokCost(range: ApiCostRange) async throws -> ApiEquivalentSummary {
+        guard features.grokEnabled else { throw CostRangeQueryError.usageUnavailable }
         guard range.window.end > range.window.start else {
             throw CostRangeQueryError.usageUnavailable
         }

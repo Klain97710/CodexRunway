@@ -1,5 +1,6 @@
 import AppIntents
 import Foundation
+import CodexRunwayCore
 
 /// macOS 27 resolves widget `AppEnum` parameters to nil and keeps the
 /// default, so a saved "both" renders as Codex. These ids stay plain
@@ -7,13 +8,11 @@ import Foundation
 @available(macOS 14.0, *)
 struct RunwayProviderOptions: DynamicOptionsProvider, Sendable {
     func results() async throws -> IntentItemCollection<String> {
-        IntentItemCollection(sections: [
-            IntentItemSection(items: [
-                IntentItem("codex", title: "Codex"),
-                IntentItem("grok", title: "Grok"),
-                IntentItem("both", title: "Both"),
-            ]),
-        ])
+        var items = [IntentItem("codex", title: "Codex")]
+        if RunwayFeatures.production.grokEnabled {
+            items += [IntentItem("grok", title: "Grok"), IntentItem("both", title: "Both")]
+        }
+        return IntentItemCollection(sections: [IntentItemSection(items: items)])
     }
 
     func defaultResult() async -> String? { "codex" }

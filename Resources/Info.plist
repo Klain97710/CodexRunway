@@ -43,7 +43,7 @@
     <true/>
   </dict>
   <key>NSAppDataUsageDescription</key>
-  <string>CodexRunway reads local Codex and Grok configuration to show quota, reset credits, and API-equivalent cost.</string>
+  <string>CodexRunway reads local Codex configuration to show quota, reset credits, and API-equivalent cost.</string>
   <key>SUEnableAutomaticChecks</key>
   <true/>
   <key>RunwayUpdatesEnabled</key>

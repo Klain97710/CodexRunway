@@ -11,8 +11,8 @@
 "Codex Reset Updates" = "Обновления сбросов Codex";
 "Shows the Codex reset status and next expected reset." = "Показывает статус сбросов Codex и следующий ожидаемый сброс.";
 "Quota Overview" = "Обзор квоты";
-"Codex and Grok quota, cost, tokens, and balances." = "Квота, стоимость, токены и балансы Codex и Grok.";
+"Codex quota, cost, tokens, and balances." = "Квота, стоимость, токены и балансы Codex.";
 "Token Trend" = "Тренд токенов";
-"Recent Codex and Grok token activity." = "Недавнее использование токенов Codex и Grok.";
+"Recent Codex token activity." = "Недавнее использование токенов Codex.";
 "One focused quota, cost, token, or balance metric." = "Один показатель квоты, стоимости, токенов или баланса.";
 "Codex reset status and next expected reset." = "Статус сбросов Codex и следующий ожидаемый сброс.";

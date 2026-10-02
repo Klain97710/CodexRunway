@@ -44,6 +44,7 @@ extension L10n {
         .auto: "자동",
         .about: "정보",
         .customEdition: "사용자 지정 버전",
+        .codexOnlyImport: "이 버전은 Codex 계정만 가져올 수 있습니다.",
         .originalProject: "원본 프로젝트",
         .advanced: "고급",
         .account: "계정",

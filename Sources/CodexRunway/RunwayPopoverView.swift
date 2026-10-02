@@ -340,7 +340,7 @@ struct RunwayPopoverView: View {
             HStack(alignment: .center, spacing: 8) {
                 Text("CodexRunway")
                     .font(.title3.weight(.semibold))
-                providerMenu
+                if settings.features.grokEnabled { providerMenu }
                 Spacer(minLength: 8)
                 HStack(spacing: 2) {
                     HeaderActionButton(title: l10n.text(.checkForUpdates), action: checkForUpdates) {

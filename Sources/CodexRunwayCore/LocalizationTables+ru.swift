@@ -44,6 +44,7 @@ extension L10n {
         .auto: "Авто",
         .about: "О программе",
         .customEdition: "Пользовательская версия",
+        .codexOnlyImport: "Эта версия импортирует только аккаунты Codex.",
         .originalProject: "Исходный проект",
         .advanced: "Дополнительно",
         .account: "Аккаунт",

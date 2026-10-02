@@ -22,7 +22,9 @@ final class StatusController: NSObject, NSPopoverDelegate, NSWindowDelegate {
     let statusBarView = StatusBarContentView(frame: .zero)
     private let popover = NSPopover()
     let settings = RunwaySettings()
-    lazy var model = RunwayModel(settings: settings, grokModule: GrokAccountModule())
+    lazy var model = RunwayModel(
+        settings: settings,
+        grokModule: settings.features.grokEnabled ? GrokAccountModule() : nil)
     private lazy var updaterService = UpdaterService(settings: settings)
     /// Drives pause of panel-only animations while the main panel is hidden.
     let mainPanelVisibility = MainPanelVisibility()
@@ -664,7 +666,7 @@ final class StatusController: NSObject, NSPopoverDelegate, NSWindowDelegate {
     }
 
     func openWidget(_ link: RunwayWidgetDeepLink) {
-        switch link.provider {
+        switch settings.features.widgetScope(link.provider) {
         case .codex:
             model.selectProvider(.codex)
         case .grok:

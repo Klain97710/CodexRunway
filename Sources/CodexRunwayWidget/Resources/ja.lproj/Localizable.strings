@@ -11,8 +11,8 @@
 "Codex Reset Updates" = "Codex リセット更新";
 "Shows the Codex reset status and next expected reset." = "Codex のリセット状況と次回の予想リセットを表示します。";
 "Quota Overview" = "クォータ概要";
-"Codex and Grok quota, cost, tokens, and balances." = "Codex と Grok のクォータ、コスト、トークン、残高。";
+"Codex quota, cost, tokens, and balances." = "Codex のクォータ、コスト、トークン、残高。";
 "Token Trend" = "トークンの推移";
-"Recent Codex and Grok token activity." = "最近の Codex と Grok のトークン使用量。";
+"Recent Codex token activity." = "最近の Codex のトークン使用量。";
 "One focused quota, cost, token, or balance metric." = "クォータ、コスト、トークン、残高のいずれかの指標。";
 "Codex reset status and next expected reset." = "Codex のリセット状況と次回の予想リセット。";
