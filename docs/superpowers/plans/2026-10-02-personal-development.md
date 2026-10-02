@@ -8,6 +8,8 @@
 
 **Tech Stack:** Swift 6、AppKit、SwiftUI、Foundation、WidgetKit、SQLite；更新组件 Sparkle 2.9.3。
 
+**当前优先目标（2026-10-02 更新）：** 先完成本机开发启动与打包后启动。已在本机验证 Dev app、arm64 安装包与从 DMG 安装后的应用启动；命令和限制见 [本机启动与打包](../../development/local-run.md)。本轮未修改业务功能。
+
 ## 1. 仓库与基线
 
 | 项目 | 约定 |
@@ -17,7 +19,7 @@
 | 起始版本 | v0.0.85 |
 | 起始提交 | `b689c66aa0a9490eb69cc01b6fd7abcf1d337347` |
 | 基线标签 | `personal/baseline-v0.0.85` |
-| 本轮分支 | `personal/development-plan` |
+| 准备分支 / 启动分支 | `personal/development-plan` / `personal/local-launch` |
 | origin | 个人 fork，默认推送目标 |
 | upstream | 原作者仓库，用于获取后续更新 |
 
@@ -27,12 +29,13 @@
 
 ## 2. 当前范围与文件边界
 
-本轮交付为 GitHub fork、远端配置、基线引用、计划文档和本地验证记录。首个具体功能尚未选定。
+GitHub fork、远端配置、基线引用和初始计划已建立。当前交付补充本机可启动的开发版与安装包，以及可重复执行的启动和打包说明。首个具体业务增强功能尚未选定。
 
 本轮新增：
 
 - `docs/superpowers/plans/2026-10-02-personal-development.md`：开发路线与验收要求。
 - `docs/development/baseline-2026-10-02.md`：本地工具链、验证命令、结果与限制。
+- `docs/development/local-run.md`：开发启动、打包、安装启动与实际验证结果。
 
 后续按需涉及的代码入口：
 
@@ -67,7 +70,7 @@ swift build
 
 两项检查依次执行，共用 SwiftPM 构建缓存。它们不会替代桌面启动与 Widget 打包验证。出现未修改原版即可复现的失败时，先记录基线问题，后续修复使用独立提交。
 
-本轮识别到的优先准备项是对齐测试工具链：上游同一提交在 Swift 6.3.3 下通过 777 个测试，本机 Swift 6.1.2 在三个 Grok 测试替身的并发捕获处编译失败。先对齐并复验，再确定是否需要独立的测试兼容性修复。
+上游同一提交在 Swift 6.3.3 下通过 777 个测试，本机 Swift 6.1.2 在三个 Grok 测试替身的并发捕获处编译失败。该问题不阻碍本机主程序与安装包构建；按当前优先目标先完成启动和打包，随后单独处理测试工具链或测试替身兼容性。
 
 **验收：** 个人远端和上游远端明确；代码历史完整；本地检查有可复现记录；准备文档能在个人仓库中查看。
 
@@ -92,7 +95,7 @@ swift run CodexRunway --render-main-panel-mock=all .build/personal-preview
 - `RunwayModel.bootstrapAccounts()` 会调用 `AccountStore.syncFromOfficialAuth()`。官方凭据缺失、损坏或不可用时，有可用托管副本便可能触发恢复写入。
 - 开发启动脚本会处理开发版进程和组件注册；不能只凭 Dev 名称判断它是只读运行。
 
-首次完整桌面联调优先使用独立 macOS 标准测试账户和测试凭据。若长期在日常账户开发，再单独设计覆盖账号库、官方认证目标、缓存、Widget 快照、锁、后台任务与更新入口的开发隔离机制。保持系统级 HOME 和当前 Codex 会话的 CODEX_HOME 不变。
+当前启动验收按用户要求在日常 macOS 账户上完成，记录见启动报告。后续涉及账号写入或破坏性场景的功能联调，优先使用独立 macOS 标准测试账户和测试凭据。若长期在日常账户开发，再单独设计覆盖账号库、官方认证目标、缓存、Widget 快照、锁、后台任务与更新入口的开发隔离机制。保持系统级 HOME 和当前 Codex 会话的 CODEX_HOME 不变。
 
 **验收：** 视觉改动可通过假数据复现；真实账号操作的测试路径与日常数据明确分离。
 
@@ -124,7 +127,7 @@ swift run CodexRunway --render-main-panel-mock=all .build/personal-preview
 
 ## 7. 个人安装包的后续要求
 
-本轮不创建 Release。开始分发或替代日常安装之前，需要落实：
+本轮已生成并验证本机 arm64 安装包，安装至 `~/Applications/CodexRunway.app`，未创建 GitHub Release。正式对外分发或维护个人自动更新之前，需要落实：
 
 - 独立的应用 / Widget bundle 标识、数据边界和安装位置。
 - 个人更新源、Sparkle 签名配置及对应验证。当前配置和发布脚本仍含上游地址，应逐项检查。
@@ -135,10 +138,11 @@ swift run CodexRunway --render-main-panel-mock=all .build/personal-preview
 
 ## 8. 首期完成标准
 
-- [ ] 个人仓库、计划分支与验证报告已可访问。
-- [ ] 本地构建 / 测试通过，或已记录明确的兼容性阻碍及解决方向。
+- [x] 个人仓库、计划分支与验证报告已可访问。
+- [x] 本地构建 / 测试通过，或已记录明确的兼容性阻碍及解决方向。
+- [x] 本机开发启动、arm64 打包、签名校验、DMG 校验和安装启动均已验证。
 - [ ] 首个改动的范围与验收标准已确定。
 - [ ] 使用适合该改动的假数据或隔离运行环境。
 - [ ] 对应回归验证通过，修改以独立提交保存。
 
-推荐推进顺序：**个人 fork 与基线 → 假数据预览 → 首个功能设计 → 小步实现 → 原生联调 → 个人安装包**。
+当前推进顺序：**个人 fork 与基线 → 本机开发启动与打包验收 → 测试兼容性处理 → 首个功能设计 → 假数据预览与小步实现 → 原生联调**。
