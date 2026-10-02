@@ -8,6 +8,9 @@ import Testing
 @Suite("Network proxy previews", .serialized)
 @MainActor
 struct NetworkProxyPreviewTests {
+    // Keep the viewport below the fitted content on both macOS 15 and newer systems.
+    private static let previewHeight: CGFloat = 280
+
     @Test("authenticated proxy fits all seven locales in both appearances")
     func localizedProxyPreviews() async throws {
         let directory = URL(fileURLWithPath: #filePath)
@@ -40,7 +43,7 @@ struct NetworkProxyPreviewTests {
         let host = NSHostingView(rootView: PreferencesPane {
             NetworkProxySettingsView(settings: settings)
         }
-        .frame(width: width, height: 320)
+        .frame(width: width, height: Self.previewHeight)
         .background(Color(nsColor: .windowBackgroundColor))
         .environment(\.colorScheme, appearance == .dark ? .dark : .light))
         let window = offscreenWindow(host: host, appearance: appearance, width: width)
@@ -85,12 +88,12 @@ struct NetworkProxyPreviewTests {
         width: CGFloat) -> NSWindow
     {
         let window = ProxyPreviewWindow(
-            contentRect: NSRect(x: -10_000, y: -10_000, width: width, height: 320),
+            contentRect: NSRect(x: -10_000, y: -10_000, width: width, height: Self.previewHeight),
             styleMask: .borderless, backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.appearance = appearance.nsAppearance
         host.appearance = appearance.nsAppearance
-        host.frame = NSRect(x: 0, y: 0, width: width, height: 320)
+        host.frame = NSRect(x: 0, y: 0, width: width, height: Self.previewHeight)
         window.contentView = host
         return window
     }

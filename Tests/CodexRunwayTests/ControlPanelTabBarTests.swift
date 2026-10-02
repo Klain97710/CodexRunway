@@ -57,8 +57,11 @@ struct ControlPanelTabBarTests {
 
         let english = ControlPanelTab.allCases.map { $0.title(L10n(language: .english)) }
         let russian = ControlPanelTab.allCases.map { $0.title(L10n(language: .russian)) }
-        #expect(ControlPanelLayout.naturalStripWidth(titles: russian) > 550)
-        #expect(ControlPanelLayout.panelWidth(titles: russian) >= 722)
+        // Native control metrics vary by macOS version; the long labels must
+        // overflow the compact panel and still fit once the window expands.
+        #expect(
+            ControlPanelLayout.naturalStripWidth(titles: russian)
+                > ControlPanelLayout.tabStripAvailableWidth(titles: english))
         #expect(
             ControlPanelLayout.panelWidth(titles: russian)
                 > ControlPanelLayout.panelWidth(titles: english))

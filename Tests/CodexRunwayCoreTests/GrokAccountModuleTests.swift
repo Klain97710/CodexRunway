@@ -847,7 +847,8 @@ struct GrokAccountModuleTests {
     private func refreshPersistsStableErrorCodes(_ failure: RefreshFailureFixture) async throws {
         let fixture = try Fixture()
         defer { fixture.remove() }
-        let credential = Self.credential(email: "current@example.com", userID: "current-user")
+        // Exercise error persistence without falling back to a real OAuth refresh.
+        let credential = Self.credential(email: "current@example.com", userID: "current-user", refreshToken: "")
         try fixture.writeOfficial(credential)
         let cli = GrokCLIClient(
             billing: { _ in try failure.raise() },
@@ -993,11 +994,11 @@ private enum NonisolatedModuleTokenURLProtocolResponder {
     nonisolated static func fulfill(
         request: URLRequest,
         handler: @escaping @Sendable (URLRequest) async throws -> (HTTPURLResponse, Data),
-        protocol urlProtocol: URLProtocol)
+        protocol urlProtocol: MockGrokModuleTokenURLProtocol)
     {
         let client = urlProtocol.client
-        // URLProtocol is not Sendable; the mock is single-session and serialised by suite.
-        nonisolated(unsafe) let protocolInstance = urlProtocol
+        // The concrete mock is explicitly @unchecked Sendable and the suite is serialised.
+        let protocolInstance = urlProtocol
         Task {
             do {
                 let (response, data) = try await handler(request)

@@ -237,11 +237,11 @@ private enum NonisolatedURLProtocolResponder {
     nonisolated static func fulfill(
         request: URLRequest,
         handler: @escaping @Sendable (URLRequest) async throws -> (HTTPURLResponse, Data),
-        protocol urlProtocol: URLProtocol)
+        protocol urlProtocol: MockGrokTokenURLProtocol)
     {
         let client = urlProtocol.client
-        // URLProtocol is not Sendable; the mock is single-session and serialised by suite.
-        nonisolated(unsafe) let protocolInstance = urlProtocol
+        // The concrete mock is explicitly @unchecked Sendable and the suite is serialised.
+        let protocolInstance = urlProtocol
         Task {
             do {
                 let (response, data) = try await handler(request)
