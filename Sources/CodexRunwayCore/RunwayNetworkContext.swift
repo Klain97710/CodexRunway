@@ -72,7 +72,9 @@ public final class RunwayNetworkContext: @unchecked Sendable {
         let requestAuthentication = ProxyAuthenticationDelegate(
             configuration: configuration, credentials: authentication.credentials)
         do {
-            let result = try await session.data(for: request, delegate: requestAuthentication)
+            let result = try await RunwayNetworkDiagnostics.measure(request: request, route: .init(configuration.mode)) {
+                try await session.data(for: request, delegate: requestAuthentication)
+            }
             if configuration.mode != .system, (result.1 as? HTTPURLResponse)?.statusCode == 407 {
                 throw NetworkProxyError.authenticationFailed
             }

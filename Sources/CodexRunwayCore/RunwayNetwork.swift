@@ -34,7 +34,11 @@ public enum RunwayNetwork {
         session: URLSession? = nil,
         policy: RunwayNetworkPolicy = .standard) async throws -> (Data, URLResponse)
     {
-        if let session { return try await session.data(for: request) }
+        if let session {
+            return try await RunwayNetworkDiagnostics.measure(request: request, route: .injected) {
+                try await session.data(for: request)
+            }
+        }
         return try await context().data(for: request, policy: policy)
     }
 
