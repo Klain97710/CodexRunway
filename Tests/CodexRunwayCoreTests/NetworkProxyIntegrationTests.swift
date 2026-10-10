@@ -76,6 +76,25 @@ struct NetworkProxyIntegrationTests {
         #expect(state.errors.isEmpty)
     }
 
+    @Test("background HTTP probes are not counted as proxy traffic",
+          arguments: [NetworkProxyMode.http, .socks5])
+    func ignoresNonProxyPortProbes(mode: NetworkProxyMode) async throws {
+        let fixture = try await NetworkProxyFixture.start(mode: mode, authentication: false)
+        defer { fixture.stop() }
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.connectionProxyDictionary = [:]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        let probe = URL(string: "http://127.0.0.1:\(fixture.information.proxyPort)/")!
+
+        _ = await requestFailure(session: session, url: probe)
+        let state = try fixture.state()
+
+        #expect(state.proxyConnections == 0)
+        #expect(state.tunneledRequests == 0)
+        #expect(state.errors.isEmpty)
+    }
+
     private var virtualTarget: URL { URL(string: "https://proxy-target.invalid/payload")! }
 
     private func makeContext(

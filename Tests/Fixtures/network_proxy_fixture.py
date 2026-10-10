@@ -97,9 +97,11 @@ def validate_authority(server, host, port):
 def http_connect(connection, server):
     headers = read_headers(connection)
     request_line, *header_lines = headers.split(b"\r\n")
-    method, authority, version = request_line.decode("ascii").split(" ")
-    if method != "CONNECT" or version != "HTTP/1.1":
-        raise ValueError("expected HTTP CONNECT")
+    parts = request_line.split(b" ")
+    if len(parts) != 3 or parts[0] != b"CONNECT" or parts[2] != b"HTTP/1.1":
+        return False
+    server.state.change(proxy_connections=1)
+    authority = parts[1].decode("ascii")
     host, port = authority.rsplit(":", 1)
     validate_authority(server, host, int(port))
     supplied = next((line.split(b":", 1)[1].strip() for line in header_lines
@@ -121,9 +123,12 @@ def http_connect(connection, server):
 
 def socks_connect(connection, server):
     version, count = read_exact(connection, 2)
+    if version != 5:
+        return False
     methods = read_exact(connection, count)
+    server.state.change(proxy_connections=1)
     selected = 2 if server.auth_required else 0
-    if version != 5 or selected not in methods:
+    if selected not in methods:
         connection.sendall(b"\x05\xff")
         return False
     connection.sendall(bytes((5, selected)))
@@ -157,7 +162,8 @@ class Handler(socketserver.BaseRequestHandler):
     def handle(self):
         self.request.settimeout(5)
         server = self.server
-        server.state.change(proxy_connections=1)
+        # Local development tools may send HTTP or empty health probes to new ports.
+        # Count a connection only after recognizing an actual proxy handshake.
         try:
             if (http_connect(self.request, server) if server.mode == "http"
                     else socks_connect(self.request, server)):

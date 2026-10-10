@@ -50,7 +50,9 @@ struct StatusBarAppearanceTests {
             image.unlockFocus()
             let data = try #require(image.tiffRepresentation)
             let bitmap = try #require(NSBitmapImageRep(data: data))
-            #expect(bitmap.pixelsWide > 100)
+            // AppKit uses the active display scale; both 1x and Retina are valid.
+            #expect(bitmap.pixelsWide >= Int(ceil(view.bounds.width)))
+            #expect(bitmap.pixelsHigh >= Int(ceil(view.bounds.height)))
             if let directory = ProcessInfo.processInfo.environment["RUNWAY_TEST_RENDER_DIR"] {
                 let url = URL(fileURLWithPath: directory)
                 try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
