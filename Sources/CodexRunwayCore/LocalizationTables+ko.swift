@@ -48,6 +48,7 @@ extension L10n {
         .originalProject: "원본 프로젝트",
         .advanced: "고급",
         .account: "계정",
+        .accountPrivacyMode: "프라이버시 모드",
         .accounts: "계정",
         .accountsAdd: "계정 추가",
         .accountsAddAPIKey: "API Key",

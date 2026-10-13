@@ -48,6 +48,7 @@ extension L10n {
         .originalProject: "Исходный проект",
         .advanced: "Дополнительно",
         .account: "Аккаунт",
+        .accountPrivacyMode: "Конфиденциальность",
         .accounts: "Аккаунты",
         .accountsAdd: "Добавить аккаунт",
         .accountsAddAPIKey: "API Key",

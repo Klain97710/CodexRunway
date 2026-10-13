@@ -48,6 +48,7 @@ extension L10n {
         .originalProject: "Projet d’origine",
         .advanced: "Avancé",
         .account: "Compte",
+        .accountPrivacyMode: "Mode privé",
         .accounts: "Comptes",
         .accountsAdd: "Ajouter un compte",
         .accountsAddAPIKey: "API Key",

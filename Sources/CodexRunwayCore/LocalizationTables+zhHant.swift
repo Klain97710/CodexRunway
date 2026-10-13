@@ -48,6 +48,7 @@ extension L10n {
         .originalProject: "原始專案",
         .advanced: "進階",
         .account: "帳號",
+        .accountPrivacyMode: "隱私模式",
         .accounts: "多帳號",
         .accountsAdd: "新增帳號",
         .accountsAddAPIKey: "API Key",

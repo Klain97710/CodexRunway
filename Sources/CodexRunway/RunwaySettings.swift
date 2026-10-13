@@ -315,6 +315,10 @@ final class RunwaySettings: ObservableObject {
         update { $0.exportsStatusJSON = isEnabled }
     }
 
+    func updateAccountPrivacyModeEnabled(_ isEnabled: Bool) {
+        update(notify: false) { $0.accountPrivacyModeEnabled = isEnabled }
+    }
+
     private func applyLaunchAtLogin(_ isEnabled: Bool) {
         do {
             loginItemStatus = try loginItemApplier.status()
