@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/licoy/quosparr/internal/personal"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -15,7 +16,7 @@ const (
 	// SnapshotFileName is the widget snapshot file.
 	SnapshotFileName = "widget-snapshot.json"
 	// DefaultAppGroupID is the App Group the Swift widget extension reads.
-	DefaultAppGroupID = "group.com.quosparr.app"
+	DefaultAppGroupID = "group." + personal.BundleID
 )
 
 var (

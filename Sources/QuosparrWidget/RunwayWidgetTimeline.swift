@@ -139,7 +139,7 @@ struct RunwayResetTimelineProvider: TimelineProvider {
 @available(macOS 14.0, *)
 private extension String {
     var providerScope: RunwayWidgetProviderScope {
-        RunwayFeatures.production.widgetScope(RunwayWidgetProviderScope(rawValue: self) ?? .codex)
+        RunwayWidgetProviderScope.codex
     }
 
     var metricKind: RunwayWidgetMetricKind {

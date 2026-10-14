@@ -99,14 +99,6 @@ func (u *settingsUI) statusBarRows(c *ui.Context, row rowFunc, p store.Preferenc
 			}
 		})
 	}
-	if p.StatusBarDisplayStyle == store.StatusBarStyleMeters {
-		row(l.Text(l10n.KeyStatusBarMetersDetailStyle), note, func() {
-			if v, ok := choose(c, "sb-meters", l.Text(l10n.KeyStatusBarMetersDetailStyle), p.StatusBarMetersDetailStyle, store.MetersDetails(),
-				func(v store.MetersDetail) string { return l.Text(metersDetailKey(v)) }, off); ok {
-				s.SetStatusBarMetersDetail(v)
-			}
-		})
-	}
 	if p.StatusBarDisplayStyle == store.StatusBarStyleBattery {
 		row(l.Text(l10n.KeyStatusBarBatteryScope), note, func() {
 			if v, ok := choose(c, "sb-bscope", l.Text(l10n.KeyStatusBarBatteryScope), p.StatusBarBatteryScope, store.BatteryScopes(),

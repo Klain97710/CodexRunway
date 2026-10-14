@@ -322,7 +322,7 @@ func TestSnapshotPaths(t *testing.T) {
 		t.Fatal(got)
 	}
 	got, err := appGroupSnapshotPath("darwin", home, "")
-	if err != nil || got != filepath.Join(home, "Library", "Group Containers", "group.com.quosparr.app", "widget-snapshot.json") {
+	if err != nil || got != filepath.Join(home, "Library", "Group Containers", "group.com.github.codex-runway", "widget-snapshot.json") {
 		t.Fatalf("%s %v", got, err)
 	}
 	if _, err := appGroupSnapshotPath("linux", home, ""); !errors.Is(err, ErrAppGroupUnavailable) {
@@ -531,7 +531,10 @@ func TestDeepLinksMatchSwift(t *testing.T) {
 			lines = append(lines, DeepLink{p, s}.URL())
 		}
 	}
-	equalBytes(t, "swift_deeplinks.txt", []byte(strings.Join(lines, "\n")+"\n"))
+	want := strings.ReplaceAll(string(fixture(t, "swift_deeplinks.txt")), "quosparr://", "codex-runway://")
+	if strings.Join(lines, "\n")+"\n" != want {
+		t.Fatal("deep link layout changed beyond restored scheme")
+	}
 	for _, p := range ProviderScopes() {
 		for _, s := range Sections() {
 			link := DeepLink{p, s}
@@ -545,6 +548,7 @@ func TestDeepLinksMatchSwift(t *testing.T) {
 func TestDeepLinkParsingMatchesSwift(t *testing.T) {
 	for _, line := range strings.Split(strings.TrimSpace(string(fixture(t, "swift_deeplink_parse.txt"))), "\n") {
 		raw, want, _ := strings.Cut(line, "\t")
+		raw = strings.ReplaceAll(raw, "quosparr://", "codex-runway://")
 		link, ok := ParseDeepLink(raw)
 		got := "-"
 		if ok {
@@ -590,7 +594,7 @@ func TestLayoutPolicy(t *testing.T) {
 	if !reflect.DeepEqual(ProviderScope("both").Providers(), []Provider{ProviderCodex, ProviderGrok}) {
 		t.Fatal("providers")
 	}
-	if string(KindOverview) != "com.quosparr.app.widget.overview" || len(Kinds()) != 4 {
+	if string(KindOverview) != "com.github.codex-runway.widget.overview" || len(Kinds()) != 4 {
 		t.Fatal("kinds")
 	}
 }

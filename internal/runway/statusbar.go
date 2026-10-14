@@ -1,6 +1,7 @@
 package runway
 
 import (
+	"github.com/licoy/quosparr/internal/codex"
 	"strconv"
 	"strings"
 	"time"
@@ -138,6 +139,7 @@ type StatusInputs struct {
 	Prefs    store.Preferences
 	Provider store.Provider
 	// Codex side.
+	CodexTier   codex.Tier
 	CodexText   string
 	CodexMeters []Meter
 	// Grok side; the zero state reads as loading.
@@ -219,6 +221,15 @@ type StatusBarView struct {
 
 // BuildStatusBar computes the status item content for the preferences.
 func BuildStatusBar(lc l10n.Localizer, in StatusInputs) StatusBarView {
+	if in.CodexTier == codex.TierPro100 || in.CodexTier == codex.TierPro200 || in.CodexTier == codex.TierPro500 {
+		visible := make([]Meter, 0, len(in.CodexMeters))
+		for _, m := range in.CodexMeters {
+			if m.Source != SourceStandard || m.WindowMinutes != FiveHourMinutes {
+				visible = append(visible, m)
+			}
+		}
+		in.CodexMeters = visible
+	}
 	text := SelectedStatusText(lc, in)
 	meters := SelectedMeters(lc, in)
 	plan := MakeRenderPlan(in.Prefs.StatusBarDisplayStyle, in.Prefs.StatusBarBatteryScope, meters)

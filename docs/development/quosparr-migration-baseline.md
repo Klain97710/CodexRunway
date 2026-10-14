@@ -23,7 +23,7 @@ The upstream merge preserves history and adopts the Go architecture. Removed Swi
 | G1 Isolated developer runtime | PARTIAL | Go sandbox/app tests, go build and 4 packaging-policy tests PASS; packaged desktop acceptance pending |
 | G2 Identity/data/lock compatibility | PARTIAL | platform/store/netx/codex/migration tests PASS; preserved identity, in-place migration/auth immutability and shared lock tested; Swift write-back acceptance pending |
 | G3 Codex only and no reactions | PARTIAL | App/runway/store/export/reset tests PASS; repeated refresh/ticks prove zero Grok calls with positive Codex/status controls; cookie/reaction transport test PASS; desktop acceptance pending |
-| G4 Tray, actions and Widget | NOT RUN | Code and isolated desktop validation required |
+| G4 Tray, actions and Widget | PARTIAL | Go app/runway/export regressions and Go/Swift contract checks PASS; arm64 isolated package/signatures PASS; desktop and saved Widget refresh pending |
 | G5 Personal update trust | NOT RUN | Both signed feeds and mygo archives required |
 | G6 Automated tests and packaging | NOT RUN | Exact candidate SHA and artifacts required |
 | G7 Real two-generation update | NOT RUN | Disposable macOS test environment required |
@@ -34,3 +34,5 @@ Task 2 source isolation validated: default builds require a private marked sandb
 Task 3 restores original preference domain, data and lock paths, proxy Keychain service, account export identity, app name/scheme and personal 0.2.0/2000 version. Upstream directory-copy implementation remains testable with an explicit renamed target; personal installation uses no copy. Existing Swift fixtures remain unchanged (account export assertion permits only the deliberate original format name).
 
 Task 4 removes reaction transport, visitor store, UI state, buttons, polling and dedicated tests. Public status uses a cookie-free client, including injected clients. Old visitor files remain untouched. Grok implementations and low-level regression tests remain with explicit feature opt-in; the default runtime never constructs them. Legacy provider choices normalize to Codex while unrelated preferences are retained.
+
+Task 5 restores remaining-quota columns, Pro-only standard 5h filtering, action-only context menu and a separate persistent details window. Restored Widget kind/scheme/group/path contracts; old provider values remain decodable and render Codex. The migration-dev arm64 app, SQLite, bridge and Widget were packaged and signature-verified without launching the app. This is build evidence, not desktop acceptance.

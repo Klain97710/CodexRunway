@@ -12,6 +12,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/personal"
 
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/store"
@@ -53,6 +54,7 @@ type Options struct {
 
 // App owns the tray and the panel.
 type App struct {
+	details  *App
 	opts     Options
 	tray     *mygo.Tray
 	panel    *mygo.Window
@@ -114,6 +116,9 @@ func (a *App) PublishSnapshot(s runway.Snapshot) {
 	a.snap = s
 	a.snapMu.Unlock()
 	mygo.RunOnMain(func() {
+		if a.details != nil {
+			a.details.PublishSnapshot(s)
+		}
 		if a.panel != nil {
 			a.panel.Invalidate()
 		}
@@ -132,6 +137,9 @@ func (a *App) PanelActions() PanelActions {
 
 // SetPanelActions installs the panel controls. Call it before the panel opens.
 func (a *App) SetPanelActions(p PanelActions) {
+	if a.details != nil {
+		a.details.SetPanelActions(p)
+	}
 	a.cancelPanelDetails()
 	a.snapMu.Lock()
 	a.panelActs = p
@@ -161,6 +169,12 @@ func (a *App) L() l10n.Localizer { return a.settings.L() }
 // settingsChanged follows a change of the settings: the windows redraw, and
 // what carries text (the tray, the settings window title) is translated.
 func (a *App) settingsChanged() {
+	if d := a.details; d != nil && d.panel != nil && !d.panel.IsDestroyed() {
+		w, h := d.panelSize()
+		d.panel.SetContentSize(w, h)
+		d.panel.SetTitle(personal.Name + " · " + a.L().Text(l10n.KeyOpenDetailsWindow))
+		d.panel.Invalidate()
+	}
 	a.refreshStartupReport()
 	if a.backgroundReady {
 		a.startBackground()
@@ -188,7 +202,7 @@ func (a *App) Ready() {
 	mygo.App.OnWillQuit(func(*mygo.QuitEvent) { a.shutdown() })
 	if err := a.readyWithTray(a.createTray); err != nil {
 		log.Println("tray:", err)
-		mygo.Dialog.Error("Quosparr", err.Error())
+		mygo.Dialog.Error("CodexRunway", err.Error())
 		mygo.App.Quit()
 		return
 	}
@@ -218,7 +232,7 @@ func (a *App) createTray() error {
 	tray, err := mygo.NewTray(mygo.TrayOptions{
 		Icon:           icon,
 		IconIsTemplate: template,
-		ToolTip:        "Quosparr",
+		ToolTip:        "CodexRunway",
 	})
 	if err != nil {
 		return trayStartupError(a.L(), err)
@@ -254,7 +268,26 @@ func (a *App) trayMenu() *mygo.Menu {
 	l := a.L()
 	return mygo.NewMenu([]*mygo.MenuItem{
 		{Label: l.Text(l10n.KeyOpenControlPanel), Click: func(*mygo.MenuItem, *mygo.Window) { a.OpenPanel() }},
+		{Label: l.Text(l10n.KeyOpenDetailsWindow), Click: func(*mygo.MenuItem, *mygo.Window) { a.OpenDetailsWindow() }},
 		{Label: l.Text(l10n.KeySettings), Click: func(*mygo.MenuItem, *mygo.Window) { a.OpenSettings() }},
+		mygo.Separator(),
+		{Label: l.Text(l10n.KeyRefresh), Disabled: a.opts.Actions.Refresh == nil, Click: func(*mygo.MenuItem, *mygo.Window) {
+			if a.opts.Actions.Refresh != nil {
+				a.opts.Actions.Refresh()
+			}
+		}},
+		{Label: l.Text(l10n.KeyCheckForUpdates), Disabled: a.opts.Actions.CheckForUpdates == nil, Click: func(*mygo.MenuItem, *mygo.Window) {
+			if a.opts.Actions.CheckForUpdates != nil {
+				a.opts.Actions.CheckForUpdates()
+			}
+		}},
+		mygo.Separator(),
+		{Label: l.Text(l10n.KeyRepairIndex), Disabled: a.opts.Actions.RepairIndex == nil, Click: func(*mygo.MenuItem, *mygo.Window) { a.confirmTrayRepair() }},
+		{Label: l.Text(l10n.KeyCodexFolder), Disabled: a.opts.Actions.OpenFolder == nil, Click: func(*mygo.MenuItem, *mygo.Window) {
+			if a.opts.Actions.OpenFolder != nil {
+				a.opts.Actions.OpenFolder(codexDir())
+			}
+		}},
 		mygo.Separator(),
 		{Label: l.Text(l10n.KeyQuit), Click: func(*mygo.MenuItem, *mygo.Window) { mygo.App.Quit() }},
 	})
@@ -453,6 +486,9 @@ func (a *App) OpenSettings() {
 }
 
 func (a *App) shutdown() {
+	if a.details != nil && a.details.panel != nil {
+		a.details.panel.Close()
+	}
 	a.cancelPanelDetails()
 	if a.setUI != nil {
 		a.setUI.cancelAccountTask()

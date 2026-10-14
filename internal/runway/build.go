@@ -36,7 +36,7 @@ func (s *Service) buildLocked(now time.Time) Snapshot {
 	}
 	snap.StatusBar = BuildStatusBar(lc, StatusInputs{
 		Prefs: s.prefs, Provider: s.prefs.SelectedProvider,
-		CodexText: snap.Codex.StatusText, CodexMeters: snap.Codex.Meters,
+		CodexTier: snap.Accounts.Display.Tier, CodexText: snap.Codex.StatusText, CodexMeters: snap.Codex.Meters,
 		Grok: snap.Grok, Now: now,
 	})
 	return snap

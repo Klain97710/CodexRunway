@@ -30,7 +30,6 @@ func TestSettingsOtherControlEventLatency(t *testing.T) {
 		{"panel height", (*settingsUI).appearanceGroup, func(u *settingsUI) string { return tx(u.L(), xPanelHeight) }, nil},
 		{"statusbar style", (*settingsUI).appearanceGroup, text(l10n.KeyStatusBarStyle), func(u *settingsUI) string { return u.text(statusBarStyleKey(store.StatusBarStyleRings)) }},
 		{"statusbar provider scope", (*settingsUI).appearanceGroup, text(l10n.KeyStatusBarProviderScope), func(u *settingsUI) string { return u.text(providerScopeKey(store.ProviderScopeBoth)) }},
-		{"statusbar meters detail", (*settingsUI).appearanceGroup, text(l10n.KeyStatusBarMetersDetailStyle), func(u *settingsUI) string { return u.text(metersDetailKey(store.MetersDetailBoth)) }},
 		{"statusbar battery scope", (*settingsUI).appearanceGroup, text(l10n.KeyStatusBarBatteryScope), func(u *settingsUI) string { return u.text(batteryScopeKey(store.BatteryScopeBoth)) }},
 		{"statusbar battery detail", (*settingsUI).appearanceGroup, text(l10n.KeyStatusBarBatteryDetailStyle), func(u *settingsUI) string { return u.text(batteryDetailKey(store.BatteryDetailRemainingPercent)) }},
 		{"restore module order", (*settingsUI).modulesGroup, text(l10n.KeyRestoreDefaultOrder), nil},

@@ -38,7 +38,7 @@ func TestWidgetDeepLinksSelectProviderAndSection(t *testing.T) {
 func TestWidgetDeepLinkRejectsInvalidAndOverviewRefreshes(t *testing.T) {
 	count := 0
 	a, _ := newPanel(t, nil, panelFixture(), PanelActions{Refresh: func() { count++ }})
-	if a.OpenWidgetURL("quosparr://widget?provider=grok&section=unknown") {
+	if a.OpenWidgetURL("codex-runway://widget?provider=grok&section=unknown") {
 		t.Fatal("invalid link accepted")
 	}
 	if a.settings.Prefs().SelectedProvider != store.ProviderCodex || count != 0 {

@@ -237,9 +237,11 @@ public enum RunwayWidgetSnapshotStoreError: Error, Equatable {
 }
 
 public struct RunwayWidgetSnapshotStore: Sendable {
-    public static let defaultAppGroupID = "group.com.quosparr.app"
+    public static let defaultAppGroupID = "group.com.github.codex-runway"
     public static let fileName = "widget-snapshot.json"
-    public static let localDirectoryName = ".quosparr"
+    public static var localDirectoryName: String {
+        Bundle.main.bundleIdentifier?.contains(".migration.") == true ? ".codex-runway-migration" : ".codex-runway"
+    }
 
     public let fileURL: URL
 

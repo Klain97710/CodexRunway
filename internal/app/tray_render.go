@@ -17,6 +17,7 @@ const trayHorizontalPadding float32 = 4
 
 type trayLayout struct {
 	widths        []float32
+	labels        []float32
 	gap, fontSize float32
 	rows          int
 }
@@ -113,10 +114,15 @@ func makeTrayLayout(r TrayRender) trayLayout {
 	if len(l.widths) == 0 {
 		for i := 0; i < len(r.Items); i += l.rows {
 			w := float32(0)
+			label := float32(0)
 			for _, item := range r.Items[i:min(i+l.rows, len(r.Items))] {
 				w = max(w, trayTextWidth(item.Caption, l.fontSize))
+				label = max(label, min(70, trayTextWidth(item.Label, l.fontSize)))
 			}
-			if r.Style == store.StatusBarStyleBattery {
+			l.labels = append(l.labels, label)
+			if r.Style == store.StatusBarStyleMeters && label > 0 {
+				w = label + 4 + 40 + 4 + trayTextWidth("100%", l.fontSize)
+			} else if r.Style == store.StatusBarStyleBattery {
 				w = min(156, max(92, w+18))
 			} else {
 				w = min(166, max(64, w+44))
@@ -174,20 +180,29 @@ func drawTrayContent(p *ui.Painter, r TrayRender, l trayLayout, paint trayPaint)
 					height = 10
 				}
 				box := ui.Rect{X: x, Y: (22-float32(max(1, count))*height)/2 + float32(row)*height, W: width, H: height}
-				drawTrayItem(p, item, r.Style, box, l.fontSize, paint)
+				labelWidth := float32(0)
+				if col < len(l.labels) {
+					labelWidth = l.labels[col]
+				}
+				drawTrayItem(p, item, r.Style, box, l.fontSize, labelWidth, paint)
 			}
 		}
 		x += width + l.gap
 	}
 }
 
-func drawTrayItem(p *ui.Painter, item TrayItem, style store.StatusBarStyle, box ui.Rect, size float32, paint trayPaint) {
+func drawTrayItem(p *ui.Painter, item TrayItem, style store.StatusBarStyle, box ui.Rect, size, labelWidth float32, paint trayPaint) {
 	ink := paint.ink
 	level := min(1, max(0, item.Remaining))
 	fill := trayLevelColor(item.Health, true).Alpha(paint.colorOpacity)
 	switch style {
 	case store.StatusBarStyleMeters:
-		bar := ui.Rect{X: box.X, Y: box.Y + box.H/2 - 2.5, W: 40, H: 5}
+		barX := box.X
+		if labelWidth > 0 {
+			drawTrayText(p, item.Label, ui.Rect{X: box.X, Y: box.Y, W: labelWidth, H: box.H}, size, ink, false)
+			barX += labelWidth + 4
+		}
+		bar := ui.Rect{X: barX, Y: box.Y + box.H/2 - 2.5, W: 40, H: 5}
 		if ink.A > 0 {
 			p.Fill(bar, ink.Alpha(0.25), 2.5)
 		}
@@ -196,8 +211,12 @@ func drawTrayItem(p *ui.Painter, item TrayItem, style store.StatusBarStyle, box 
 			p.Fill(bar, fill, 2.5)
 		}
 		textBox := box
-		textBox.X, textBox.W = box.X+44, box.W-44
-		drawTrayText(p, item.Caption, textBox, size, ink, false)
+		textBox.X, textBox.W = barX+44, box.X+box.W-(barX+44)
+		caption := item.Caption
+		if labelWidth > 0 {
+			caption = item.Value
+		}
+		drawTrayText(p, caption, textBox, size, ink, false)
 	case store.StatusBarStyleBattery:
 		drawTrayBattery(p, item, box, size, ink, fill)
 	case store.StatusBarStyleRings:

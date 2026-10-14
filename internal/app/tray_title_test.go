@@ -88,21 +88,17 @@ func TestDesktopTrayKeepsApplicationLogoForEveryStatus(t *testing.T) {
 }
 
 func TestTrayDetailsReachRenderer(t *testing.T) {
-	seen := map[string]bool{}
-	for _, detail := range []store.MetersDetail{store.MetersDetailRemainingPercent, store.MetersDetailResetTime, store.MetersDetailBoth} {
+	// Legacy meter detail choices remain decodable, but this edition's
+	// three-column meter always displays remaining quota.
+	for _, detail := range store.MetersDetails() {
 		v := trayTestStatus(store.StatusBarStyleMeters, func(p *store.Preferences) { p.StatusBarMetersDetailStyle = detail })
 		r := TrayFromStatus(v)
-		if r.Items[0].Caption != v.Items[0].MeterText {
-			t.Fatal("meter detail discarded")
+		if r.Items[0].Label != "5h" || r.Items[0].Value != "80%" || r.Items[0].Remaining != 0.8 {
+			t.Fatal("personal three-column semantics lost")
 		}
-		image, err := TrayImage(r, true, false)
-		if err != nil {
+		if _, err := TrayImage(r, true, false); err != nil {
 			t.Fatal(err)
 		}
-		if seen[string(image)] {
-			t.Fatal("different meter details rendered identically")
-		}
-		seen[string(image)] = true
 	}
 	for _, detail := range []store.BatteryDetail{store.BatteryDetailRemainingPercent, store.BatteryDetailCountdown} {
 		v := trayTestStatus(store.StatusBarStyleBattery, func(p *store.Preferences) {

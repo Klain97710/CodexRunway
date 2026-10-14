@@ -1,10 +1,17 @@
 import Foundation
 
 public enum RunwayWidgetKind: String, Codable, CaseIterable, Sendable {
-    case overview = "com.quosparr.app.widget.overview"
-    case tokenTrend = "com.quosparr.app.widget.token-trend"
-    case metric = "com.quosparr.app.widget.metric"
-    case resetToday = "com.quosparr.app.widget.reset-today"
+#if RUNWAY_MIGRATION_DEV
+    case overview = "com.github.codex-runway.migration.widget.overview"
+    case tokenTrend = "com.github.codex-runway.migration.widget.token-trend"
+    case metric = "com.github.codex-runway.migration.widget.metric"
+    case resetToday = "com.github.codex-runway.migration.widget.reset-today"
+#else
+    case overview = "com.github.codex-runway.widget.overview"
+    case tokenTrend = "com.github.codex-runway.widget.token-trend"
+    case metric = "com.github.codex-runway.widget.metric"
+    case resetToday = "com.github.codex-runway.widget.reset-today"
+#endif
 }
 
 public enum RunwayWidgetProviderScope: String, Codable, CaseIterable, Sendable {
@@ -13,11 +20,7 @@ public enum RunwayWidgetProviderScope: String, Codable, CaseIterable, Sendable {
     case both
 
     public var providers: [RunwayProvider] {
-        switch self {
-        case .codex: [.codex]
-        case .grok: [.grok]
-        case .both: [.codex, .grok]
-        }
+        [.codex]
     }
 }
 
@@ -83,14 +86,18 @@ public enum RunwayWidgetSection: String, Codable, CaseIterable, Sendable {
 }
 
 public struct RunwayWidgetDeepLink: Equatable, Sendable {
-    public static let scheme = "quosparr"
+#if RUNWAY_MIGRATION_DEV
+    public static let scheme = "codex-runway-migration"
+#else
+    public static let scheme = "codex-runway"
+#endif
     public static let host = "widget"
 
     public var provider: RunwayWidgetProviderScope
     public var section: RunwayWidgetSection
 
     public init(provider: RunwayWidgetProviderScope, section: RunwayWidgetSection) {
-        self.provider = provider
+        self.provider = .codex
         self.section = section
     }
 

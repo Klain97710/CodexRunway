@@ -491,7 +491,7 @@ func (u *settingsUI) advancedPage(c *ui.Context) {
 				}, func(error) { u.showNotice(u.text(l10n.KeySelfCheck), report) })
 			}
 		})
-		row(l.Text(l10n.KeyExportStatusJSON), "~/.quosparr/status.json", func() {
+		row(l.Text(l10n.KeyExportStatusJSON), "~/.codex-runway/status.json", func() {
 			if v, ok := toggle(c, "export-json", l.Text(l10n.KeyExportStatusJSON), p.ExportsStatusJSON, s.ReadOnly()); ok {
 				s.SetExportsStatusJSON(v)
 			}
@@ -513,12 +513,12 @@ func (u *settingsUI) aboutPage(c *ui.Context) {
 	a := u.opts.Actions
 	ui.Row(c).Justify(ui.Center).Padding(4, 0).Children(func() {
 		if bm := appIconBitmap(); bm != nil {
-			ui.Image(c, bm).Size(96, 96).Label("Quosparr")
+			ui.Image(c, bm).Size(96, 96).Label("CodexRunway")
 		}
 	})
 	settingsGroup(c, icInfo, TintIndigo, l.Text(l10n.KeyAbout), "", nil, func(row rowFunc) {
 		row(l.Text(l10n.KeyVersion), valueOr(u.opts.Version, "dev"), func() {
-			ui.Text(c, "Quosparr").FontSize(13).TextColor(t.TextMuted)
+			ui.Text(c, tx(l, xPersonalEdition)).FontSize(13).TextColor(t.TextMuted)
 		})
 		row(l.Text(l10n.KeyAutomaticallyCheckForUpdates), l.Text(l10n.KeyCheckForUpdates), func() {
 			if v, ok := toggle(c, "auto-update", l.Text(l10n.KeyAutomaticallyCheckForUpdates), p.AutomaticallyChecksForUpdates, s.ReadOnly()); ok {
@@ -530,7 +530,12 @@ func (u *settingsUI) aboutPage(c *ui.Context) {
 				a.CheckForUpdates()
 			}
 		})
-		row("GitHub", "github.com/Licoy/Quosparr", func() {
+		row(tx(l, xOriginalProject), "Licoy/Quosparr · MIT", func() {
+			if PillButton(c, icGithub, "Licoy/Quosparr", false).Clicked() {
+				c.OpenURL("https://github.com/Licoy/Quosparr")
+			}
+		})
+		row("GitHub", "github.com/Klain97710/CodexRunway", func() {
 			if PillButton(c, icGithub, l.Text(l10n.KeyOpenGithub), false).Clicked() {
 				c.OpenURL(githubURL)
 			}

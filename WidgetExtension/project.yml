@@ -1,6 +1,6 @@
 name: QuosparrWidget
 options:
-  bundleIdPrefix: com.quosparr.app
+  bundleIdPrefix: com.github.codex-runway
   deploymentTarget:
     macOS: "14.0"
 targets:
@@ -27,9 +27,9 @@ targets:
         MARKETING_VERSION: 0.1.0
         PRODUCT_BUNDLE_IDENTIFIER: $(RUNWAY_WIDGET_BUNDLE_ID)
         PRODUCT_NAME: QuosparrWidget
-        RUNWAY_APP_GROUP_ID: group.com.quosparr.app
+        RUNWAY_APP_GROUP_ID: group.com.github.codex-runway
         RUNWAY_WIDGET_DISPLAY_NAME: Quosparr
         RUNWAY_WIDGET_STORAGE_MODE: app-group
-        RUNWAY_WIDGET_BUNDLE_ID: com.quosparr.app.widget
+        RUNWAY_WIDGET_BUNDLE_ID: com.github.codex-runway.widget
         SKIP_INSTALL: NO
         SWIFT_VERSION: "6.0"

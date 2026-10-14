@@ -11,8 +11,8 @@ case "$ARCH" in
 esac
 PROFILE="${RUNWAY_BUILD_PROFILE:-migration-dev}"
 case "$PROFILE" in
-  migration-dev) DEVELOPMENT=1; APP_NAME='CodexRunway Migration'; SNAPSHOT_DIR=.codex-runway-migration ;;
-  replacement-candidate) DEVELOPMENT=0; APP_NAME=CodexRunway; SNAPSHOT_DIR=.codex-runway ;;
+  migration-dev) DEVELOPMENT=1; APP_NAME='CodexRunway Migration'; SNAPSHOT_DIR=.codex-runway-migration; WIDGET_FLAGS=RUNWAY_MIGRATION_DEV ;;
+  replacement-candidate) DEVELOPMENT=0; APP_NAME=CodexRunway; SNAPSHOT_DIR=.codex-runway; WIDGET_FLAGS= ;;
   *) printf 'Invalid RUNWAY_BUILD_PROFILE\n' >&2; exit 2 ;;
 esac
 [[ "${V1_DEVELOPMENT_PACKAGE:-$DEVELOPMENT}" == "$DEVELOPMENT" ]] || { printf 'Conflicting build profile\n' >&2; exit 2; }
@@ -73,7 +73,7 @@ xcodebuild -project "$ROOT/WidgetExtension/QuosparrWidget.xcodeproj" \
   RUNWAY_APP_GROUP_ID="group.$HOST_ID" \
   RUNWAY_WIDGET_DISPLAY_NAME="$APP_NAME" RUNWAY_WIDGET_STORAGE_MODE=local \
   MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" \
-  CODE_SIGNING_ALLOWED=NO ARCHS="$ARCH" ONLY_ACTIVE_ARCH=YES \
+  SWIFT_ACTIVE_COMPILATION_CONDITIONS="$WIDGET_FLAGS" CODE_SIGNING_ALLOWED=NO ARCHS="$ARCH" ONLY_ACTIVE_ARCH=YES \
   ENABLE_APP_SANDBOX=NO CODE_SIGN_ENTITLEMENTS= \
   CLANG_MODULE_CACHE_PATH="$WORK/widget-module-cache" \
   SWIFT_MODULE_CACHE_PATH="$WORK/widget-module-cache" build

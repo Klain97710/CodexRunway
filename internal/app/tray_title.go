@@ -32,6 +32,8 @@ type TrayRender struct {
 }
 
 type TrayItem struct {
+	Label     string
+	Value     string
 	Caption   string
 	Remaining float64
 	Health    runway.Health

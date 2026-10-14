@@ -1,6 +1,7 @@
 package export
 
 import (
+	"github.com/licoy/quosparr/internal/personal"
 	"net/url"
 	"strings"
 	"time"
@@ -10,10 +11,10 @@ import (
 type Kind string
 
 const (
-	KindOverview   Kind = "com.quosparr.app.widget.overview"
-	KindTokenTrend Kind = "com.quosparr.app.widget.token-trend"
-	KindMetric     Kind = "com.quosparr.app.widget.metric"
-	KindResetToday Kind = "com.quosparr.app.widget.reset-today"
+	KindOverview   Kind = personal.BundleID + ".widget.overview"
+	KindTokenTrend Kind = personal.BundleID + ".widget.token-trend"
+	KindMetric     Kind = personal.BundleID + ".widget.metric"
+	KindResetToday Kind = personal.BundleID + ".widget.reset-today"
 )
 
 // Kinds lists the widget kinds in Swift declaration order.
@@ -167,7 +168,7 @@ func (s Section) Valid() bool {
 
 // Deep-link scheme and host: quosparr://widget?provider=...&section=...
 const (
-	DeepLinkScheme = "quosparr"
+	DeepLinkScheme = personal.Scheme
 	DeepLinkHost   = "widget"
 )
 

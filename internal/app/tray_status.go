@@ -1,6 +1,7 @@
 package app
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/licoy/quosparr/internal/runway"
@@ -27,7 +28,20 @@ func TrayFromStatus(v runway.StatusBarView) TrayRender {
 		case store.StatusBarStyleRings:
 			caption = item.Ring
 		}
-		r.Items = append(r.Items, TrayItem{Caption: caption, Remaining: float64(item.Meter.RemainingPercent) / 100, Health: item.Meter.Health})
+		label := item.Meter.Title
+		if item.Meter.Source == runway.SourceStandard && !strings.Contains(label, " · ") {
+			switch item.Meter.WindowMinutes {
+			case runway.FiveHourMinutes:
+				label = "5h"
+			case runway.WeeklyMinutes:
+				label = "7d"
+			}
+		}
+		value := strconv.Itoa(item.Meter.RemainingPercent) + "%"
+		if v.Style == store.StatusBarStyleMeters {
+			caption = label + " " + value
+		}
+		r.Items = append(r.Items, TrayItem{Label: label, Value: value, Caption: caption, Remaining: float64(item.Meter.RemainingPercent) / 100, Health: item.Meter.Health})
 		r.Lines = append(r.Lines, caption)
 	}
 	switch {
