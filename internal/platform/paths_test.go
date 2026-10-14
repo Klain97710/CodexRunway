@@ -17,7 +17,7 @@ func TestCodexHomeOverride(t *testing.T) {
 			if got := CodexDir(home); got != want {
 				t.Fatalf("CodexDir = %q, want %q", got, want)
 			}
-			if RunwayDir(home) != filepath.Join(home, ".quosparr") {
+			if RunwayDir(home) != filepath.Join(home, ".codex-runway") {
 				t.Fatal("CLI override changed app data directory")
 			}
 		})

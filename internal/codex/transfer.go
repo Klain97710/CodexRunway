@@ -17,8 +17,8 @@ import (
 // Transfer pack identity. Packs carry the same two constants on every
 // platform, so a pack written by one build is readable by any other.
 const (
-	TransferFormat        = "quosparr-accounts"
-	LegacyTransferFormat  = "codex-runway-accounts"
+	TransferFormat        = "codex-runway-accounts"
+	LegacyTransferFormat  = "quosparr-accounts"
 	TransferVersion       = 1
 	transferFileMode      = 0o600
 	transferInvalidJSON   = "invalid JSON"

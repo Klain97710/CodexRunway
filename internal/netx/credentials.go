@@ -3,6 +3,7 @@ package netx
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/licoy/quosparr/internal/personal"
 	"log/slog"
 	"strings"
 	"sync"
@@ -212,18 +213,13 @@ func (s systemStore) Delete(id string) error {
 
 // DefaultService is the credential service name of the shipped app, the same
 // one the Swift app derives from its bundle identifier.
-const DefaultService = "com.quosparr.app.network-proxy"
+const DefaultService = personal.CredentialService
 
 // NewCredentialStore opens the platform credential store under service (use
 // DefaultService): the macOS Keychain, the Windows Credential Manager, or the
 // Linux Secret Service. Nothing falls back to a plain file.
 func NewCredentialStore(service string) CredentialStore {
 	current := newPlatformSecrets(service)
-	if service == DefaultService {
-		current = renamedSecrets{current, []rawSecrets{
-			newPlatformSecrets("com.github.quosparr.network-proxy"),
-			newPlatformSecrets("com.github.codex-runway.network-proxy"),
-		}}
-	}
+
 	return systemStore{raw: current}
 }

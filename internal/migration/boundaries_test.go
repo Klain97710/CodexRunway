@@ -54,13 +54,13 @@ func TestMigrationMergesBothLibrariesWithoutChangingNewSelection(t *testing.T) {
 		t.Run(provider, func(t *testing.T) {
 			home := t.TempDir()
 			old := filepath.Join(home, ".codex-runway")
-			current := platform.RunwayDir(home)
+			current := filepath.Join(home, ".quosparr")
 			put(t, old, "accounts/"+provider, indexFixture(t, provider, "older", "same", "older"))
 			put(t, current, "accounts/"+provider, indexFixture(t, provider, "newer", "newer", "same"))
 			put(t, old, "accounts/same/auth.json", "old same credential")
 			put(t, old, "accounts/older/auth.json", "older credential")
 			put(t, current, "accounts/same/auth.json", "new same credential")
-			if _, err := Run(home); err != nil {
+			if _, err := runRenamed(home, filepath.Join(home, ".quosparr")); err != nil {
 				t.Fatal(err)
 			}
 			var idx struct {
@@ -84,7 +84,7 @@ func TestMigrationMergesBothLibrariesWithoutChangingNewSelection(t *testing.T) {
 			if err := os.RemoveAll(filepath.Join(current, "accounts/older")); err != nil {
 				t.Fatal(err)
 			}
-			if copied, err := Run(home); copied || err != nil {
+			if copied, err := runRenamed(home, filepath.Join(home, ".quosparr")); copied || err != nil {
 				t.Fatalf("migration repeated: %v %v", copied, err)
 			}
 			if _, err := os.Stat(filepath.Join(current, "accounts/older")); !errors.Is(err, os.ErrNotExist) {
@@ -98,12 +98,12 @@ func TestMigrationDoesNotMixSQLiteGenerations(t *testing.T) {
 		t.Run(newFile, func(t *testing.T) {
 			home := t.TempDir()
 			old := filepath.Join(home, ".codex-runway")
-			current := platform.RunwayDir(home)
+			current := filepath.Join(home, ".quosparr")
 			for _, name := range []string{"usage.sqlite", "usage.sqlite-wal", "usage.sqlite-shm", "another.sqlite", "another.sqlite-wal"} {
 				put(t, old, name, "old")
 			}
 			put(t, current, newFile, "new")
-			if _, err := Run(home); err != nil {
+			if _, err := runRenamed(home, filepath.Join(home, ".quosparr")); err != nil {
 				t.Fatal(err)
 			}
 			if get(t, current, newFile) != "new" || get(t, current, "another.sqlite-wal") != "old" {
@@ -124,7 +124,7 @@ func TestMigrationConflictLeavesCurrentTreeUntouched(t *testing.T) {
 		t.Run(failure, func(t *testing.T) {
 			home := t.TempDir()
 			old := filepath.Join(home, ".codex-runway")
-			current := platform.RunwayDir(home)
+			current := filepath.Join(home, ".quosparr")
 			put(t, current, "keep", "new")
 			put(t, old, "first", "would otherwise copy")
 			switch failure {
@@ -136,7 +136,7 @@ func TestMigrationConflictLeavesCurrentTreeUntouched(t *testing.T) {
 			case "unknown version":
 				put(t, old, "accounts/index.json", `{"version":99,"accounts":[]}`)
 			}
-			if _, err := Run(home); err == nil {
+			if _, err := runRenamed(home, filepath.Join(home, ".quosparr")); err == nil {
 				t.Fatal("invalid migration succeeded")
 			}
 			if get(t, current, "keep") != "new" {
@@ -153,7 +153,7 @@ func TestMigrationRecoversEachInterruptedPhase(t *testing.T) {
 		t.Run(phase, func(t *testing.T) {
 			home := t.TempDir()
 			old := filepath.Join(home, ".codex-runway")
-			current := platform.RunwayDir(home)
+			current := filepath.Join(home, ".quosparr")
 			work := filepath.Join(home, ".quosparr-migration-v2")
 			put(t, old, "missing", "old")
 			put(t, current, "keep", "new")
@@ -168,7 +168,7 @@ func TestMigrationRecoversEachInterruptedPhase(t *testing.T) {
 				put(t, current, "keep", "committed new")
 				put(t, current, marker, signature)
 			}
-			if _, err := Run(home); err != nil {
+			if _, err := runRenamed(home, filepath.Join(home, ".quosparr")); err != nil {
 				t.Fatal(err)
 			}
 			want := "new"
@@ -189,11 +189,11 @@ func TestMigrationRecoversEachInterruptedPhase(t *testing.T) {
 func TestMigrationRejectsActiveCurrentAppAndUnknownJournal(t *testing.T) {
 	home := t.TempDir()
 	put(t, filepath.Join(home, ".codex-runway"), "old", "old")
-	lock, err := platform.AcquireLock(platform.LockPath(home))
+	lock, err := platform.AcquireLock(filepath.Join(home, ".quosparr", "quosparr.lock"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Run(home); !errors.Is(err, platform.ErrLocked) {
+	if _, err := runRenamed(home, filepath.Join(home, ".quosparr")); !errors.Is(err, platform.ErrLocked) {
 		t.Fatalf("active app not excluded: %v", err)
 	}
 	if err := lock.Release(); err != nil {
@@ -201,7 +201,7 @@ func TestMigrationRejectsActiveCurrentAppAndUnknownJournal(t *testing.T) {
 	}
 	work := filepath.Join(home, ".quosparr-migration-v2")
 	put(t, work, "unrelated", "retain me")
-	if _, err := Run(home); err == nil {
+	if _, err := runRenamed(home, filepath.Join(home, ".quosparr")); err == nil {
 		t.Fatal("unknown staging area removed")
 	}
 	if get(t, work, "unrelated") != "retain me" {

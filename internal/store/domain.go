@@ -2,13 +2,14 @@ package store
 
 import (
 	"errors"
+	"github.com/licoy/quosparr/internal/personal"
 	"sync"
 )
 
 // Names shared with the Swift app.
 const (
 	// DomainName is the UserDefaults domain of the current Swift app.
-	DomainName = "com.quosparr.app"
+	DomainName = personal.BundleID
 	// LegacyDomainName is the domain v0.0.1 and v0.0.2 used.
 	LegacyDomainName = "dev.licoy.codex-runway"
 

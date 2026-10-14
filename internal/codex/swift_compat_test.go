@@ -192,6 +192,9 @@ func TestGoPackMatchesSwiftEncoding(t *testing.T) {
 			raw := fixture(t, name)
 			pack := must(DecodeTransferPack(raw))
 			got := must(EncodeTransferPack(pack))
+			// This edition exports the original Swift brand. All remaining
+			// bytes still match the frozen upstream fixture exactly.
+			raw = bytes.Replace(raw, []byte(`"format" : "quosparr-accounts"`), []byte(`"format" : "codex-runway-accounts"`), 1)
 			if !bytes.Equal(got, bytes.TrimRight(raw, "\n")) {
 				t.Fatalf("Go encoding differs from Swift\n--- go ---\n%s\n--- swift ---\n%s", got, raw)
 			}

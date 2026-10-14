@@ -21,11 +21,18 @@ const signature = "quosparr-data-migration-v2\n"
 // possible return can be checked against the same transaction boundaries.
 func Run(home string) (bool, error) {
 	target := platform.RunwayDir(home)
+	if target == filepath.Join(home, ".codex-runway") {
+		return false, nil
+	}
+	return runRenamed(home, target)
+}
+
+func runRenamed(home, target string) (bool, error) {
 	work := filepath.Join(home, ".quosparr-migration-v2")
 	if _, err := directoryExists(target); err != nil {
 		return false, err
 	}
-	if state, err := platform.ProbeLock(platform.LockPath(home)); err != nil {
+	if state, err := platform.ProbeLock(filepath.Join(target, "quosparr.lock")); err != nil {
 		return false, err
 	} else if state == platform.LockHeld {
 		return false, platform.ErrLocked

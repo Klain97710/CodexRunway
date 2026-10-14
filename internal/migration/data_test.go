@@ -24,10 +24,10 @@ func TestBrandMigrationPreservesDataAndNeverOverwrites(t *testing.T) {
 	if _, err := AcquireLegacyLock(home, AcquireLock); !errors.Is(err, ErrLocked) {
 		t.Fatalf("old application was not excluded: %v", err)
 	}
-	if copied, err := Run(home); err != nil || !copied {
+	if copied, err := runRenamed(home, filepath.Join(home, ".quosparr")); err != nil || !copied {
 		t.Fatalf("migration: %v, %v", copied, err)
 	}
-	target := filepath.Join(RunwayDir(home), "accounts", "sample", "auth.json")
+	target := filepath.Join(filepath.Join(home, ".quosparr"), "accounts", "sample", "auth.json")
 	for _, path := range []string{source, target} {
 		data, err := os.ReadFile(path)
 		if err != nil || string(data) != "synthetic credential fixture" {
@@ -40,7 +40,7 @@ func TestBrandMigrationPreservesDataAndNeverOverwrites(t *testing.T) {
 	if err := os.WriteFile(source, []byte("changed old data"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if copied, err := Run(home); err != nil || copied {
+	if copied, err := runRenamed(home, filepath.Join(home, ".quosparr")); err != nil || copied {
 		t.Fatalf("migration repeated: %v, %v", copied, err)
 	}
 	data, _ := os.ReadFile(target)
@@ -61,10 +61,10 @@ func TestBrandMigrationRejectsLinksWithoutPartialInstallation(t *testing.T) {
 	if err := os.Symlink(home, filepath.Join(source, "link")); err != nil {
 		t.Fatal(err)
 	}
-	if copied, err := Run(home); err == nil || copied {
+	if copied, err := runRenamed(home, filepath.Join(home, ".quosparr")); err == nil || copied {
 		t.Fatal("symlink was accepted")
 	}
-	if _, err := os.Stat(RunwayDir(home)); !errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(home, ".quosparr")); !errors.Is(err, os.ErrNotExist) {
 		t.Fatal("partial destination was installed")
 	}
 }
@@ -72,7 +72,7 @@ func TestBrandMigrationRejectsLinksWithoutPartialInstallation(t *testing.T) {
 func TestBrandMigrationContinuesIntoExistingDirectory(t *testing.T) {
 	home := t.TempDir()
 	old := filepath.Join(home, ".codex-runway")
-	current := RunwayDir(home)
+	current := filepath.Join(home, ".quosparr")
 	for path, content := range map[string]string{
 		filepath.Join(old, "accounts", "older", "auth.json"): "old fixture",
 		filepath.Join(old, "preferences.json"):               "old settings",
@@ -82,7 +82,7 @@ func TestBrandMigrationContinuesIntoExistingDirectory(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := Run(home); err != nil {
+	if _, err := runRenamed(home, filepath.Join(home, ".quosparr")); err != nil {
 		t.Fatal(err)
 	}
 	if got, err := os.ReadFile(filepath.Join(current, "accounts", "older", "auth.json")); err != nil || string(got) != "old fixture" {

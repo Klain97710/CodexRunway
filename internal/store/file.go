@@ -3,6 +3,7 @@ package store
 import (
 	"errors"
 	"fmt"
+	"github.com/licoy/quosparr/internal/personal"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -11,7 +12,7 @@ import (
 )
 
 // DataDirName is the Quosparr directory in the user's home.
-const DataDirName = ".quosparr"
+const DataDirName = personal.DataDir
 
 // File names inside the data directory on platforms without UserDefaults. The
 // general settings and the proxy configuration are separate files so that a

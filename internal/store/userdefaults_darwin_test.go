@@ -149,7 +149,7 @@ func TestOpenUsesRealDomainNamesOnly(t *testing.T) {
 	if _, err := Open(); err != nil {
 		t.Fatal(err)
 	}
-	if DomainName != "com.quosparr.app" || LegacyDomainName != "dev.licoy.codex-runway" {
+	if DomainName != "com.github.codex-runway" || LegacyDomainName != "dev.licoy.codex-runway" {
 		t.Error("domain names changed")
 	}
 }

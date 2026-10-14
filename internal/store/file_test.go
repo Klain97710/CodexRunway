@@ -22,7 +22,7 @@ func TestFileDomainReadMissing(t *testing.T) {
 }
 
 func TestFileDomainWriteRead(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), ".quosparr")
+	dir := filepath.Join(t.TempDir(), ".codex-runway")
 	d := FileDomain{Dir: dir}
 	if err := d.Write(KeyPreferences, []byte(`{"a":1}`)); err != nil {
 		t.Fatal(err)
@@ -160,7 +160,7 @@ func TestProxyOnFilesIsSeparate(t *testing.T) {
 
 func TestDataDir(t *testing.T) {
 	dir, err := DataDir()
-	if err != nil || filepath.Base(dir) != ".quosparr" {
+	if err != nil || filepath.Base(dir) != ".codex-runway" {
 		t.Errorf("DataDir = %q, %v", dir, err)
 	}
 }

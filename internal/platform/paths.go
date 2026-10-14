@@ -3,16 +3,17 @@
 package platform
 
 import (
+	"github.com/licoy/quosparr/internal/personal"
 	"os"
 	"path/filepath"
 )
 
 const (
 	// RunwayDirName is the app-owned directory under the user's home.
-	RunwayDirName = ".quosparr"
+	RunwayDirName = personal.DataDir
 	// LockFileName matches SingleInstanceGuard.lockFileName of the Swift app,
 	// so the Swift and Go builds exclude each other.
-	LockFileName = "quosparr.lock"
+	LockFileName = personal.LockFile
 	// CodexDirName is the official Codex directory (read only for us).
 	CodexDirName = ".codex"
 )
