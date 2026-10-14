@@ -44,14 +44,14 @@ def published_feeds(repository):
     raw = gh("api", f"repos/{repository}/releases?per_page=100", "--paginate", "--slurp")
     releases = [release for page in json.loads(raw) for release in page if not release["draft"]]
     assets = [asset for release in releases for asset in release["assets"]
-              if asset["name"] in ("appcast-arm64.xml", "appcast-x86_64.xml", "quosparr-appcast-arm64.xml", "quosparr-appcast-x86_64.xml")]
+              if asset["name"] in ("appcast-arm64.xml", "appcast-x86_64.xml")]
     return [gh("api", asset["url"], "-H", "Accept: application/octet-stream") for asset in assets]
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="mygo.json")
-    parser.add_argument("--repository", default="Licoy/Quosparr")
+    parser.add_argument("--repository", default="Klain97710/CodexRunway")
     parser.add_argument("--appcasts", nargs="+", help="explicit offline fixtures, never an automatic fallback")
     args = parser.parse_args()
     config = json.loads(pathlib.Path(args.config).read_text())

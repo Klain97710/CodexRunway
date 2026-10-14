@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/base64"
@@ -12,6 +13,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/licoy/quosparr/internal/personal"
 	"io"
 	"net/url"
 	"os"
@@ -44,6 +46,9 @@ func main() {
 	}
 }
 func run(args []string) error {
+	if len(args) > 0 && args[0] == "check-keys" {
+		return checkKeys(args[1:])
+	}
 	if len(args) > 0 && args[0] == "verify-sparkle" {
 		return verifySparkle(args[1:])
 	}
@@ -105,6 +110,9 @@ func validTarget(target string) bool {
 	return false
 }
 func archiveName(version, target string) string {
+	if strings.HasPrefix(target, "darwin-") {
+		return "codex-runway-" + version + "-" + target + ".tar.gz"
+	}
 	return "quosparr-" + version + "-" + target + ".tar.gz"
 }
 func readJSON(path string, value any) error {
@@ -134,12 +142,18 @@ func signingKey(pub []byte) (ed25519.PrivateKey, error) {
 		return nil, errors.New("missing or invalid mygo signing key")
 	}
 	private := ed25519.PrivateKey(key)
+	if !bytes.Equal(ed25519.NewKeyFromSeed(private.Seed()), private) {
+		return nil, errors.New("invalid mygo private key pair")
+	}
 	if !ed25519.PublicKey(pub).Equal(private.Public()) {
 		return nil, errors.New("mygo signing key does not match configuration")
 	}
 	return private, nil
 }
 func sign(cfg config, dir, target string) error {
+	if cfg.Updates.GitHub != personal.Repository || cfg.Updates.TagPrefix != personal.TagPrefix || cfg.Updates.URL != "" {
+		return errors.New("release configuration must use the personal repository and tag prefix")
+	}
 	pub, err := base64.StdEncoding.DecodeString(strings.TrimSpace(cfg.Updates.PublicKey))
 	if err != nil || len(pub) != ed25519.PublicKeySize {
 		return errors.New("invalid update public key")
@@ -181,7 +195,7 @@ func verify(cfg config, dir, target string) error {
 		return errors.New("manifest version mismatch")
 	}
 	u, err := url.Parse(m.URL)
-	if err != nil || u.Scheme != "https" || u.Host == "" || filepath.Base(u.Path) != archiveName(cfg.Version, target) {
+	if err != nil || u.Scheme != "https" || !personal.UpdateURL(u, false) || filepath.Base(u.Path) != archiveName(cfg.Version, target) {
 		return errors.New("invalid archive URL or target")
 	}
 	prefix := cfg.Updates.TagPrefix

@@ -1,0 +1,13 @@
+# CodexRunway 0.2.0 · Klain97710 定制版迁移候选
+
+本草稿基于 Quosparr v1.0.3 的 Go + mygo/ui 架构，当前仍需隔离桌面、旧 Widget 刷新、跨代安装更新、Intel 与最低 macOS 版本验收。**尚不建议替换日常 Swift 版；验收前不公开发布。**
+
+- 保留 CodexRunway 应用标识、账号与偏好路径、Keychain 服务和 Widget 标识。
+- 仅启用 Codex；保留重置公开状态与提醒，移除互动请求。
+- 菜单栏使用剩余额度三列；Pro 隐藏标准 5h；右键菜单保留操作项。
+- 旧 Swift 版使用原个人 Sparkle 签名链；Go 版使用独立 mygo 签名与个人更新源。
+- 产品版本 0.2.0，构建号 2000，支持目标为 macOS 12+、Widget 14+，提供 arm64/x86_64 候选。
+
+首次隔离覆盖前，退出旧版并整组备份应用、偏好和数据。回退时恢复匹配的 Swift 应用和合成数据快照；不要用过期 OAuth 备份覆盖已旋转的真实令牌。完整验收状态见迁移验证报告。
+
+This is an unaccepted migration candidate, not a daily-use replacement. Keep the Swift application until isolated upgrade, rollback, Widget and required platform checks pass. MIT license and original Licoy attribution are retained.

@@ -36,6 +36,7 @@ trap 'rm -rf "$CONFIG_STAGE"' EXIT
 if [[ "$DEVELOPMENT" == 0 ]]; then
   export MYGO_UPDATER_PRIVATE_KEY="${MYGO_UPDATE_PRIVATE_KEY:-${MYGO_UPDATER_PRIVATE_KEY:-}}"
   [[ -n "$MYGO_UPDATER_PRIVATE_KEY" ]] || { printf 'Missing MYGO_UPDATE_PRIVATE_KEY\n' >&2; exit 1; }
+  go run ./Scripts/release-assets check-keys -config "${V1_CONFIG_PATH:-$ROOT/mygo.json}"
 fi
 V1_DEVELOPMENT_PACKAGE="$DEVELOPMENT" python3 "$ROOT/Scripts/stage-v1-config.py" "$ROOT" "$CONFIG_STAGE"
 mkdir -p "$WORK/config"
@@ -80,6 +81,13 @@ xcodebuild -project "$ROOT/WidgetExtension/QuosparrWidget.xcodeproj" \
 ditto "$WORK/widget-derived/Build/Products/Release/QuosparrWidget.appex" "$WIDGET"
 for lproj in "$ROOT/Resources"/*.lproj; do
   ditto "$lproj" "$CONTENTS/Resources/$(basename "$lproj")"
+  if [[ "$DEVELOPMENT" == 1 ]]; then
+    python3 - "$CONTENTS/Resources/$(basename "$lproj")/InfoPlist.strings" <<'PYDEV'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1]); p.write_text(p.read_text().replace("CodexRunway", "CodexRunway Migration"))
+PYDEV
+  fi
 done
 plutil -replace RunwayWidgetStorageMode -string local "$CONTENTS/Info.plist"
 plutil -replace NSAppDataUsageDescription -string \
@@ -110,7 +118,7 @@ rm -f "$ZIP"
 ditto -c -k --keepParent "$APP" "$ZIP"
 printf 'Packaged v1: %s\nArchive: %s\n' "$APP" "$ZIP"
 if [[ "$DEVELOPMENT" == 0 ]]; then
-  TAR="$WORK/quosparr-$VERSION-darwin-$GOARCH.tar.gz"
+  TAR="$WORK/codex-runway-$VERSION-darwin-$GOARCH.tar.gz"
   COPYFILE_DISABLE=1 tar -czf "$TAR" -C "$(dirname "$APP")" "$APP_NAME.app"
   go run ./Scripts/release-assets sign -config "$WORK/config/mygo.json" -dir "$WORK" -targets "darwin-$GOARCH"
   DMG_ROOT="$WORK/dmg-root"

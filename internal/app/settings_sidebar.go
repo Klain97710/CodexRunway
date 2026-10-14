@@ -37,7 +37,7 @@ func (u *settingsUI) sidebar(c *ui.Context) {
 	ui.Row(c).Padding(14, 18).Gap(10).AlignItems(ui.Center).BorderWidth(1, 0, 0, 0).BorderColor(pal(t).Line).Children(func() {
 		ui.Image(c, appIconBitmap()).Size(32, 32)
 		ui.Column(c).Gap(2).Children(func() {
-			ui.Text(c, "Quosparr").FontSize(13).FontWeight(600).SingleLine()
+			ui.Text(c, "CodexRunway").FontSize(13).FontWeight(600).SingleLine()
 			ui.Text(c, u.opts.Version).FontSize(11).TextColor(t.TextMuted).SingleLine()
 		})
 	})

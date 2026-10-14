@@ -35,8 +35,8 @@ func verifyArchive(file, target string) error {
 		sqlite = "mygo-sqlite3.dll"
 	}
 	if system == "darwin" {
-		executable = "Quosparr.app/Contents/MacOS/Quosparr"
-		sqlite = "Quosparr.app/Contents/Resources/libmygo-sqlite3.dylib"
+		executable = "CodexRunway.app/Contents/MacOS/CodexRunway"
+		sqlite = "CodexRunway.app/Contents/Resources/libmygo-sqlite3.dylib"
 	}
 	seen := map[string]bool{}
 	links := map[string]string{}
@@ -45,8 +45,8 @@ func verifyArchive(file, target string) error {
 		delete(required, sqlite)
 	}
 	if system == "darwin" {
-		required["Quosparr.app/Contents/Frameworks/libQuosparrWidgetBridge.dylib"] = false
-		required["Quosparr.app/Contents/PlugIns/QuosparrWidget.appex/Contents/MacOS/QuosparrWidget"] = false
+		required["CodexRunway.app/Contents/Frameworks/libQuosparrWidgetBridge.dylib"] = false
+		required["CodexRunway.app/Contents/PlugIns/QuosparrWidget.appex/Contents/MacOS/QuosparrWidget"] = false
 	}
 	for {
 		hdr, err := tr.Next()

@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/licoy/quosparr/internal/netx"
+	"github.com/licoy/quosparr/internal/personal"
 )
 
 // ClientFunc returns the HTTP client for the requests made under ctx.
@@ -34,8 +35,12 @@ type updaterTransport struct {
 // ErrUpdateNoTransport: the client of the network context has no transport,
 // and a request must not fall back to a default one.
 var ErrUpdateNoTransport = errors.New("updates: the network client has no transport")
+var ErrUpdateURL = errors.New("updates: download URL is outside the personal release channel")
 
 func (t updaterTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if !personal.UpdateURL(req.URL, req.Response != nil) {
+		return nil, ErrUpdateURL
+	}
 	client, err := t.clients.Client(req.Context())
 	if err != nil {
 		return nil, err // blocked network: an error, never a direct connection
@@ -43,7 +48,11 @@ func (t updaterTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if client.Transport == nil {
 		return nil, ErrUpdateNoTransport
 	}
-	return client.Transport.RoundTrip(req)
+	clean := req.Clone(req.Context())
+	clean.Header.Del("Authorization")
+	clean.Header.Del("Cookie")
+	clean.Header.Del("Proxy-Authorization")
+	return client.Transport.RoundTrip(clean)
 }
 
 // configureUpdaterHTTP points the global client at provider's transport. It
@@ -54,6 +63,13 @@ func configureUpdaterHTTP(provider ClientFunc) (restore func()) {
 	previous := http.DefaultClient
 	client := *previous
 	client.Transport = updaterTransport{clients: newCycleClients(provider)}
+	client.Jar = nil
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if len(via) >= 10 || len(via) == 0 || !personal.UpdateURL(via[0].URL, false) || !personal.UpdateURL(req.URL, true) {
+			return ErrUpdateURL
+		}
+		return nil
+	}
 	http.DefaultClient = &client
 	return func() { http.DefaultClient = previous }
 }

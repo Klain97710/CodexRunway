@@ -1,4 +1,4 @@
-name: Personal release (migration gate)
+name: Personal candidate draft
 
 on:
   push:
@@ -8,11 +8,60 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: personal-draft-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  migration-gate:
-    runs-on: ubuntu-latest
+  candidate:
+    if: github.repository == 'Klain97710/CodexRunway' && startsWith(github.ref, 'refs/tags/personal-v')
+    runs-on: macos-26
+    permissions:
+      contents: write
     steps:
-      - name: Require the personal signing and acceptance pipeline
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Check personal tag and version
         run: |
-          echo 'Migration releases are disabled until the personal release pipeline is validated.'
-          exit 1
+          python3 - <<'PY'
+          import json,os,re
+          cfg=json.load(open('mygo.json'))
+          assert re.fullmatch(r'personal-v[0-9]+\.[0-9]+\.[0-9]+',os.environ['GITHUB_REF_NAME'])
+          assert os.environ['GITHUB_REF_NAME']=='personal-v'+cfg['version']
+          assert cfg['updates']['github']==os.environ['GITHUB_REPOSITORY']
+          PY
+      - name: Regression gate
+        run: |
+          go test -count=1 -timeout=10m ./...
+          go vet ./...
+          go build ./...
+          python3 Scripts/Tests/test-personal-package.py
+          python3 Scripts/Tests/test-personal-release.py
+          python3 Scripts/Tests/test-workflow-drafts.py
+      - name: Require a build newer than published personal releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 Scripts/check-v1-build-number.py --repository "$GITHUB_REPOSITORY"
+      - name: Build and verify final candidates and both signature chains
+        env:
+          MYGO_UPDATE_PRIVATE_KEY: ${{ secrets.MYGO_UPDATE_PRIVATE_KEY }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          RUNWAY_BUILD_PROFILE: replacement-candidate
+        run: |
+          mkdir -p dist-v1
+          for arch in arm64 x86_64; do
+            ARCH="$arch" bash Scripts/package-v1-app.sh
+            cp build/replacement-candidate-"$arch"/*.zip build/replacement-candidate-"$arch"/*.dmg build/replacement-candidate-"$arch"/*.tar.gz build/replacement-candidate-"$arch"/update-*.json dist-v1/
+          done
+          bash Scripts/legacy-appcast.sh "$PWD/dist-v1" "$PWD/mygo.json" "$GITHUB_REF_NAME"
+          python3 Scripts/release-checksums.py write dist-v1
+          bash Scripts/verify-v1-release.sh "$PWD/dist-v1" "$PWD/mygo.json"
+      - name: Prepare candidate notes
+        run: cp docs/releases/personal-v0.2.0.md release-notes.md
+      - name: Create a draft without changing latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --latest=false --title "CodexRunway $GITHUB_REF_NAME · migration candidate" --notes-file release-notes.md dist-v1/*

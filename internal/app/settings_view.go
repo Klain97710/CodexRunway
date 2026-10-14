@@ -11,6 +11,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/platform"
 	"github.com/licoy/quosparr/internal/store"
 )
@@ -83,8 +84,8 @@ func appIconBitmap() *ui.Bitmap {
 }
 
 const (
-	githubURL   = "https://github.com/Licoy/Quosparr"
-	feedbackURL = "https://github.com/Licoy/Quosparr/issues/new"
+	githubURL   = personal.Homepage
+	feedbackURL = personal.Feedback
 
 	// loginItemsSettingsURL opens System Settings > General > Login Items
 	// (macOS 13+), where a login item waiting for approval is allowed.

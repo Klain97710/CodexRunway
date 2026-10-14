@@ -8,7 +8,6 @@ import (
 	"math"
 	"net/http"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -121,7 +120,7 @@ func ApplySavedProxy(cfg store.NetworkProxyConfiguration, creds *ProxyCredential
 	return nil
 }
 
-// TestProxyDraft dials the update feed through a temporary context. The
+// TestProxyDraft dials the public personal repository through a temporary context. The
 // draft is not installed.
 func TestProxyDraft(ctx context.Context, cfg store.NetworkProxyConfiguration, creds *ProxyCredentials) error {
 	return probeProxy(ctx, cfg, netCredentials(creds), proxyTestURL())
@@ -152,15 +151,7 @@ func probeProxy(ctx context.Context, cfg store.NetworkProxyConfiguration, creds 
 	return nil
 }
 
-func proxyTestURL() string {
-	arch := "x86_64"
-	if runtime.GOARCH == "arm64" {
-		arch = "arm64"
-	}
-	// Keep the existing public diagnostic endpoint usable before the first
-	// Quosparr release; this request does not install or parse an update.
-	return "https://github.com/Licoy/Quosparr/releases/latest/download/appcast-" + arch + ".xml"
-}
+func proxyTestURL() string { return personal.Homepage }
 
 func netCredentials(c *ProxyCredentials) *netx.Credentials {
 	if c == nil {

@@ -32,8 +32,10 @@ if development:
 else:
     if os.environ.get("V1_UPDATE_CHANNEL", "stable") != "stable":
         raise SystemExit("only the personal stable channel is supported")
+    if config["name"] != "CodexRunway" or config["identifier"] != "com.github.codex-runway" or config["urlSchemes"] != ["codex-runway"]:
+        raise SystemExit("replacement must retain the original application identity")
     config["updates"]["tagPrefix"] = "personal-v"
-    if config["updates"].get("github") != "Klain97710/CodexRunway":
+    if config["updates"].get("github") != "Klain97710/CodexRunway" or config["updates"].get("url") or config["updates"].get("privateKey") or config["updates"].get("s3"):
         raise SystemExit("replacement updates must use the personal repository")
 config["macos"]["infoPlist"]["RunwayBuildProfile"] = profile
 destination.mkdir(parents=True, exist_ok=True)

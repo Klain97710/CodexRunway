@@ -21,12 +21,12 @@ func TestSparkleAppcastSignsArchiveForSUPublicEDKey(t *testing.T) {
 	if err := os.WriteFile(cfg, []byte(config), 0600); err != nil {
 		t.Fatal(err)
 	}
-	archive := filepath.Join(dir, "Quosparr-macos-arm64.zip")
+	archive := filepath.Join(dir, "CodexRunway-macos-arm64.zip")
 	if err := os.WriteFile(archive, []byte("archive fixture"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	feed := filepath.Join(dir, "quosparr-appcast-arm64.xml")
-	url := "https://github.com/Licoy/Quosparr/releases/download/v1.2.3/Quosparr-macos-arm64.zip"
+	url := "https://github.com/Klain97710/CodexRunway/releases/download/personal-v1.2.3/CodexRunway-macos-arm64.zip"
 	args := []string{"sparkle-appcast", "-config", cfg, "-file", archive, "-url", url, "-out", feed}
 
 	t.Setenv("SPARKLE_PRIVATE_KEY", "")
@@ -40,7 +40,7 @@ func TestSparkleAppcastSignsArchiveForSUPublicEDKey(t *testing.T) {
 	}
 	t.Setenv("SPARKLE_PRIVATE_KEY", base64.StdEncoding.EncodeToString(key.Seed()))
 	bad := append([]string(nil), args...)
-	bad[6] = "https://github.com/Licoy/Quosparr/releases/download/v1.2.3/other.zip"
+	bad[6] = "https://github.com/Klain97710/CodexRunway/releases/download/personal-v1.2.3/other.zip"
 	if err := run(bad); err == nil {
 		t.Fatal("appcast accepted a URL naming another archive")
 	}

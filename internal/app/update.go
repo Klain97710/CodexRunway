@@ -15,12 +15,13 @@ import (
 	"github.com/egoist/mygo/plugins/updater"
 	"github.com/egoist/mygo/plugins/updater/native"
 	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/platform"
 )
 
 // releasesURL is the formal download entry, offered when an installation
 // cannot update itself.
-const releasesURL = "https://github.com/Licoy/Quosparr/releases/latest"
+const releasesURL = personal.Releases
 
 // UpdateInterval is the time between background update checks while the
 // app runs; with ForgetLastUpdateCheck, the first one of a launch runs

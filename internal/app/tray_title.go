@@ -164,7 +164,7 @@ func applyLegacyTray(tray *mygo.Tray, r TrayRender) {
 
 func trayTooltip(tip string) string {
 	if strings.TrimSpace(tip) == "" {
-		return "Quosparr"
+		return "CodexRunway"
 	}
 	return tip
 }

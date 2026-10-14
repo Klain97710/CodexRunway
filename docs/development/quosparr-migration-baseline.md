@@ -13,7 +13,7 @@ Status: in progress, 2026-10-14. This is not release acceptance.
 
 Both Swift applications and exported preferences were backed up in the private release directory under `backups/20261014-093347-pre-go-migration`. Both app signatures passed `codesign --verify --deep --strict`. No real account files were read for this baseline. The installed app remains unchanged.
 
-The upstream merge preserves history and adopts the Go architecture. Removed Swift main-app sources/tests remain available on the stable branch. Personal documentation is retained. Release automation is fail-closed while signing and validation are ported; it has no publish step or signing secrets. CI currently runs Go checks on an isolated GitHub runner without launching the desktop app.
+The upstream merge preserves history and adopts the Go architecture. Removed Swift main-app sources/tests remain available on the stable branch. Personal documentation is retained. Release automation now accepts only personal tags and creates drafts with latest=false after checks. Signing secrets are scoped to the candidate build step; branch CI stays read-only and secret-free. CI currently runs Go checks on an isolated GitHub runner without launching the desktop app.
 
 ## Validation gates
 
@@ -24,7 +24,7 @@ The upstream merge preserves history and adopts the Go architecture. Removed Swi
 | G2 Identity/data/lock compatibility | PARTIAL | platform/store/netx/codex/migration tests PASS; preserved identity, in-place migration/auth immutability and shared lock tested; Swift write-back acceptance pending |
 | G3 Codex only and no reactions | PARTIAL | App/runway/store/export/reset tests PASS; repeated refresh/ticks prove zero Grok calls with positive Codex/status controls; cookie/reaction transport test PASS; desktop acceptance pending |
 | G4 Tray, actions and Widget | PARTIAL | Go app/runway/export regressions and Go/Swift contract checks PASS; arm64 isolated package/signatures PASS; desktop and saved Widget refresh pending |
-| G5 Personal update trust | NOT RUN | Both signed feeds and mygo archives required |
+| G5 Personal update trust | PARTIAL | URL/redirect/proxy tests, official Sparkle signed/unsigned/tampered XML and ZIP tests, draft-command tests PASS; final dual-architecture signatures and real installer acceptance pending |
 | G6 Automated tests and packaging | NOT RUN | Exact candidate SHA and artifacts required |
 | G7 Real two-generation update | NOT RUN | Disposable macOS test environment required |
 | G8 Platform/rollback acceptance | NOT RUN | macOS 12/13, Intel, Widget and rollback evidence required |
@@ -36,3 +36,5 @@ Task 3 restores original preference domain, data and lock paths, proxy Keychain 
 Task 4 removes reaction transport, visitor store, UI state, buttons, polling and dedicated tests. Public status uses a cookie-free client, including injected clients. Old visitor files remain untouched. Grok implementations and low-level regression tests remain with explicit feature opt-in; the default runtime never constructs them. Legacy provider choices normalize to Codex while unrelated preferences are retained.
 
 Task 5 restores remaining-quota columns, Pro-only standard 5h filtering, action-only context menu and a separate persistent details window. Restored Widget kind/scheme/group/path contracts; old provider values remain decodable and render Codex. The migration-dev arm64 app, SQLite, bridge and Widget were packaged and signature-verified without launching the app. This is build evidence, not desktop acceptance.
+
+Task 6 adds a separate mygo key (private key outside Git, GitHub secret configured), retains the original Sparkle key, and signs the legacy XML feed as well as its ZIP. mygo v0.4.8 signs the archive SHA256; its JSON metadata is HTTPS-served and is not independently signed. The runtime validates every origin/redirect against the personal repository and its numeric CDN namespace, strips request credentials, and preserves proxy failures. Release automation creates drafts only; real two-generation install tests remain G7.

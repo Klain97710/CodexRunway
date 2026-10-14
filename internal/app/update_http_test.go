@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"go/ast"
 	"go/parser"
@@ -19,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/licoy/quosparr/internal/netx"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/store"
 )
 
@@ -54,6 +57,7 @@ func getVia(t *testing.T, ctx context.Context, url string) (string, error) {
 
 func TestConfigureUpdaterHTTPSendsRequestsThroughTheNetworkContext(t *testing.T) {
 	before := http.DefaultClient
+	cfg, seen, roots := updateTLSProxy(t)
 	restore := configureUpdaterHTTP(netxUpdateClient)
 	t.Cleanup(restore)
 	if http.DefaultClient == before {
@@ -63,8 +67,7 @@ func TestConfigureUpdaterHTTPSendsRequestsThroughTheNetworkContext(t *testing.T)
 		t.Error("the previous client was modified in place")
 	}
 
-	cfg, seen := proxyAt(t)
-	c, err := netx.NewContext(cfg, nil)
+	c, err := netx.NewContext(cfg, nil, netx.WithTLSConfig(&tls.Config{RootCAs: roots, ServerName: "example.com"}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,8 +77,8 @@ func TestConfigureUpdaterHTTPSendsRequestsThroughTheNetworkContext(t *testing.T)
 	defer cancel()
 	// "check" and "install" of one cycle: same ctx, same proxy.
 	for range 2 {
-		body, err := getVia(t, ctx, "http://updates.example.invalid/feed.json")
-		if err != nil || !strings.HasPrefix(body, "via proxy updates.example.invalid") {
+		body, err := getVia(t, ctx, personal.Homepage+"/releases/latest/download/update-darwin-arm64.json")
+		if err != nil || !strings.HasPrefix(body, "via TLS proxy") {
 			t.Fatalf("body %q, err %v", body, err)
 		}
 	}
@@ -98,7 +101,7 @@ func TestUpdaterTransportUsesNetxForAContextThatIsNoCycle(t *testing.T) {
 		})}, nil
 	})}
 	for range 2 {
-		req, _ := http.NewRequest(http.MethodGet, "http://x.invalid/", nil) // Background: never ends
+		req, _ := http.NewRequest(http.MethodGet, personal.Homepage+"/releases/latest/download/update-darwin-arm64.json", nil) // Background: never ends
 		resp, err := rt.RoundTrip(req)
 		if err != nil {
 			t.Fatal(err)
@@ -116,7 +119,7 @@ func TestUpdaterTransportFailsInsteadOfConnectingDirectly(t *testing.T) {
 	defer srv.Close()
 	boom := errors.New("proxy settings are broken")
 	rt := updaterTransport{clients: newCycleClients(func(context.Context) (*http.Client, error) { return nil, boom })}
-	req, _ := http.NewRequest(http.MethodGet, srv.URL, nil)
+	req, _ := http.NewRequest(http.MethodGet, personal.Homepage+"/releases/latest/download/update-darwin-arm64.json", nil)
 	if _, err := rt.RoundTrip(req); !errors.Is(err, boom) {
 		t.Errorf("err = %v, want the provider's error", err)
 	}
@@ -189,4 +192,37 @@ func TestNoBusinessCodeUsesTheGlobalHTTPClient(t *testing.T) {
 	if len(found) > 0 {
 		t.Errorf("business code uses the global HTTP client (use internal/netx):\n%s", strings.Join(found, "\n"))
 	}
+}
+
+// CONNECT is tunneled to a local TLS server. Certificate verification stays on.
+func updateTLSProxy(t *testing.T) (store.NetworkProxyConfiguration, *atomic.Int32, *x509.CertPool) {
+	t.Helper()
+	var seen atomic.Int32
+	backend := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { seen.Add(1); io.WriteString(w, "via TLS proxy") }))
+	t.Cleanup(backend.Close)
+	roots := x509.NewCertPool()
+	roots.AddCert(backend.Certificate())
+	proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodConnect || r.Host != "github.com:443" {
+			http.Error(w, "unexpected target", 400)
+			return
+		}
+		upstream, err := net.Dial("tcp", backend.Listener.Addr().String())
+		if err != nil {
+			http.Error(w, "backend", 502)
+			return
+		}
+		downstream, _, err := w.(http.Hijacker).Hijack()
+		if err != nil {
+			upstream.Close()
+			return
+		}
+		io.WriteString(downstream, "HTTP/1.1 200 Connection Established\r\n\r\n")
+		go func() { defer upstream.Close(); defer downstream.Close(); io.Copy(upstream, downstream) }()
+		go func() { defer upstream.Close(); defer downstream.Close(); io.Copy(downstream, upstream) }()
+	}))
+	t.Cleanup(proxy.Close)
+	host, port, _ := net.SplitHostPort(proxy.Listener.Addr().String())
+	n, _ := strconv.Atoi(port)
+	return store.NetworkProxyConfiguration{Mode: store.ProxyModeHTTP, Host: host, Port: n}, &seen, roots
 }

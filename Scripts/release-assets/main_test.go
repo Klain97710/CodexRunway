@@ -87,7 +87,8 @@ func TestManifestAuthenticatesFinalArchive(t *testing.T) {
 	var cfg config
 	cfg.Version = "1.0.0"
 	cfg.Updates.PublicKey = base64.StdEncoding.EncodeToString(pub)
-	cfg.Updates.GitHub = "Licoy/Quosparr"
+	cfg.Updates.GitHub = "Klain97710/CodexRunway"
+	cfg.Updates.TagPrefix = "personal-v"
 	t.Setenv("MYGO_UPDATE_PRIVATE_KEY", base64.StdEncoding.EncodeToString(key))
 	file := filepath.Join(dir, archiveName(cfg.Version, "linux-amd64"))
 	fixtureArchive(t, file, []string{"quosparr", "libmygo-sqlite3.so"})
@@ -161,7 +162,8 @@ func TestManifestRejectsWrongDownloadHost(t *testing.T) {
 	var cfg config
 	cfg.Version = "1.0.0"
 	cfg.Updates.PublicKey = base64.StdEncoding.EncodeToString(pub)
-	cfg.Updates.GitHub = "Licoy/Quosparr"
+	cfg.Updates.GitHub = "Klain97710/CodexRunway"
+	cfg.Updates.TagPrefix = "personal-v"
 	t.Setenv("MYGO_UPDATE_PRIVATE_KEY", base64.StdEncoding.EncodeToString(key))
 	fixtureArchive(t, filepath.Join(dir, archiveName(cfg.Version, "linux-amd64")), []string{"quosparr", "libmygo-sqlite3.so"})
 	if err := sign(cfg, dir, "linux-amd64"); err != nil {

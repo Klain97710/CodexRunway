@@ -23,47 +23,21 @@ class BuildNumberTests(unittest.TestCase):
    with self.assertRaises(ValueError): builds.check(candidate,feeds)
 
 class StageConfigTests(unittest.TestCase):
- def test_stable_uses_quosparr_repository(self):
+ def test_stable_uses_personal_repository(self):
   root=pathlib.Path(__file__).resolve().parents[2]
   with tempfile.TemporaryDirectory(prefix="quosparr-config-test-") as temporary:
    env=os.environ.copy()
-   env.update(V1_CONFIG_PATH=str(root/"mygo.json"),V1_UPDATE_CHANNEL="stable",V1_DEVELOPMENT_PACKAGE="0")
+   env.update(V1_CONFIG_PATH=str(root/"mygo.json"),V1_UPDATE_CHANNEL="stable",V1_DEVELOPMENT_PACKAGE="0",RUNWAY_BUILD_PROFILE="replacement-candidate")
    subprocess.run(["python3",str(root/"Scripts/stage-v1-config.py"),str(root),temporary],env=env,check=True)
    staged=json.loads((pathlib.Path(temporary)/"mygo.json").read_text())
-   self.assertEqual(staged["updates"]["github"],"Licoy/Quosparr")
-   self.assertEqual(staged["updates"]["tagPrefix"],"v")
+   self.assertEqual(staged["updates"]["github"],"Klain97710/CodexRunway")
+   self.assertEqual(staged["updates"]["tagPrefix"],"personal-v")
    self.assertNotIn("url",staged["updates"])
 
- def test_beta_uses_fixed_prerelease_feed_and_dev_disables_updates(self):
+ def test_rename_notice_is_disabled(self):
   root=pathlib.Path(__file__).resolve().parents[2]
-  config=json.loads((root/"mygo.json").read_text())
-  config["version"]="1.0.0-beta.1"
-  with tempfile.TemporaryDirectory(prefix="runway-config-test-") as temporary:
-   directory=pathlib.Path(temporary)
-   source=directory/"source.json"
-   source.write_text(json.dumps(config))
-   env=os.environ.copy()
-   env.update(V1_CONFIG_PATH=str(source),V1_UPDATE_CHANNEL="beta",V1_DEVELOPMENT_PACKAGE="0")
-   stage=root/"Scripts/stage-v1-config.py"
-   subprocess.run(["python3",str(stage),str(root),str(directory/"beta")],env=env,check=True)
-   beta=json.loads((directory/"beta/mygo.json").read_text())
-   self.assertEqual(beta["updates"]["url"],"https://github.com/Licoy/Quosparr/releases/download/v1-beta")
-   self.assertNotIn("github",beta["updates"])
-   self.assertNotIn("tagPrefix",beta["updates"])
-   env["V1_DEVELOPMENT_PACKAGE"]="1"
-   subprocess.run(["python3",str(stage),str(root),str(directory/"dev")],env=env,check=True)
-   self.assertNotIn("updates",json.loads((directory/"dev/mygo.json").read_text()))
-
-class RenameNoticeTests(unittest.TestCase):
- def test_old_feed_cannot_install_new_bundle_identity(self):
-  root=pathlib.Path(__file__).resolve().parents[2]
-  with tempfile.TemporaryDirectory() as temporary:
-   notice=pathlib.Path(temporary)/"appcast.xml"
-   subprocess.run(["python3",str(root/"Scripts/legacy-install-notice.py"),str(root/"mygo.json"),str(notice),"v1.0.0"],check=True)
-   item=builds.ET.parse(notice).find(".//item")
-   self.assertIsNotNone(item)
-   self.assertIsNone(item.find("enclosure"))
-   self.assertEqual(item.findtext("link"),"https://github.com/Licoy/Quosparr/releases/tag/v1.0.0")
-   self.assertEqual(item.findtext(f"{{{builds.NS}}}version"),str(json.loads((root/"mygo.json").read_text())["macos"]["infoPlist"]["CFBundleVersion"]))
+  result=subprocess.run(["python3",str(root/"Scripts/legacy-install-notice.py")],capture_output=True)
+  self.assertNotEqual(result.returncode,0)
+  self.assertIn(b"signed XML and ZIP",result.stderr)
 
 if __name__=="__main__": unittest.main()

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/licoy/quosparr/internal/personal"
 	"net/url"
 	"os"
 	"path"
@@ -63,7 +64,7 @@ func sparkleAppcast(args []string) error {
 		return errors.New("configuration lacks version, CFBundleVersion or minimumSystemVersion")
 	}
 	u, err := url.Parse(*download)
-	if err != nil || u.Scheme != "https" || u.Host == "" || path.Base(u.Path) != filepath.Base(*file) {
+	if err != nil || !personal.UpdateURL(u, false) || path.Base(u.Path) != filepath.Base(*file) {
 		return errors.New("download URL must be https and name the archive")
 	}
 	key, err := sparkleKey(cfg.MacOS.InfoPlist.SUPublicEDKey)
@@ -90,7 +91,7 @@ func appcastXML(cfg sparkleConfig, download string, length int, signature string
 	}
 	b.WriteString(xml.Header)
 	b.WriteString(`<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">` + "\n")
-	b.WriteString("  <channel>\n    <title>Quosparr</title>\n    <item>\n")
+	b.WriteString("  <channel>\n    <title>CodexRunway · Klain97710</title>\n    <item>\n")
 	fmt.Fprintf(&b, "      <title>%s</title>\n", text(cfg.Version))
 	fmt.Fprintf(&b, "      <pubDate>%s</pubDate>\n", date.Format(time.RFC1123Z))
 	fmt.Fprintf(&b, "      <sparkle:version>%s</sparkle:version>\n", text(cfg.MacOS.InfoPlist.CFBundleVersion))
