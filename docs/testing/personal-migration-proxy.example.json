@@ -1,0 +1,29 @@
+{
+  "mode": [
+    "regular"
+  ],
+  "listen_host": "127.0.0.1",
+  "listen_port": 8080,
+  "allow_hosts": [
+    "^github\\.com(?::443)?$",
+    "^api\\.github\\.com(?::443)?$"
+  ],
+  "ssl_insecure": false,
+  "upstream_cert": false,
+  "connection_strategy": "lazy",
+  "flow_detail": 0,
+  "termlog_verbosity": "error",
+  "command_history": false,
+  "onboarding": false,
+  "map_local": [
+    "|~m GET|^https://github\\.com/Klain97710/CodexRunway/releases/latest/download/appcast\\-arm64\\.xml$|/private/tmp/personal-runway-update-vm/candidate/appcast-arm64.xml",
+    "|~m GET|^https://github\\.com/Klain97710/CodexRunway/releases/download/personal\\-v0\\.2\\.0/CodexRunway\\-macos\\-arm64\\.zip$|/private/tmp/personal-runway-update-vm/candidate/CodexRunway-macos-arm64.zip",
+    "|~m GET|^https://github\\.com/Klain97710/CodexRunway/releases/download/personal\\-v0\\.2\\.1/update\\-darwin\\-arm64\\.json$|/private/tmp/personal-runway-update-vm/next/update-darwin-arm64.json",
+    "|~m GET|^https://github\\.com/Klain97710/CodexRunway/releases/download/personal\\-v0\\.2\\.1/codex\\-runway\\-0\\.2\\.1\\-darwin\\-arm64\\.tar\\.gz$|/private/tmp/personal-runway-update-vm/next/codex-runway-0.2.1-darwin-arm64.tar.gz",
+    "|~m GET|^https://github\\.com/Klain97710/CodexRunway/releases/latest/download/appcast\\-x86_64\\.xml$|/private/tmp/personal-runway-update-vm/candidate/appcast-x86_64.xml",
+    "|~m GET|^https://github\\.com/Klain97710/CodexRunway/releases/download/personal\\-v0\\.2\\.0/CodexRunway\\-macos\\-x86_64\\.zip$|/private/tmp/personal-runway-update-vm/candidate/CodexRunway-macos-x86_64.zip",
+    "|~m GET|^https://github\\.com/Klain97710/CodexRunway/releases/download/personal\\-v0\\.2\\.1/update\\-darwin\\-amd64\\.json$|/private/tmp/personal-runway-update-vm/next/update-darwin-amd64.json",
+    "|~m GET|^https://github\\.com/Klain97710/CodexRunway/releases/download/personal\\-v0\\.2\\.1/codex\\-runway\\-0\\.2\\.1\\-darwin\\-amd64\\.tar\\.gz$|/private/tmp/personal-runway-update-vm/next/codex-runway-0.2.1-darwin-amd64.tar.gz",
+    "|~m GET|^https://api\\.github\\.com/repos/Klain97710/CodexRunway/releases\\?per_page=100\\&page=1$|/private/tmp/personal-runway-update-vm/next/releases-page-1.json"
+  ]
+}

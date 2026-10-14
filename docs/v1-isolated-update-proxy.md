@@ -1,3 +1,5 @@
+> 上游历史文档：本定制版保持原身份，不走更名提示或作者更新源。执行时改用 [个人迁移更新验收](development/personal-migration-update-validation.md)。
+
 # v1 隔离 HTTPS 更新代理
 
 状态：配置与步骤用于后续版本公开发布前的隔离验收，代理配置不等于真实更新已通过；旧名称客户端只能接收手动下载提示，以下在线 ZIP 升级流程仅用于 bundle ID 已为 com.quosparr.app 的 Swift 构建；本文件服务于[隔离验收清单](v1-acceptance-checklist.md)，不能把示例语法检查记为 Sparkle / mygo 真实更新通过

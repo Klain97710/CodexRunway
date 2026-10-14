@@ -1,3 +1,5 @@
+> 2026-10-14 执行修订（用户选择 1）：Go 版最低 macOS 13；macOS 12 保留 Swift 稳定线。Go 1.27 原生最低系统为 13，不能仅改 plist 继续宣称 12+。首个诊断包 build 2000 已作废，build 2001 已通过双架构校验；最终冻结源码包使用 build 2002。以下原计划中的 macOS 12 要求改为验证旧 Swift 留存和拒绝不兼容更新；Go 最低系统实测改为 macOS 13。
+
 # Quosparr 迁移分支验证 Implementation Plan
 
 > **For agentic workers:** 在主线程顺序执行，遵循用户 AGENTS.md 的工具映射，不派发子代理。下列复选框记录实际结果；完成计划不等于已执行迁移。
@@ -8,7 +10,23 @@
 
 **Tech Stack:** Go 1.27.1、mygo v0.4.8、purego 与上游锁定依赖；Swift WidgetKit/桥接；GitHub Actions；旧客户端 Sparkle → Go 包，后续 mygo 更新。
 
-**设计依据：** [迁移验证设计](../specs/2026-10-14-quosparr-migration-design.md)。本次仅制定计划，未建立迁移分支、未执行 Go 测试、未安装候选版。
+**设计依据：** [迁移验证设计](../specs/2026-10-14-quosparr-migration-design.md)。计划已获用户授权执行。源码适配、自动化和本地候选构建已完成，远程 CI 与隔离桌面验收按下表继续；尚未安装候选版。
+
+## 执行状态（2026-10-14）
+
+| Task | 当前状态 | 证据 / 剩余 |
+| --- | --- | --- |
+| 1 | 完成 | 隔离 worktree、固定合并、双份 Swift 备份；稳定安装未改 |
+| 2 | 源码完成，桌面未验收 | 隔离与禁用更新测试通过；双架构开发包交给 CI |
+| 3 | 源码和合成数据测试完成 | 固定 Swift Core 双向读回、SQLite 复用通过；真实 Keychain/桌面锁待测 |
+| 4 | 源码和运行层测试完成 | Codex 正向控制、Grok/互动零调用通过；桌面待测 |
+| 5 | 源码、离屏布局与契约测试完成 | 三列/Pro/动作菜单已恢复；旧 Widget 实际刷新待测 |
+| 6 | 源码、离线信任与草稿策略通过 | 两代签名及个人下载限制通过；真实安装链待测 |
+| 7 | 本地回归和双架构打包通过 | CI 绑定提交与最终 2002 构建进行中 |
+| 8 | NOT RUN | 已提供隔离代理/执行手册；缺一次性 macOS 测试环境 |
+| 9 | NOT RUN | 缺桌面、最低系统、Intel、Widget 和真实回退证据 |
+
+复选框仅勾选完整执行的项目；包含真实桌面/系统验收的组合项保持未完成。详见[基线与门槛](../../development/quosparr-migration-baseline.md)和[隔离更新手册](../../development/personal-migration-update-validation.md)。
 
 ---
 
@@ -18,13 +36,13 @@
 
 **涉及文件：** 新增 `docs/development/quosparr-migration-baseline.md`、`docs/development/quosparr-migration-validation.md`；修改迁移分支 `AGENTS.md`；不改稳定分支应用源码。
 
-- [ ] 检查工作区和远程分支，记录稳定代码 `895e991d67eea3f8500065b605741f42aee54ae3`、上游 `94ce1869d2603593972846baa811672c1c2e903c`。当前工具链已读到 Go 1.27.1；执行时重新核对，不自动升级框架。
-- [ ] 保存当前实际安装包和 `personal-v0.1.0` 原始发布包的独立备份、SHA256、签名、架构和版本清单。当前本机包包含后续定制，不能用最早的发布包冒充其等价回退包。
-- [ ] 创建 `personal/legacy-swift` 指向稳定代码；从执行时 `personal/main` 创建 `personal/migrate-quosparr-v1` 和独立 worktree。已有同名分支先核对，不强制覆盖。文档提交可以在稳定代码之后，应用代码基线仍固定上述 SHA。
-- [ ] 在迁移 worktree 合并固定上游，采用正常合并记录祖先关系；逐个解决修改/删除冲突，采用 Go 结构，不将旧 Swift UI 文件机械恢复到新架构。旧定制提交用作行为规格，不整体 cherry-pick。
-- [ ] 更新迁移分支 `AGENTS.md`：Go 分层、固定依赖、Codex-only、旧产品身份、隔离运行、草稿发布；保留隐私和数据保护规则。稳定分支继续遵循原 Swift 约定。
-- [ ] 首次推送前移除上游自动公开步骤，限制发布标签为 `personal-v*`，分支 push 只跑验证。此阶段禁用发布 job，不接入私钥。
-- [ ] 提交 `chore: establish isolated Quosparr migration baseline`。
+- [x] 检查工作区和远程分支，记录稳定代码 `895e991d67eea3f8500065b605741f42aee54ae3`、上游 `94ce1869d2603593972846baa811672c1c2e903c`。当前工具链已读到 Go 1.27.1；执行时重新核对，不自动升级框架。
+- [x] 保存当前实际安装包和 `personal-v0.1.0` 原始发布包的独立备份、SHA256、签名、架构和版本清单。当前本机包包含后续定制，不能用最早的发布包冒充其等价回退包。
+- [x] 创建 `personal/legacy-swift` 指向稳定代码；从执行时 `personal/main` 创建 `personal/migrate-quosparr-v1` 和独立 worktree。已有同名分支先核对，不强制覆盖。文档提交可以在稳定代码之后，应用代码基线仍固定上述 SHA。
+- [x] 在迁移 worktree 合并固定上游，采用正常合并记录祖先关系；逐个解决修改/删除冲突，采用 Go 结构，不将旧 Swift UI 文件机械恢复到新架构。旧定制提交用作行为规格，不整体 cherry-pick。
+- [x] 更新迁移分支 `AGENTS.md`：Go 分层、固定依赖、Codex-only、旧产品身份、隔离运行、草稿发布；保留隐私和数据保护规则。稳定分支继续遵循原 Swift 约定。
+- [x] 首次推送前移除上游自动公开步骤，限制发布标签为 `personal-v*`，分支 push 只跑验证。此阶段禁用发布 job，不接入私钥。
+- [x] 提交 `chore: establish isolated Quosparr migration baseline`。
 
 **门槛 G0：** 稳定应用未替换；工作目录隔离；固定上游可追溯；迁移分支 push 不会发布 Release。`main` 保持上游基线用途，其快进与 `personal/main` 的候选接纳分开处理。
 
@@ -34,14 +52,14 @@
 
 **新增：** `Scripts/run-personal-migration.py`、`Scripts/Tests/test-personal-package.py`、`internal/app/personal_isolation_test.go`。
 
-- [ ] 用测试先定义两个构建档位：`migration-dev` 与 `replacement-candidate`。前者用 `CodexRunway Migration.app`、`com.github.codex-runway.migration`、独立 scheme/Widget/Keychain/偏好；后者严格使用设计文档中的旧正式身份。
-- [ ] `migration-dev` 强制禁用在线更新、生产偏好导入、登录项、真实通知和真实凭据访问；只接合成 fixture/内存凭据。身份不同不等于隔离：测试必须证明文件路径、系统凭据服务和后台任务也隔离。
-- [ ] `run-personal-migration.py` 只接受有测试标记的沙盒目录，记录非敏感配置，拒绝真实账号路径、符号链接逃逸和生产偏好域。退出时只关闭该脚本启动的进程，不清理其他应用数据。
+- [x] 用测试先定义两个构建档位：`migration-dev` 与 `replacement-candidate`。前者用 `CodexRunway Migration.app`、`com.github.codex-runway.migration`、独立 scheme/Widget/Keychain/偏好；后者严格使用设计文档中的旧正式身份。
+- [x] `migration-dev` 强制禁用在线更新、生产偏好导入、登录项、真实通知和真实凭据访问；只接合成 fixture/内存凭据。身份不同不等于隔离：测试必须证明文件路径、系统凭据服务和后台任务也隔离。
+- [x] `run-personal-migration.py` 只接受有测试标记的沙盒目录，记录非敏感配置，拒绝真实账号路径、符号链接逃逸和生产偏好域。退出时只关闭该脚本启动的进程，不清理其他应用数据。
 - [ ] 完整主程序先仅在一次性 VM/专用用户运行。开发机只进行显式目录依赖注入的测试和构建；不覆盖 shell 的 HOME、CODEX_HOME 等现有环境变量来模拟安全隔离。
-- [ ] 不原样执行上游 `Scripts/run-dev-app.sh`；它以正式身份和真实用户环境运行。开发入口应默认使用上述隔离档位，对正式候选运行明确提示实际目标路径。
-- [ ] 保留 `QUOSPARR_DEV_*` 测试钩子；检查 `QUOSPARR_PREFS_DOMAIN` 仅隔离偏好，不把它当作文件、Keychain 或 Widget 的隔离证明。
+- [x] 不原样执行上游 `Scripts/run-dev-app.sh`；它以正式身份和真实用户环境运行。开发入口应默认使用上述隔离档位，对正式候选运行明确提示实际目标路径。
+- [x] 保留 `QUOSPARR_DEV_*` 测试钩子；检查 `QUOSPARR_PREFS_DOMAIN` 仅隔离偏好，不把它当作文件、Keychain 或 Widget 的隔离证明。
 - [ ] 无 secrets 生成两个架构的开发包，验证开发构建标签和 updater-disabled 行为；发布构建缺少密钥必须失败。
-- [ ] 提交 `build: isolate personal migration development packages`。
+- [x] 提交 `build: isolate personal migration development packages`。
 
 **门槛 G1：** 试运行不会触碰日常账号/偏好/登录项/生产更新源。若 VM 尚不可用，继续纯测试与打包，桌面验收标记未执行。
 
@@ -54,14 +72,14 @@
 **修改：** `main.go`、`mygo.json`、`internal/platform/{paths,brand_migration}.go`、`internal/store/{domain,brand_migration,preferences_codec}.go`、`internal/netx/{credentials,secrets_darwin,brand_migration}.go`、`internal/app/{paths,login_migration}.go`、`Scripts/{stage-v1-config.py,package-v1-app.sh,verify-v1-app.sh}`。
 
 - [ ] 从稳定 Swift 基线生成合成样本：账号索引/导入包、代理引用、完整偏好、缓存、带 WAL 的成本库、额度历史和 Widget 快照。保留所有上游 `testdata/swift_*`，新增亲友版 fixture，禁止用真实账号文件填充 fixture。
-- [ ] 产品常量集中 `internal/personal`；`mygo.json` 保持唯一版本源。测试比较包内 manifest、运行时常量、Swift Widget 输出，防止名称/标识/仓库分叉。不重命名上游 Go module。
+- [x] 产品常量集中 `internal/personal`；`mygo.json` 保持唯一版本源。测试比较包内 manifest、运行时常量、Swift Widget 输出，防止名称/标识/仓库分叉。不重命名上游 Go module。
 - [ ] 正式配置恢复 `CodexRunway.app`、旧 bundle ID、数据目录、偏好域、Keychain service、URL scheme 和 App Group。保留标识型 ad-hoc designated requirement，实际测试钥匙串授权行为，不能承诺无需系统授权提示。
 - [ ] 正式旧目录与目标目录相同，跳过上游更名复制事务；旧 legacy lock 与 current lock 只获取一次，且在任何迁移或写入前持有锁。验证 Swift 先启/Go 先启、退出重启及更新重启均只有一个写入者。
-- [ ] Go 读取稳定版 fixture，再由 Swift 基线读取 Go 写回的副本；字段级比较，允许的变化只有提供方归一化、已声明新字段默认值和正常派生缓存。保留未知字段和旧枚举，坏数据不得重置为默认并覆盖原件。
+- [x] Go 读取稳定版 fixture，再由 Swift 基线读取 Go 写回的副本；字段级比较，允许的变化只有提供方归一化、已声明新字段默认值和正常派生缓存。保留未知字段和旧枚举，坏数据不得重置为默认并覆盖原件。
 - [ ] 验证账号 ID、当前账号、排序、别名、订阅、token 到期语义、数值精度、时区、SQLite/WAL、缓存时间戳。账号数据的存储格式不得通过“重新导入账号”掩盖兼容问题。
-- [ ] 测试纯安装迁移不写官方 auth；正常 token 刷新允许按原约定写回当前账号；非当前账号只写托管副本，切号/退出登录后的迟到响应不得覆盖当前认证。
-- [ ] 代理凭据读取旧 service 原始 JSON，拒绝双重 base64 包装或 Keychain 失败后直连；目录 0700、账号/快照文件 0600、原子写入保持。
-- [ ] 提交 `feat: preserve personal identity and Swift data compatibility`。
+- [x] 测试纯安装迁移不写官方 auth；正常 token 刷新允许按原约定写回当前账号；非当前账号只写托管副本，切号/退出登录后的迟到响应不得覆盖当前认证。
+- [x] 代理凭据读取旧 service 原始 JSON，拒绝双重 base64 包装或 Keychain 失败后直连；目录 0700、账号/快照文件 0600、原子写入保持。
+- [x] 提交 `feat: preserve personal identity and Swift data compatibility`。
 
 **门槛 G2：** 无需重新导入账号；既有偏好可读取且保留；Swift/Go 单实例排斥；合成数据往返兼容；损坏数据有可见错误且原件不变。
 
@@ -73,13 +91,13 @@
 
 **删除/断开：** `internal/app/panel_reaction.go`、`internal/resettoday/reaction*.go` 的业务实现及其专用测试、`internal/export/reaction.go` 的访客存储调用；先核对引用，保留为旧文件解码所必需的无行为类型。
 
-- [ ] 新配置默认只启用 Codex；测试可显式开启 Grok。沿用已有 `Options.Grok` 可选接口，无需新建多提供方框架。
-- [ ] 在 `StartBackground` 构造 `grok.NewStore`/`NewModule` 之前拦截；初始加载、定时 tick、手动刷新、账号操作、自检、会话/成本扫描和 Widget 需求都不得触发 Grok。仅隐藏控件不算完成。
-- [ ] 读取旧 Grok/Both 偏好后归一化为 Codex/单服务，其余字段不改。保留枚举解码能力、磁盘旧文件和底层测试；无开启入口。
-- [ ] 重置动态保留公开 `/api/status.json`、默认 300 秒、提醒、来源链接与 Widget。缺失字段默认开启；已有 false 保持；删除互动按钮、计数、任务、轮询、cookie jar 和访客文件读写。
+- [x] 新配置默认只启用 Codex；测试可显式开启 Grok。沿用已有 `Options.Grok` 可选接口，无需新建多提供方框架。
+- [x] 在 `StartBackground` 构造 `grok.NewStore`/`NewModule` 之前拦截；初始加载、定时 tick、手动刷新、账号操作、自检、会话/成本扫描和 Widget 需求都不得触发 Grok。仅隐藏控件不算完成。
+- [x] 读取旧 Grok/Both 偏好后归一化为 Codex/单服务，其余字段不改。保留枚举解码能力、磁盘旧文件和底层测试；无开启入口。
+- [x] 重置动态保留公开 `/api/status.json`、默认 300 秒、提醒、来源链接与 Widget。缺失字段默认开启；已有 false 保持；删除互动按钮、计数、任务、轮询、cookie jar 和访客文件读写。
 - [ ] 用可计数的文件/进程/网络替身验证启动、面板打开/关闭、设置变化、超过两次刷新周期、旧深链与 Widget 需求。生产路径 Grok 调用计数、`/api/reaction` 请求数、访客 Cookie 读写均为零；测试同时断言 Codex/公开状态确实有调用，避免以“后台未运行”获得假通过。
-- [ ] Grok 保留实现用显式全提供方配置继续测试；旧 reaction fixture 无运行引用的不必额外清理用户文件。
-- [ ] 提交 `feat: enforce Codex-only personal runtime`。
+- [x] Grok 保留实现用显式全提供方配置继续测试；旧 reaction fixture 无运行引用的不必额外清理用户文件。
+- [x] 提交 `feat: enforce Codex-only personal runtime`。
 
 **门槛 G3：** 黑盒行为证实 Grok 与互动零调用，公开状态和 Codex 正常；不能只靠源码搜索、隐藏 UI 或把测试跳过。
 
@@ -89,14 +107,14 @@
 
 **测试：** 扩展 `internal/runway/statusbar_test.go`、`internal/app/{tray_title,tray_layers_darwin,widgets,privacy_display}_test.go`；新增 `internal/app/personal_widget_contract_test.go`。
 
-- [ ] 以当前已验收 UI 作为基准：`5h | 进度条 | 百分比`、`7d | 进度条 | 百分比`，百分比和条长均为剩余额度；列对齐、100% 不挤压、单行居中；不把上游整段 caption 当作三列。
-- [ ] Pro 100/200/500 隐藏标准 5h，非 Pro 按实际窗口显示；未知订阅不误判为 Pro。保留详情原值和用户主动启用的模型专属窗口。覆盖登录切换时的 tier 变化、缺 weekly 数据及空态。
-- [ ] 上游新右键菜单目前仅有面板/设置/退出。补齐现有定制版的刷新、更新、索引修复、Codex 文件夹及详情窗口等动作；映射到既有 UI 能力，禁止恢复灰色摘要块。独立详情窗口若新框架无等效能力，记录为迁移差异并实现后再判通过，不能静默删除。
+- [x] 以当前已验收 UI 作为基准：`5h | 进度条 | 百分比`、`7d | 进度条 | 百分比`，百分比和条长均为剩余额度；列对齐、100% 不挤压、单行居中；不把上游整段 caption 当作三列。
+- [x] Pro 100/200/500 隐藏标准 5h，非 Pro 按实际窗口显示；未知订阅不误判为 Pro。保留详情原值和用户主动启用的模型专属窗口。覆盖登录切换时的 tier 变化、缺 weekly 数据及空态。
+- [x] 上游新右键菜单目前仅有面板/设置/退出。补齐现有定制版的刷新、更新、索引修复、Codex 文件夹及详情窗口等动作；映射到既有 UI 能力，禁止恢复灰色摘要块。独立详情窗口若新框架无等效能力，记录为迁移差异并实现后再判通过，不能静默删除。
 - [ ] 复用既有布局/渲染测试，覆盖 1x/2x、深浅色、7 种语言、0/100%、长错误文本和 Pro 单行。菜单行删除不新增只数行数的实现镜像测试；动作分派及副作用保留必要行为测试。
-- [ ] Widget 除 bundle ID 外，还需恢复四个 kind 字符串、Intent 名称/参数、URL scheme、快照路径和读取 entitlements；源码目录可沿用上游名称，用户保存的系统契约不可随之改名。
-- [ ] Go 仅发布 Codex 快照；Swift 端旧 grok/both 配置可解码、显示 Codex；使用静态契约测试对比 Go 和 Swift，不依赖已经移除的 Core 包。
+- [x] Widget 除 bundle ID 外，还需恢复四个 kind 字符串、Intent 名称/参数、URL scheme、快照路径和读取 entitlements；源码目录可沿用上游名称，用户保存的系统契约不可随之改名。
+- [x] Go 仅发布 Codex 快照；Swift 端旧 grok/both 配置可解码、显示 Codex；使用静态契约测试对比 Go 和 Swift，不依赖已经移除的 Core 包。
 - [ ] 独立测试用户先在旧版添加四种 Widget，再覆盖候选，检查保留布局、更新、点击跳转；快照未变化也要跨一个计划刷新周期验证。
-- [ ] 提交 `feat: restore personal tray and Widget behavior`。
+- [x] 提交 `feat: restore personal tray and Widget behavior`。
 
 **门槛 G4：** 定制视觉与操作均保留；旧 Widget 无需重新添加且有真实刷新证据；新增账号隐私模式可用。Widget 只注册成功不算完整验收。
 
@@ -110,17 +128,17 @@
 
 **新增发布工具入口：** `Scripts/prepare-personal-sparkle-tools.sh`、`Scripts/sign-personal-appcast.sh`。仅供构建和验收使用，不恢复 Swift 主应用依赖。固定 Sparkle 2.9.3 的 `Sparkle-for-Swift-Package-Manager.zip`，SHA256 为 `3a5d7fd698acc39c122e75764ed3614b472b284cc483f32ae7006d86c513370c`；该值已从稳定版锁定的 Sparkle 依赖自身 `Package.swift` 核对。
 
-- [ ] 所有更新/下载/反馈/主页/代理测试入口改为 `Klain97710/CodexRunway`。代理测试用公开仓库地址，不依赖首个新版清单存在。
-- [ ] 更新 URL 校验覆盖初始 URL、feed/manifest 内资产 URL 和重定向；拒绝上游仓库、相似域、任意仓库、降级 HTTP、URL 内凭据和异常路径。允许 GitHub 正常资产 CDN 重定向，并剥离不应跨主机转发的凭据；不能用只接受 github.com 导致所有资产下载失败。
-- [ ] 保留旧 Sparkle 公钥/私钥；为 mygo 单独生成并限制权限保存密钥，新增 `MYGO_UPDATE_PRIVATE_KEY` secret。读取框架固定版本签名接口确认编码，不以两者同为 Ed25519 就复用密钥或猜测格式；日志不输出密钥。
-- [ ] 旧 Swift 客户端继续请求个人 `appcast-arm64.xml` / `appcast-x86_64.xml`，其中 enclosure 指向同身份 CodexRunway ZIP，由旧 Sparkle 密钥签名。删除上游的“旧名称只提供更名下载页”分支对本定制包的影响。
-- [ ] 为旧包的 `SURequireSignedFeed=true` 补齐 XML feed 签名：上游 `release-assets/sparkle.go` 只有 ZIP 的 `sparkle:edSignature`，不可直接用作最终 feed。采用固定 Sparkle 2.9.3 `sign_update` 对生成后的 XML 签名，再以同版本官方工具验签 XML 与 ZIP；密钥从受限文件/标准输入提供。新增“ZIP 签名正确但 feed 未签/损坏仍被拒绝”用例。XML 签名后不得再改下载 URL、版本或排版。
-- [ ] 新 Go 包包含原 `SUPublicEDKey` 以维持旧客户端安装校验，同时 mygo 配置使用自己的新公钥；后续用自己的 `update-darwin-arm64.json` 和 `update-darwin-amd64.json` 及签名归档。Go 包不重新嵌入 Sparkle 运行库。
+- [x] 所有更新/下载/反馈/主页/代理测试入口改为 `Klain97710/CodexRunway`。代理测试用公开仓库地址，不依赖首个新版清单存在。
+- [x] 更新 URL 校验覆盖初始 URL、feed/manifest 内资产 URL 和重定向；拒绝上游仓库、相似域、任意仓库、降级 HTTP、URL 内凭据和异常路径。允许 GitHub 正常资产 CDN 重定向，并剥离不应跨主机转发的凭据；不能用只接受 github.com 导致所有资产下载失败。
+- [x] 保留旧 Sparkle 公钥/私钥；为 mygo 单独生成并限制权限保存密钥，新增 `MYGO_UPDATE_PRIVATE_KEY` secret。读取框架固定版本签名接口确认编码，不以两者同为 Ed25519 就复用密钥或猜测格式；日志不输出密钥。
+- [x] 旧 Swift 客户端继续请求个人 `appcast-arm64.xml` / `appcast-x86_64.xml`，其中 enclosure 指向同身份 CodexRunway ZIP，由旧 Sparkle 密钥签名。删除上游的“旧名称只提供更名下载页”分支对本定制包的影响。
+- [x] 为旧包的 `SURequireSignedFeed=true` 补齐 XML feed 签名：上游 `release-assets/sparkle.go` 只有 ZIP 的 `sparkle:edSignature`，不可直接用作最终 feed。采用固定 Sparkle 2.9.3 `sign_update` 对生成后的 XML 签名，再以同版本官方工具验签 XML 与 ZIP；密钥从受限文件/标准输入提供。新增“ZIP 签名正确但 feed 未签/损坏仍被拒绝”用例。XML 签名后不得再改下载 URL、版本或排版。
+- [x] 新 Go 包包含原 `SUPublicEDKey` 以维持旧客户端安装校验，同时 mygo 配置使用自己的新公钥；后续用自己的 `update-darwin-arm64.json` 和 `update-darwin-amd64.json` 及签名归档。Go 包不重新嵌入 Sparkle 运行库。
 - [ ] 验证实际旧客户端要求的全部签名层和解包前校验，不能仅以 ZIP 离线签名通过代替安装验证。更新失败应保留原应用；关闭自动检查的偏好跨代保持，开启时可沿用上游启动检查/每小时检查。
-- [ ] 发布版本从个人 `0.2.0`、build `2000` 起。候选重打递增 build，宿主/Widget/清单一致；与上游 `1.0.3/103` 分离；正式标签 `personal-v0.2.0` 与候选 manifest 版本匹配。将 config staging 强制写入的 `updates.tagPrefix="v"` 改成 `personal-v`，验证 mygo 对个人标签和产品版本的解析。
-- [ ] 分支 push 仅产生 Actions artifacts；正式标签仅生成 draft、`latest=false`，没有自动公开步骤。Release notes/资产 URL 使用当前个人仓库；不触发上游 `v*` / `beta-v*`；不修改既有发布/标签。
-- [ ] 针对最终嵌入 Widget、桥接、SQLite 并完成签名后的同一 bundle 生成 ZIP、tar.gz、DMG、两代清单和 SHA256SUMS，防止签名发生在后续资源修改之前。
-- [ ] 提交 `build: bridge personal Sparkle and mygo update channels`。
+- [x] 发布版本从个人 `0.2.0`、build `2000` 起。候选重打递增 build，宿主/Widget/清单一致；与上游 `1.0.3/103` 分离；正式标签 `personal-v0.2.0` 与候选 manifest 版本匹配。将 config staging 强制写入的 `updates.tagPrefix="v"` 改成 `personal-v`，验证 mygo 对个人标签和产品版本的解析。
+- [x] 分支 push 仅产生 Actions artifacts；正式标签仅生成 draft、`latest=false`，没有自动公开步骤。Release notes/资产 URL 使用当前个人仓库；不触发上游 `v*` / `beta-v*`；不修改既有发布/标签。
+- [x] 针对最终嵌入 Widget、桥接、SQLite 并完成签名后的同一 bundle 生成 ZIP、tar.gz、DMG、两代清单和 SHA256SUMS，防止签名发生在后续资源修改之前。
+- [x] 提交 `build: bridge personal Sparkle and mygo update channels`。
 
 **门槛 G5：** 两套签名分别验证，个人 URL 限制不阻断正常下载；开发包不更新；工作流只能创建个人草稿。
 
@@ -129,7 +147,7 @@
 **修改：** `.github/workflows/ci.yml`、`Scripts/Tests/test-personal-package.py`；新增 `Scripts/Tests/verify-personal-regressions.py`。后者只编排确定的检查并汇总结果，不吞掉失败或改写 fixture。
 
 - [ ] 在独立 runner/测试用户中先跑上游基础测试，再跑定制测试。记录上游原生问题、环境问题和迁移引入问题，不以整体 skip 或改期望值掩盖失败。
-- [ ] 在 Go worktree 执行以下命令；Swift 基线的 `swift test` 留在保留 worktree，不能在已移除 Package.swift 的 Go 分支执行：
+- [x] 在 Go worktree 执行以下命令；Swift 基线的 `swift test` 留在保留 worktree，不能在已移除 Package.swift 的 Go 分支执行：
 
 ```bash
 go test -count=1 -timeout=10m ./...
@@ -144,8 +162,8 @@ python3 Scripts/Tests/test-workflow-drafts.py
 
 上述 `test-personal-*` 为本计划新增脚本，须先实现后执行；预期全部退出 0，无跳过的核心验收项。Race 运行在原生 arm64 CI；需要桌面会话的测试安排到隔离桌面环境，不把无桌面跳过计为通过。
 
-- [ ] Codex 回归覆盖 OAuth/import/API Key、多账号刷新、配额、重置券、估算、成本、Token 图、会话索引修复、隐私开关；故障用 fake 网络和假凭据，OAuth 真实授权只在正常人工冒烟阶段验证。
-- [ ] 并发回归覆盖刷新重入、部分失败、超时取消、切号后迟到响应、退出时 goroutine 回收；缓存保留真实采集时间，网络错误日志脱敏；代理失败不能直连。
+- [x] Codex 回归覆盖 OAuth/import/API Key、多账号刷新、配额、重置券、估算、成本、Token 图、会话索引修复、隐私开关；故障用 fake 网络和假凭据，OAuth 真实授权只在正常人工冒烟阶段验证。
+- [x] 并发回归覆盖刷新重入、部分失败、超时取消、切号后迟到响应、退出时 goroutine 回收；缓存保留真实采集时间，网络错误日志脱敏；代理失败不能直连。
 - [ ] 依次构建 arm64、x86_64，分开输出目录；在 Task 2 脚本适配后运行：
 
 ```bash
@@ -153,9 +171,9 @@ V1_DEVELOPMENT_PACKAGE=1 ARCH=arm64 bash Scripts/package-v1-app.sh
 V1_DEVELOPMENT_PACKAGE=1 ARCH=x86_64 bash Scripts/package-v1-app.sh
 ```
 
-- [ ] 生产候选从受控签名环境构建，用适配后的 `verify-v1-app.sh` 验证最终 manifest、Mach-O 架构/最低系统、Widget/桥接/SQLite、动态库 rpath、签名、产品身份、版本和更新公钥；DMG 运行 `hdiutil verify`。构建主机的 SDK 版本不是最低系统运行证明。
+- [x] 生产候选从受控签名环境构建，用适配后的 `verify-v1-app.sh` 验证最终 manifest、Mach-O 架构/最低系统、Widget/桥接/SQLite、动态库 rpath、签名、产品身份、版本和更新公钥；DMG 运行 `hdiutil verify`。构建主机的 SDK 版本不是最低系统运行证明。
 - [ ] 保存产物 SHA、CI run URL、测试统计和失败摘要；验证报告只写结论，不放认证数据。本轮 CI 必需目标为 macOS 两架构，Windows/Linux 构建如保留仅作额外兼容信号，不是已支持声明。
-- [ ] 提交 `test: gate personal migration regressions and packaging`。
+- [x] 提交 `test: gate personal migration regressions and packaging`。
 
 **门槛 G6：** 自动回归和签名构建全部通过，CI 绑定候选确切 SHA。出现后续代码/资源改动须重打受影响产物，不能沿用旧报告。
 
@@ -189,7 +207,8 @@ V1_DEVELOPMENT_PACKAGE=1 ARCH=x86_64 bash Scripts/package-v1-app.sh
 
 | 环境 | 必须验证 | 环境不足时的处理 |
 | --- | --- | --- |
-| macOS 12/13 | 启动、状态栏/菜单/设置、配额、更新、无 Widget 时启动 | 标记未验证，阻止完整公开发布 |
+| macOS 12 | 继续运行 Swift，旧 Sparkle 客户端拒绝 Go 的最低系统 13 更新 | 标记未验证，阻止完整公开发布 |
+| macOS 13 | Go 启动、状态栏/菜单/设置、配额、更新、无 Widget 时启动 | 标记未验证，阻止完整公开发布 |
 | macOS 14+ arm64 | 上述项目、旧 Widget 保留及刷新、登录项、权限、覆盖升级 | VM/专用用户完成后才做日常机正常冒烟 |
 | Intel macOS | x86_64 原生启动、更新/重启、配额和可用系统上的 Widget | 交叉构建/Rosetta 不算原生验收；缺机器则保留候选 |
 
