@@ -19,8 +19,8 @@
 ## Data and execution safety
 
 - Never log or commit tokens, keys, credentials, account identifiers or full auth documents. Tests use synthetic fixtures.
-- Do not launch the migration desktop app against real user data. A temporary HOME alone does not isolate Keychain/UserDefaults. Full GUI acceptance requires a disposable VM or dedicated test user.
-- Keep the installed Swift app unchanged until acceptance. No real auth in failure tests; no system proxy/DNS changes on this host.
+- Default migration validation must not launch against real user data. On 2026-10-14 the user explicitly authorized replacing their local arm64 app with 0.2.0/2002 and normal launch verification; that installation is complete. This exception does not authorize failure tests against real accounts. A temporary HOME does not isolate Keychain/UserDefaults; full GUI/failure acceptance still requires a disposable VM or dedicated test user.
+- The user-authorized local install now runs Go 0.2.0/2002; a verified Swift app/data/preferences backup is retained outside Git. Preserve that rollback point. No real auth in failure tests; no system proxy/DNS changes on this host.
 - Production application data remains ~/.codex-runway; credential directories 0700, auth files and snapshots 0600, atomic writes. Acquire the legacy-compatible single lock before migrations or writes; skip upstream directory renaming when source and destination coincide.
 - Official Codex auth changes are limited to legitimate OAuth refresh or user-requested account switching. Non-current account refresh only writes the managed copy; reject stale writes after external switch/logout.
 - Session repair only edits session_index.jsonl after backup; never delete session directories.
