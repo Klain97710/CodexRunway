@@ -4,6 +4,7 @@ package app
 
 import (
 	"context"
+	"github.com/licoy/quosparr/internal/personal"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -32,7 +33,7 @@ func TestLivePreferencesDoNotReadGrokIndexOnUIThread(t *testing.T) {
 	}
 	g := newGrokBridge(grok.NewModule(st), p, nil)
 	g.reload(false)
-	svc := runway.New(runway.Options{Preferences: p, Grok: g})
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Grok: g})
 	defer svc.Close()
 	rt := &liveApp{svc: svc, grok: g, reset: newResetBridge(e.s, p, nil)}
 	e.s.OnChange(func() { rt.pushPreferences(e.s) })
@@ -119,7 +120,7 @@ func TestLiveUIActionsReturnDuringBackgroundHistoryRead(t *testing.T) {
 			}
 			auth := codex.APIKeyAuth("synthetic-local-test")
 			g := newGrokBridge(nil, p, nil)
-			svc := runway.New(runway.Options{Preferences: p, Grok: g, EstimateHistoryPath: path, Sources: runway.Sources{
+			svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Grok: g, EstimateHistoryPath: path, Sources: runway.Sources{
 				LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) { return auth, nil },
 				FetchQuota: func(context.Context, codexapi.Auth) (codexapi.QuotaSnapshot, error) {
 					return codexapi.QuotaSnapshot{}, nil

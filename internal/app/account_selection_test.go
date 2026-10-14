@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"github.com/licoy/quosparr/internal/personal"
 	"os"
 	"path/filepath"
 	"testing"
@@ -51,7 +52,7 @@ func TestAccountBrowserLoginEntryAndCancelControl(t *testing.T) {
 	_ = e.s.Load()
 	u := newSettingsUI(e.s, SettingsOptions{})
 	f := accountFormOf(u)
-	rt := &liveApp{svc: runway.New(runway.Options{})}
+	rt := &liveApp{svc: runway.New(runway.Options{Features: personal.Features{Grok: true}})}
 	tt := ui.NewTester(func(c *ui.Context) {
 		applyTheme(c)
 		ui.Column(c).Fill().Padding(20).Gap(8).Children(func() { renderCodexAccounts(c, u, f, rt) })

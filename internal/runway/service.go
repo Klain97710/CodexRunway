@@ -2,6 +2,7 @@ package runway
 
 import (
 	"context"
+	"github.com/licoy/quosparr/internal/personal"
 	"sync"
 	"time"
 
@@ -30,6 +31,7 @@ const (
 
 // Options configures a Service.
 type Options struct {
+	Features    personal.Features
 	Sources     Sources
 	Preferences store.Preferences
 
@@ -181,6 +183,10 @@ type flight struct {
 
 // New builds a Service. Nothing runs until Start (or a Refresh call).
 func New(o Options) *Service {
+	o.Preferences.ApplyFeatures(o.Features)
+	if !o.Features.Grok {
+		o.Grok = nil
+	}
 	if o.Now == nil {
 		o.Now = time.Now
 	}
@@ -433,6 +439,7 @@ func (s *Service) Epoch() uint64 {
 // SetPreferences applies changed preferences: relabels, re-arms the refresh
 // schedules and fetches what a newly enabled section needs.
 func (s *Service) SetPreferences(p store.Preferences) {
+	p.ApplyFeatures(s.opts.Features)
 	s.mu.Lock()
 	old := s.prefs
 	s.prefs = p.Clone()

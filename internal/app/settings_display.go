@@ -41,13 +41,15 @@ func (u *settingsUI) appearanceGroup(c *ui.Context) {
 		return tx(l, xMacOnly)
 	}
 	settingsGroup(c, icPalette, TintBlue, l.Text(l10n.KeyDisplayAppearanceSection), "", nil, func(row rowFunc) {
-		row(tx(l, xProvider), tx(l, xProviderDescription), func() {
-			providers := store.Providers()
-			selected := max(0, slices.Index(providers, p.SelectedProvider))
-			if ProviderTabs(c.Key("provider"), &selected, ro, l.Text(l10n.KeyProviderCodex), l.Text(l10n.KeyProviderGrok)) {
-				s.SetSelectedProvider(providers[selected])
-			}
-		})
+		if sys.Features.Grok {
+			row(tx(l, xProvider), tx(l, xProviderDescription), func() {
+				providers := store.Providers()
+				selected := max(0, slices.Index(providers, p.SelectedProvider))
+				if ProviderTabs(c.Key("provider"), &selected, ro, l.Text(l10n.KeyProviderCodex), l.Text(l10n.KeyProviderGrok)) {
+					s.SetSelectedProvider(providers[selected])
+				}
+			})
+		}
 		row(l.Text(l10n.KeyAppearance), "", func() {
 			if v, ok := pills(c, "appearance", p.Appearance, store.Appearances(),
 				func(v store.Appearance) string { return l.Text(appearanceKey(v)) }, ro); ok {
@@ -89,12 +91,14 @@ func (u *settingsUI) statusBarRows(c *ui.Context, row rowFunc, p store.Preferenc
 			s.SetStatusBarStyle(v)
 		}
 	})
-	row(l.Text(l10n.KeyStatusBarProviderScope), note, func() {
-		if v, ok := choose(c, "sb-scope", l.Text(l10n.KeyStatusBarProviderScope), p.StatusBarProviderScope, store.StatusBarProviderScopes(),
-			func(v store.StatusBarProviderScope) string { return l.Text(providerScopeKey(v)) }, off); ok {
-			s.SetStatusBarProviderScope(v)
-		}
-	})
+	if s.System().Features.Grok {
+		row(l.Text(l10n.KeyStatusBarProviderScope), note, func() {
+			if v, ok := choose(c, "sb-scope", l.Text(l10n.KeyStatusBarProviderScope), p.StatusBarProviderScope, store.StatusBarProviderScopes(),
+				func(v store.StatusBarProviderScope) string { return l.Text(providerScopeKey(v)) }, off); ok {
+				s.SetStatusBarProviderScope(v)
+			}
+		})
+	}
 	if p.StatusBarDisplayStyle == store.StatusBarStyleMeters {
 		row(l.Text(l10n.KeyStatusBarMetersDetailStyle), note, func() {
 			if v, ok := choose(c, "sb-meters", l.Text(l10n.KeyStatusBarMetersDetailStyle), p.StatusBarMetersDetailStyle, store.MetersDetails(),

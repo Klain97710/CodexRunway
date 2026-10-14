@@ -43,7 +43,11 @@ func (c Client) statusURL() string {
 
 func httpClient(ctx context.Context, c *http.Client, policy netx.Policy) (*http.Client, error) {
 	if c != nil {
-		return c, nil
+		copy := *c
+		if policy == netx.WithoutCookies {
+			copy.Jar = nil
+		}
+		return &copy, nil
 	}
 	return netx.ClientFor(ctx, policy)
 }
@@ -56,7 +60,7 @@ func (c Client) FetchStatus(ctx context.Context, now time.Time, loc *time.Locati
 	}
 	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
 	defer cancel()
-	client, err := httpClient(ctx, c.HTTP, netx.Standard)
+	client, err := httpClient(ctx, c.HTTP, netx.WithoutCookies)
 	if err != nil {
 		return nil, err
 	}

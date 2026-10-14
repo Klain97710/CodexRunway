@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/licoy/quosparr/internal/personal"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -23,7 +24,7 @@ func TestPanelRuntimeRejectsCompletedDetailAfterSameAccountReapply(t *testing.T)
 	auth := codex.APIKeyAuth("synthetic-account-reapply")
 	var switched atomic.Bool
 	index := codex.AccountIndex{ActiveAccountID: "ada", Accounts: []codex.ManagedAccount{{ID: "ada", DisplayName: "Synthetic account"}}}
-	svc := runway.New(runway.Options{Preferences: p, Sources: runway.Sources{
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Sources: runway.Sources{
 		LoadIndex:     func() (codex.AccountIndex, error) { return index, nil },
 		LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) { return auth, nil },
 		SwitchAccount: func(context.Context, string) (codex.SwitchResult, error) {
@@ -107,7 +108,7 @@ func TestPanelRuntimeRefreshUpdatesOpenCostDetail(t *testing.T) {
 	var quotaSignal sync.Once
 	auth := codex.APIKeyAuth("synthetic-refresh")
 	now := time.Now()
-	svc := runway.New(runway.Options{Preferences: p, Now: func() time.Time { return now }, Sources: runway.Sources{
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Now: func() time.Time { return now }, Sources: runway.Sources{
 		LoadIndex:     func() (codex.AccountIndex, error) { return codex.AccountIndex{ActiveAccountID: "ada"}, nil },
 		LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) { return auth, nil },
 		FetchQuota: func(context.Context, codexapi.Auth) (codexapi.QuotaSnapshot, error) {

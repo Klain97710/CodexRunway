@@ -111,6 +111,16 @@ func (s *Settings) Load() error {
 	}
 	s.loadErr = nil
 	s.source = src
+	oldProvider, oldScope := p.SelectedProvider, p.StatusBarProviderScope
+	p.ApplyFeatures(s.sys.Features)
+	if oldProvider != p.SelectedProvider || oldScope != p.StatusBarProviderScope {
+		if err := s.st.SavePreferences(p); err != nil {
+			s.loadErr = err
+			s.prefs, s.persisted = p, p.Clone()
+			s.applyLocale()
+			return err
+		}
+	}
 	s.prefs = p
 	s.persisted = p.Clone()
 	s.applyLocale()
@@ -174,6 +184,7 @@ func (s *Settings) Update(change func(*store.Preferences)) bool {
 	next := s.prefs.Clone()
 	change(&next)
 	next.Normalize()
+	next.ApplyFeatures(s.sys.Features)
 	if reflect.DeepEqual(next, s.prefs) {
 		return true
 	}

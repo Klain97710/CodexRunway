@@ -149,7 +149,9 @@ func (rt *liveApp) applyPreferences(p store.Preferences) {
 	if reflect.DeepEqual(rt.svc.Preferences(), p) {
 		return
 	}
-	rt.grok.setPreferences(p, rt.langs)
+	if rt.grok != nil {
+		rt.grok.setPreferences(p, rt.langs)
+	}
 	rt.reset.setPreferences(p, rt.langs)
 	rt.svc.SetPreferences(p)
 }

@@ -2,8 +2,7 @@ package app
 
 import (
 	"bytes"
-	"context"
-	"errors"
+
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,7 +11,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/l10n"
-	"github.com/licoy/quosparr/internal/resettoday"
+
 	"github.com/licoy/quosparr/internal/store"
 )
 
@@ -112,48 +111,6 @@ func TestPanelMetallicBadgeActuallyAnimates(t *testing.T) {
 	t.Fatal("metallic badge stayed static through a complete Swift sheen cycle")
 }
 
-func TestPanelReactionClickFloatsBeforeResponse(t *testing.T) {
-	queue := detailMainQueue(t)
-	a, _ := newPanel(t, nil, panelFixture(), PanelActions{})
-	defer a.cancelPanelDetails()
-	snap := resettoday.ReactionDevMock(resettoday.MockNo, 321)
-	a.panelState.reaction.snapshot = &snap
-	a.panelState.startReaction = a.startReaction
-	acts := PanelActions{
-		QueryReaction: func(context.Context) (resettoday.ReactionSnapshot, error) { return snap, nil },
-		React: func(ctx context.Context) (resettoday.ReactionPostResult, error) {
-			<-ctx.Done()
-			return resettoday.ReactionPostResult{}, ctx.Err()
-		},
-	}
-	tt := ui.NewTester(func(c *ui.Context) {
-		ui.Row(c).Padding(30).Children(func() { (resetCard{l: a.L()}).reactionButton(c, acts, &a.panelState) })
-	}, 300, 100)
-	if err := tt.Click(a.L().Text(l10n.KeyRateLimitResetTodayReactionPlease)); err != nil {
-		t.Fatal(err)
-	}
-	if !tt.HasText("+1") || !tt.HasText("322") {
-		t.Fatal("click did not immediately show the floating +1 and updated count")
-	}
-	start, _ := tt.Find("+1")
-	a.panelState.reaction.deltaAt = time.Now().Add(-800 * time.Millisecond)
-	tt.Frame()
-	floating, _ := tt.Find("+1")
-	if floating.Y >= start.Y-8 {
-		t.Fatalf("delta did not float up: %v -> %v", start, floating)
-	}
-	if os.Getenv("RUNWAY_UI_QA") != "" {
-		exportReviewPNG(t, tt, filepath.Join("..", "..", ".build", "v1-ui-qa", "polish-reaction.png"))
-	}
-	a.panelState.reaction.deltaAt = time.Now().Add(-3 * time.Second)
-	tt.Frame()
-	if tt.HasText("+1") {
-		t.Fatal("floating delta did not disappear")
-	}
-	a.cancelPanelDetails()
-	finishDetail(t, queue)
-}
-
 func TestPanelMetallicBadgeRespectsReduceMotion(t *testing.T) {
 	tt := ui.NewTester(func(c *ui.Context) {
 		ui.Row(c).Padding(10).Children(func() { tierBadge(c, codexTierLook(c.Theme(), codex.TierPro200), "Pro 200") })
@@ -164,68 +121,5 @@ func TestPanelMetallicBadgeRespectsReduceMotion(t *testing.T) {
 	tt.Frame()
 	if !bytes.Equal(before, tt.Image().Pix) {
 		t.Fatal("badge animated with Reduce Motion enabled")
-	}
-}
-
-func TestPanelReactionRollsBackFailures(t *testing.T) {
-	for _, failure := range []error{errors.New("offline"), resettoday.ErrReactionRateLimited} {
-		t.Run(failure.Error(), func(t *testing.T) {
-			queue := detailMainQueue(t)
-			a, _ := newPanel(t, nil, panelFixture(), PanelActions{})
-			defer a.cancelPanelDetails()
-			before := resettoday.ReactionDevMock(resettoday.MockNo, 321)
-			remaining := 5
-			before.Remaining, before.DailyLimit = &remaining, 5
-			a.panelState.reaction.snapshot = &before
-			a.startReaction(PanelActions{
-				QueryReaction: func(context.Context) (resettoday.ReactionSnapshot, error) { return before, nil },
-				React: func(context.Context) (resettoday.ReactionPostResult, error) {
-					return resettoday.ReactionPostResult{}, failure
-				},
-			}, true)
-			if *a.panelState.reaction.snapshot.Count != 322 {
-				t.Fatal("optimistic count missing")
-			}
-			finishDetail(t, queue)
-			state := a.panelState.reaction
-			if *state.snapshot.Count != 321 || state.delta != 0 || state.task.Err != failure {
-				t.Fatalf("failed click was not rolled back: %+v", state)
-			}
-			if state.snapshot.IsExhausted() != errors.Is(failure, resettoday.ErrReactionRateLimited) {
-				t.Fatal("wrong remaining limit after failure")
-			}
-			tt := ui.NewTester(func(c *ui.Context) {
-				ui.Column(c).Padding(20).Children(func() { (resetCard{l: a.L()}).hero(c, PanelActions{}, &a.panelState) })
-			}, 400, 180)
-			message := tx(a.L(), xReactionFailed)
-			if state.snapshot.IsExhausted() {
-				message = a.L().Text(l10n.KeyRateLimitResetTodayReactionLimitReached)
-			}
-			if !tt.HasText(message) {
-				t.Fatal("reaction failure was not visible")
-			}
-			if *before.Count != 321 || *before.Remaining != 5 {
-				t.Fatal("mutated pre-click snapshot")
-			}
-		})
-	}
-}
-
-func TestPanelReactionSuccessReconcilesCountAndDelta(t *testing.T) {
-	for _, count := range []int{321, 322, 325} {
-		before := resettoday.ReactionDevMock(resettoday.MockNo, 321)
-		updated := resettoday.ReactionDevMock(resettoday.MockNo, count)
-		optimistic := resettoday.OptimisticClick(before)
-		state := panelReactionState{snapshot: &optimistic, delta: 1, deltaAt: time.Now()}
-		state.finish(&before, updated, true, nil)
-		expected := 1
-		if count == 321 {
-			expected = 0
-		} else if count > 322 {
-			expected = count - 322
-		}
-		if *state.snapshot.Count != count || state.delta != expected || state.task.Running || state.task.Err != nil {
-			t.Fatalf("count %d reconciled incorrectly: %+v", count, state)
-		}
 	}
 }

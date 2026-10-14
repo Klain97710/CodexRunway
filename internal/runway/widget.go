@@ -1,6 +1,7 @@
 package runway
 
 import (
+	"github.com/licoy/quosparr/internal/personal"
 	"strconv"
 	"time"
 
@@ -99,8 +100,11 @@ func grokWidgetProvider(g GrokState, p store.Preferences) export.ProviderSnapsho
 }
 
 // makeWidgetSnapshot builds the widget file content from a snapshot.
-func makeWidgetSnapshot(snap Snapshot, p store.Preferences, now time.Time) export.Snapshot {
-	providers := []export.ProviderSnapshot{codexWidgetProvider(snap.Codex), grokWidgetProvider(snap.Grok, p)}
+func makeWidgetSnapshot(snap Snapshot, p store.Preferences, now time.Time, features personal.Features) export.Snapshot {
+	providers := []export.ProviderSnapshot{codexWidgetProvider(snap.Codex)}
+	if features.Grok {
+		providers = append(providers, grokWidgetProvider(snap.Grok, p))
+	}
 	return export.NewSnapshot(now, snap.Language, providers, snap.ResetToday.Widget)
 }
 
@@ -108,7 +112,7 @@ func makeWidgetSnapshot(snap Snapshot, p store.Preferences, now time.Time) expor
 func (s *Service) WidgetSnapshot(now time.Time) export.Snapshot {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return makeWidgetSnapshot(s.buildLocked(now), s.prefs, now)
+	return makeWidgetSnapshot(s.buildLocked(now), s.prefs, now, s.opts.Features)
 }
 
 // writeWidget hands the widget snapshot to the sink. Called without s.mu.
@@ -119,7 +123,7 @@ func (s *Service) writeWidget(snap Snapshot, now time.Time) {
 	s.mu.Lock()
 	p := s.prefs
 	s.mu.Unlock()
-	if err := s.opts.WidgetSink(makeWidgetSnapshot(snap, p, now)); err != nil {
+	if err := s.opts.WidgetSink(makeWidgetSnapshot(snap, p, now, s.opts.Features)); err != nil {
 		s.mu.Lock()
 		s.lastErr = err.Error()
 		s.publishLocked()

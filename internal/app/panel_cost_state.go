@@ -28,11 +28,7 @@ func (a *App) cancelPanelDetails() {
 	if s.cost.cancel != nil {
 		s.cost.cancel()
 	}
-	if s.reaction.cancel != nil {
-		s.reaction.cancel()
-	}
 	s.cost = panelCostState{generation: s.cost.generation + 1}
-	s.reaction = panelReactionState{generation: s.reaction.generation + 1}
 }
 
 func (a *App) redrawPanel() {

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/licoy/quosparr/internal/estimate"
-	"github.com/licoy/quosparr/internal/resettoday"
+
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
 )
@@ -54,9 +54,6 @@ func TestExportDetailFlows(t *testing.T) {
 		tt.Frame()
 		exportReviewPNG(t, tt, filepath.Join(dir, "after-estimate-history-"+string(lang)+".png"))
 		a.panelState.detail = store.ModuleRateLimitResetToday
-		a.panelState.reaction.initialized = true
-		reaction := resettoday.ReactionDevMock(resettoday.MockYes, 321)
-		a.panelState.reaction.snapshot = &reaction
 		tt.Frame()
 		exportReviewPNG(t, tt, filepath.Join(dir, "after-reset-reaction-"+string(lang)+".png"))
 	}

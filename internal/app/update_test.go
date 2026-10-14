@@ -274,9 +274,9 @@ func TestUseUpdaterKeepsItsStateInTheRunwayDirectory(t *testing.T) {
 	}
 	// The settings are the truth: the updater's file gets exactly that.
 	svc.ApplyAutomaticChecks(true, true)
-	raw, err := os.ReadFile(filepath.Join(home, ".quosparr", "updater.json"))
+	raw, err := os.ReadFile(filepath.Join(home, ".codex-runway", "updater.json"))
 	if err != nil {
-		t.Fatalf("updater.json is not in ~/.quosparr: %v", err)
+		t.Fatalf("updater.json is not in ~/.codex-runway: %v", err)
 	}
 	want := `"automaticChecks":true`
 	if !strings.Contains(string(raw), want) {

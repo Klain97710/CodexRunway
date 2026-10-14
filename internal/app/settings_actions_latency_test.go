@@ -51,7 +51,7 @@ func TestSettingsSelfCheckUsesRedactedTemporaryHomeReport(t *testing.T) {
 	u, tt := openSettingsView(t, e, tabAdvanced)
 	tt.SetPreferences(ui.Preferences{ReduceMotion: true})
 	home := t.TempDir()
-	if err := os.Mkdir(filepath.Join(home, ".quosparr"), 0o700); err != nil {
+	if err := os.Mkdir(filepath.Join(home, ".codex-runway"), 0o700); err != nil {
 		t.Fatal(err)
 	}
 	u.opts.Actions.SelfCheck = func() string {
@@ -65,7 +65,7 @@ func TestSettingsSelfCheckUsesRedactedTemporaryHomeReport(t *testing.T) {
 	tt.Key(0, ui.KeySpace)
 	t.Logf("temporary-home actual self-check event=%s", time.Since(start))
 	awaitSettingsTask(t, e, &u.selfCheckTask)
-	if !u.noticeOpen || !strings.Contains(u.notice, "quosparr dir: ok ("+filepath.Join("~", ".quosparr")) || strings.Contains(u.notice, home) {
+	if !u.noticeOpen || !strings.Contains(u.notice, "quosparr dir: ok ("+filepath.Join("~", ".codex-runway")) || strings.Contains(u.notice, home) {
 		t.Fatal("temporary-home report was lost or unredacted")
 	}
 }

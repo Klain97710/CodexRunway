@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/licoy/quosparr/internal/personal"
 	"io"
 	"log"
 	"math"
@@ -34,6 +35,7 @@ import (
 
 // BackgroundOptions is what StartBackground needs from main.
 type BackgroundOptions struct {
+	Features personal.Features
 	Home     string
 	Settings *Settings
 	Notifier *Notifier
@@ -211,16 +213,20 @@ func newRuntime(opts BackgroundOptions) *liveApp {
 		prefs = opts.Settings.Prefs()
 	}
 	codexStore := codex.NewStore(platform.CodexDir(home), platform.RunwayDir(home))
-	// NewStore is the constructor; grok has no Open.
-	gstore := grok.NewStore(grok.ResolveOfficialHome(os.Getenv("GROK_HOME"), home), platform.RunwayDir(home))
-	mod := grok.NewModule(gstore)
-	mod.AppVersion = opts.Version
-	mod.Billing = (&grok.BillingClient{}).Fetch
-	bridge := newGrokBridge(mod, prefs, langs)
-	if _, err := mod.Load(context.Background()); err != nil {
-		log.Println("grok accounts: load failed")
+	var mod *grok.Module
+	var bridge *grokBridge
+	if opts.Features.Grok {
+		// NewStore is the constructor; grok has no Open.
+		gstore := grok.NewStore(grok.ResolveOfficialHome(os.Getenv("GROK_HOME"), home), platform.RunwayDir(home))
+		mod = grok.NewModule(gstore)
+		mod.AppVersion = opts.Version
+		mod.Billing = (&grok.BillingClient{}).Fetch
+		bridge = newGrokBridge(mod, prefs, langs)
+		if _, err := mod.Load(context.Background()); err != nil {
+			log.Println("grok accounts: load failed")
+		}
+		bridge.reload(false)
 	}
-	bridge.reload(false)
 	reset := newResetBridge(opts.Settings, prefs, langs)
 	repo := openUsage(home)
 	widgetRequirements := initialWidgetRequirements(opts.Settings)
@@ -243,7 +249,12 @@ func newRuntime(opts BackgroundOptions) *liveApp {
 			deliverEvent(opts, e)
 		}
 	}}
+	var grokProvider runway.GrokProvider
+	if bridge != nil {
+		grokProvider = bridge
+	}
 	svc = runway.New(runway.Options{
+		Features: opts.Features,
 		Sources: runway.NewLiveSources(runway.LiveConfig{
 			Store: codexStore, CodexHome: platform.CodexDir(home),
 			Quota: codexapi.QuotaClient{}, Refresher: codexapi.TokenRefresher{}, Repo: repo,
@@ -253,7 +264,7 @@ func newRuntime(opts BackgroundOptions) *liveApp {
 		EstimateHistoryPath: estimate.DefaultHistoryPath(home),
 		CostCachePath:       usage.DefaultSummaryCachePath(home),
 		StatusPath:          export.DefaultStatusPath(home),
-		Grok:                bridge,
+		Grok:                grokProvider,
 		ResetToday:          reset,
 		WidgetRequirements:  widgetRequirements,
 		WidgetSink:          widgets.publish,

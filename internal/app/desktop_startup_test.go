@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/licoy/quosparr/internal/personal"
 	"os"
 	"os/exec"
 	"strings"
@@ -83,7 +84,7 @@ func TestDesktopFailureExitProcess(t *testing.T) {
 		cause := linuxDesktopStartupError(loc, errors.New("mygo: libgtk-3.so.0 missing"), func(string) ([]byte, error) {
 			return []byte("ID=arch"), nil
 		})
-		a := &App{settings: NewSettings(store.New(store.NewMemoryDomain(), nil), System{}, UnavailableCredentials{})}
+		a := &App{settings: NewSettings(store.New(store.NewMemoryDomain(), nil), System{Features: personal.Features{Grok: true}}, UnavailableCredentials{})}
 		if err := a.runDesktop(func() error { return cause }); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)

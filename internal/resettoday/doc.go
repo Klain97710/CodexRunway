@@ -1,7 +1,6 @@
 // Package resettoday is the Go port of Quosparr's "did Codex reset today"
 // feature: the hosted status feed (RateLimitResetToday*.swift), its strict
-// decoder, the verdict and next-scheduled-reset rules, the optional reaction
-// service, and the controllers that poll and refresh them.
+// decoder, the verdict, next-scheduled-reset rules and public status refresh.
 //
 // Time rules. Feed timestamps are absolute RFC 3339 instants. "Today" is the
 // viewer's local Gregorian day, passed to every method as a *time.Location
@@ -15,6 +14,6 @@
 // internal/runway's duration and schedule formatting take a Formatter, so this
 // package does not depend on the coordinator that consumes it.
 //
-// Privacy. The reaction visitor ID is stored by export.ReactionStore and is
-// never logged; nothing here reads credentials.
+// Privacy. Public status requests never send or store cookies. There is no
+// reaction endpoint or visitor file access. Nothing here reads credentials.
 package resettoday

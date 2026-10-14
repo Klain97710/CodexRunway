@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/licoy/quosparr/internal/personal"
 	"strings"
 	"testing"
 	"time"
@@ -15,7 +16,7 @@ import (
 
 func newPanel(t *testing.T, mutate func(*store.Preferences), snap runway.Snapshot, acts PanelActions) (*App, *ui.Tester) {
 	t.Helper()
-	s := NewSettings(store.New(store.NewMemoryDomain(), nil), System{}, nil)
+	s := NewSettings(store.New(store.NewMemoryDomain(), nil), System{Features: personal.Features{Grok: true}}, nil)
 	s.prefs = store.DefaultPreferences()
 	s.prefs.Language = store.LanguageEnglish
 	if mutate != nil {

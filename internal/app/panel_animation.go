@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/egoist/mygo/ui"
-	"github.com/licoy/quosparr/internal/resettoday"
 )
 
 // The Swift badge sweeps for 2.4 seconds, then rests for 1.2 seconds.
@@ -36,27 +35,6 @@ func drawTierSheen(p *ui.Painter, r ui.Rect, color ui.Color) {
 			alpha := float32(math.Pow(1-math.Abs((float64(i)+0.5)/12-1), 2))
 			p.FillPath(&strip, color.Alpha(alpha))
 		}
-	})
-}
-
-func reactionFloat(c *ui.Context, button ui.Element, rs *panelReactionState) {
-	if rs.delta <= 0 {
-		return
-	}
-	elapsed := c.Now().Sub(rs.deltaAt).Seconds()
-	if elapsed >= 2 {
-		return
-	}
-	c.AnimationFrame()
-	progress := float32(min(1, max(0, elapsed)))
-	offset := 12 * (1 - (1-progress)*(1-progress))
-	if c.Preferences().ReduceMotion {
-		offset = 2
-	}
-	ui.Overlay(c, func() {
-		ui.Text(c, resettoday.FormatDelta(rs.delta)).Absolute().PassThrough().Role(ui.RoleNone).
-			AttachTo(button, ui.AnchorTopRight, ui.AnchorBottomRight).Margin(0, 2, offset, 0).
-			FontSize(9).FontWeight(500).TextColor(inkSecondary(c.Theme())).Opacity(float32(min(1, 2-elapsed)))
 	})
 }
 

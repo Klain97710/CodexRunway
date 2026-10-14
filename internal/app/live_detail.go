@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/licoy/quosparr/internal/grok"
-	"github.com/licoy/quosparr/internal/resettoday"
+
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
 )
@@ -83,8 +83,5 @@ func (rt *liveApp) queryGrokDetailCost(ctx context.Context, q CostQuery, now tim
 
 func installDetailActions(rt *liveApp, a *PanelActions) {
 	a.QueryCost = rt.queryDetailCost
-	client := &resettoday.ReactionClient{Store: resettoday.DefaultReactionStore()}
-	a.QueryReaction = client.Fetch
-	a.React = client.Click
 	a.RepairSessions = func() { rt.queuePreferences(livePreferenceRequest{repair: true}) }
 }

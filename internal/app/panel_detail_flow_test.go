@@ -3,16 +3,13 @@ package app
 import (
 	"context"
 	"errors"
-	"io"
-	"net/http"
-	"strings"
-	"sync/atomic"
+
 	"testing"
 	"time"
 
 	"github.com/licoy/quosparr/internal/estimate"
 	"github.com/licoy/quosparr/internal/l10n"
-	"github.com/licoy/quosparr/internal/resettoday"
+
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
 )
@@ -193,46 +190,5 @@ func TestPanelEstimateHistoryAndUnavailableReason(t *testing.T) {
 		if !tt.HasText(text) {
 			t.Fatalf("estimate detail missing %q", text)
 		}
-	}
-}
-
-func TestResetReactionPostsOnlyOnClickAndShowsLimit(t *testing.T) {
-	queue := detailMainQueue(t)
-	var posts atomic.Int32
-	client := &resettoday.ReactionClient{HTTP: &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
-		code, body := 200, `{"ok":true,"data":{"enabled":true,"ready":true,"polarity":"yes","epochId":"fixture","count":5,"remaining":1,"dailyLimit":1}}`
-		if r.Method == http.MethodPost {
-			posts.Add(1)
-			code = 429
-			body = `{"ok":false,"error":"daily_limit"}`
-		}
-		return &http.Response{StatusCode: code, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
-	})}, URL: "https://fixture.invalid/reaction"}
-	a, tt := newPanel(t, nil, panelFixture(), PanelActions{QueryReaction: client.Fetch, React: client.Click})
-	finishDetail(t, queue)
-	tt.Frame()
-	if posts.Load() != 0 {
-		t.Fatal("opening the main page posted feedback")
-	}
-	if a.panelState.detail != "" || !tt.HasText("5") {
-		t.Fatal("main-page reaction count missing")
-	}
-	label := a.L().Text(l10n.KeyRateLimitResetTodayReactionThank)
-	if err := tt.Click(label); err != nil {
-		t.Fatal(err)
-	}
-	finishDetail(t, queue)
-	tt.Frame()
-	if posts.Load() != 1 || !tt.HasText(a.L().Text(l10n.KeyRateLimitResetTodayReactionLimitReached)) {
-		t.Fatal("feedback limit not shown")
-	}
-	if !a.panelState.reaction.snapshot.IsExhausted() {
-		t.Fatal("rate-limit response did not disable feedback")
-	}
-	if err := tt.Click(label); err != nil {
-		t.Fatal(err)
-	}
-	if posts.Load() != 1 {
-		t.Fatal("exhausted feedback posted again")
 	}
 }

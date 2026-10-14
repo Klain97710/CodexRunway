@@ -108,7 +108,7 @@ func TestSelfCheckReadsOnlyAndDoesNotCreate(t *testing.T) {
 	for _, want := range []string{
 		"quosparr: 1.2.3",
 		"home: ok",
-		"quosparr dir: missing (" + filepath.Join("~", ".quosparr"),
+		"quosparr dir: missing (" + filepath.Join("~", ".codex-runway"),
 		"lock: not created yet",
 		"codex dir: missing",
 		"not ported yet:",
@@ -121,7 +121,7 @@ func TestSelfCheckReadsOnlyAndDoesNotCreate(t *testing.T) {
 		t.Errorf("output leaks the home path:\n%s", got)
 	}
 	if _, err := os.Stat(platform.RunwayDir(home)); err == nil {
-		t.Error("self-check must not create ~/.quosparr")
+		t.Error("self-check must not create ~/.codex-runway")
 	}
 }
 

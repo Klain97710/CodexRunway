@@ -9,7 +9,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/l10n"
-	"github.com/licoy/quosparr/internal/resettoday"
+
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/store"
 )
@@ -39,14 +39,6 @@ func TestExportPanelRefinement(t *testing.T) {
 		row, _ := tt.Find(a.L().Text(l10n.KeyAccounts))
 		tt.Move(380, row.Y+row.H/2)
 		exportReviewPNG(t, tt, filepath.Join(dir, "refinement-panel-"+name+".png"))
-		reaction := resettoday.ReactionDevMock(resettoday.MockNo, 333101)
-		a.panelState.reaction = panelReactionState{snapshot: &reaction, delta: 1, deltaAt: time.Now().Add(-500 * time.Millisecond)}
-		button := ui.NewTester(func(c *ui.Context) {
-			applyTheme(c)
-			ui.Column(c).Fill().Padding(35).Children(func() { (resetCard{l: a.L()}).reactionButton(c, PanelActions{}, &a.panelState) })
-		}, 200, 100)
-		button.SetScale(2)
-		button.SetDark(dark)
-		exportReviewPNG(t, button, filepath.Join(dir, "refinement-reaction-"+name+".png"))
+
 	}
 }

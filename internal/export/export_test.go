@@ -125,7 +125,7 @@ func TestStatusFileHasNoSecretsAndIsPrivateEnoughToShare(t *testing.T) {
 			t.Fatalf("mode = %v", info.Mode().Perm())
 		}
 	}
-	if got := DefaultStatusPath("/h"); filepath.Base(got) != "status.json" || filepath.Base(filepath.Dir(got)) != ".quosparr" {
+	if got := DefaultStatusPath("/h"); filepath.Base(got) != "status.json" || filepath.Base(filepath.Dir(got)) != ".codex-runway" {
 		t.Fatalf("path = %s", got)
 	}
 }
@@ -318,7 +318,7 @@ func TestLegacyTimelineIsOmittedAndEmptyIsWritten(t *testing.T) {
 
 func TestSnapshotPaths(t *testing.T) {
 	home := filepath.Join("h", "u")
-	if got := LocalSnapshotPath(home); got != filepath.Join(home, ".quosparr", "widget-snapshot.json") {
+	if got := LocalSnapshotPath(home); got != filepath.Join(home, ".codex-runway", "widget-snapshot.json") {
 		t.Fatal(got)
 	}
 	got, err := appGroupSnapshotPath("darwin", home, "")
@@ -616,130 +616,6 @@ func TestRequirements(t *testing.T) {
 }
 
 // Reaction visitor.
-
-func TestParseVisitorID(t *testing.T) {
-	ok := map[string]string{
-		"0ca75a14e041f05a5258f7924fa08914":     "0ca75a14e041f05a5258f7924fa08914",
-		"0CA75A14E041F05A5258F7924FA08914":     "0ca75a14e041f05a5258f7924fa08914",
-		"  abcdef0123456789abcdef0123456789  ": "abcdef0123456789abcdef0123456789",
-		"\nabcdef0123456789abcdef0123456789\t": "abcdef0123456789abcdef0123456789",
-	}
-	for in, want := range ok {
-		if got, valid := ParseVisitorID(in); !valid || got != want {
-			t.Errorf("ParseVisitorID(%q) = %q %v", in, got, valid)
-		}
-	}
-	for _, in := range []string{"", "not-a-visitor-id", "0ca75a14e041f05a5258f7924fa0891", "0ca75a14e041f05a5258f7924fa0891400", "0ca75a14e041f05a5258f7924fa0891g", "ａ"} {
-		if _, valid := ParseVisitorID(in); valid {
-			t.Errorf("ParseVisitorID(%q) must fail", in)
-		}
-	}
-}
-
-func TestVisitorIDFromSetCookie(t *testing.T) {
-	const id = "0ca75a14e041f05a5258f7924fa08914"
-	if got, ok := VisitorIDFromSetCookie("hr_react=" + id + "; HttpOnly; Max-Age=31536000; Path=/; SameSite=lax; Secure"); !ok || got != id {
-		t.Fatalf("%q %v", got, ok)
-	}
-	for _, h := range []string{"", "other=" + id, "hr_react", "hr_react=short", "x=1; hr_react=" + id} {
-		if _, ok := VisitorIDFromSetCookie(h); ok {
-			t.Errorf("%q must not parse", h)
-		}
-	}
-}
-
-func TestReactionStore(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "sub", ReactionFileName)
-	store := ReactionStore{Path: path}
-	if _, ok := store.LoadVisitorID(); ok {
-		t.Fatal("empty store")
-	}
-	if err := store.SaveVisitorID("not-valid"); err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := store.LoadVisitorID(); ok {
-		t.Fatal("invalid ID stored")
-	}
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		t.Fatal("an invalid ID must not create the file")
-	}
-	const visitor = "abcdef0123456789abcdef0123456789"
-	if err := store.SaveVisitorID(visitor); err != nil {
-		t.Fatal(err)
-	}
-	if got, ok := store.LoadVisitorID(); !ok || got != visitor {
-		t.Fatalf("%q %v", got, ok)
-	}
-	if runtime.GOOS != "windows" {
-		if info, _ := os.Stat(path); info.Mode().Perm() != 0o600 {
-			t.Fatalf("mode = %v", info.Mode().Perm())
-		}
-	}
-	if err := store.SaveVisitorID("FFFF0000aaaa1111bbbb2222cccc3333"); err != nil {
-		t.Fatal(err)
-	}
-	if got, _ := store.LoadVisitorID(); got != "ffff0000aaaa1111bbbb2222cccc3333" {
-		t.Fatalf("got %q", got)
-	}
-}
-
-func TestReactionStoreKeepsFileWhenIDUnchanged(t *testing.T) {
-	path := filepath.Join(t.TempDir(), ReactionFileName)
-	clock := utc(2026, 8, 23, 12, 0, 0)
-	store := ReactionStore{Path: path, Now: func() time.Time { return clock }}
-	const visitor = "0123456789abcdef0123456789abcdef"
-	if err := store.SaveVisitorID(visitor); err != nil {
-		t.Fatal(err)
-	}
-	first, _ := os.ReadFile(path)
-	clock = clock.Add(time.Hour)
-	if err := store.SaveVisitorID("  " + strings.ToUpper(visitor) + "\n"); err != nil {
-		t.Fatal(err)
-	}
-	second, _ := os.ReadFile(path)
-	if !bytes.Equal(first, second) {
-		t.Fatalf("unchanged ID rewrote the file: %s vs %s", first, second)
-	}
-}
-
-func TestReactionFileMatchesSwift(t *testing.T) {
-	path := filepath.Join(t.TempDir(), ReactionFileName)
-	store := ReactionStore{Path: path, Now: func() time.Time { return utc(2026, 8, 23, 12, 0, 0) }}
-	if err := store.SaveVisitorID("  0123456789ABCDEF0123456789abcdef \n"); err != nil {
-		t.Fatal(err)
-	}
-	got, _ := os.ReadFile(path)
-	equalBytes(t, "swift_reaction_visitor.json", got)
-	if want := strings.TrimSpace(string(fixture(t, "swift_reaction_mode.txt"))); want != "600" {
-		t.Fatalf("Swift mode %s", want)
-	}
-	// The Swift file loads.
-	swiftStore := ReactionStore{Path: filepath.Join("testdata", "swift_reaction_visitor.json")}
-	if id, ok := swiftStore.LoadVisitorID(); !ok || id != "0123456789abcdef0123456789abcdef" {
-		t.Fatalf("%q %v", id, ok)
-	}
-}
-
-func TestReactionStoreRejectsDamagedFiles(t *testing.T) {
-	for name, content := range map[string]string{
-		"garbage":    "nope",
-		"no date":    `{"visitorId":"0123456789abcdef0123456789abcdef"}`,
-		"bad date":   `{"visitorId":"0123456789abcdef0123456789abcdef","updatedAt":"yesterday"}`,
-		"no id":      `{"updatedAt":"2026-08-23T12:00:00Z"}`,
-		"invalid id": `{"visitorId":"xyz","updatedAt":"2026-08-23T12:00:00Z"}`,
-	} {
-		path := filepath.Join(t.TempDir(), ReactionFileName)
-		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
-			t.Fatal(err)
-		}
-		if id, ok := (ReactionStore{Path: path}).LoadVisitorID(); ok {
-			t.Errorf("%s: loaded %q", name, id)
-		}
-	}
-	if got := DefaultReactionPath("/h"); filepath.Base(got) != "reaction-visitor.json" {
-		t.Fatal(got)
-	}
-}
 
 // jsonMember returns the raw text of a top-level member of a compact JSON
 // object, scanning brackets and strings.

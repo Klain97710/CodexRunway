@@ -44,18 +44,16 @@ func TestPanelCloseReopenStartsFreshPresentation(t *testing.T) {
 func TestPanelClosedCancelsDetailRequests(t *testing.T) {
 	a, _ := newPanel(t, nil, panelFixture(), PanelActions{})
 	cost, cancelCost := context.WithCancel(context.Background())
-	reaction, cancelReaction := context.WithCancel(context.Background())
 	a.panelState.cost = panelCostState{cancel: cancelCost, generation: 3, task: Task{Running: true}}
-	a.panelState.reaction = panelReactionState{cancel: cancelReaction, generation: 4, task: Task{Running: true}}
 	a.panelState.detail = store.ModuleAPICost
 	a.panelClosed()
-	if cost.Err() == nil || reaction.Err() == nil {
+	if cost.Err() == nil {
 		t.Fatal("close did not cancel requests")
 	}
-	if a.panelState.cost.generation != 4 || a.panelState.reaction.generation != 5 {
+	if a.panelState.cost.generation != 4 {
 		t.Fatal("close lost request generations")
 	}
-	if a.panelState.cost.task.Running || a.panelState.reaction.task.Running {
+	if a.panelState.cost.task.Running {
 		t.Fatal("close retained a running task")
 	}
 }

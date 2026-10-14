@@ -2,6 +2,7 @@ package app
 
 import (
 	"errors"
+	"github.com/licoy/quosparr/internal/personal"
 	"reflect"
 	"slices"
 	"sort"
@@ -65,7 +66,7 @@ type fakeSys struct {
 }
 
 func (f *fakeSys) system() System {
-	return System{
+	return System{Features: personal.Features{Grok: true},
 		PreferredLanguages: func() []string { return []string{"en-US"} },
 		SetAppearance:      func(a store.Appearance) { f.appearance = append(f.appearance, a) },
 		LoginSupported:     true,
@@ -467,7 +468,7 @@ func TestSettingsUnsupportedPlatformKeepsStoredValues(t *testing.T) {
 		}
 		d.Put(store.KeyPreferences, data)
 	})
-	e.s = NewSettings(e.st, System{}, e.creds) // nothing is supported
+	e.s = NewSettings(e.st, System{Features: personal.Features{Grok: true}}, e.creds) // nothing is supported
 	if err := e.s.Load(); err != nil {
 		t.Fatal(err)
 	}

@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"github.com/licoy/quosparr/internal/personal"
 	"slices"
 	"testing"
 
@@ -11,7 +12,7 @@ import (
 func TestFirstLaunchShowsSettingsOnlyUntilPreferencesExist(t *testing.T) {
 	dir := t.TempDir()
 	for run := 0; run < 3; run++ {
-		settings := NewSettings(store.New(store.FileDomain{Dir: dir}, nil), System{}, NewMemoryCredentials())
+		settings := NewSettings(store.New(store.FileDomain{Dir: dir}, nil), System{Features: personal.Features{Grok: true}}, NewMemoryCredentials())
 		if err := settings.Load(); err != nil {
 			t.Fatal(err)
 		}
@@ -42,7 +43,7 @@ func TestFirstLaunchPreservesExistingAndMigratedPreferences(t *testing.T) {
 		} else {
 			current.Put(store.KeyPreferences, original)
 		}
-		settings := NewSettings(store.New(current, legacy), System{}, NewMemoryCredentials())
+		settings := NewSettings(store.New(current, legacy), System{Features: personal.Features{Grok: true}}, NewMemoryCredentials())
 		if err := settings.Load(); err != nil {
 			t.Fatal(err)
 		}

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/licoy/quosparr/internal/personal"
 	"testing"
 
 	"github.com/egoist/mygo/ui"
@@ -106,7 +107,7 @@ func TestSettingsViewTabs(t *testing.T) {
 
 func TestSettingsViewExplainsUnsupportedPlatformSettings(t *testing.T) {
 	e := newEnv(t, nil)
-	e.s = NewSettings(e.st, System{}, e.creds)
+	e.s = NewSettings(e.st, System{Features: personal.Features{Grok: true}}, e.creds)
 	_, tt := openSettingsView(t, e, tabDisplay)
 	if !tt.HasText(tx(e.s.L(), xMacOnly)) {
 		t.Errorf("no note on the status bar styles; texts %q", tt.Texts())

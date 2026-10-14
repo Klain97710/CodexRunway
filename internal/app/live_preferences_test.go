@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"github.com/licoy/quosparr/internal/personal"
 	"reflect"
 	"sync/atomic"
 	"testing"
@@ -28,7 +29,7 @@ func quietLivePreferences() store.Preferences {
 func TestLivePreferenceBurstClosesWithLatestValue(t *testing.T) {
 	p := quietLivePreferences()
 	g := newGrokBridge(nil, p, nil)
-	svc := runway.New(runway.Options{Preferences: p, Grok: g})
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Grok: g})
 	defer svc.Close()
 	rt := &liveApp{svc: svc, grok: g, reset: newResetBridge(nil, p, nil)}
 	g.mu.Lock()
@@ -90,7 +91,7 @@ func TestLiveRefreshUsesLatestUIProvider(t *testing.T) {
 	e.s.prefs = p
 	var codexLoads atomic.Int32
 	g := newGrokBridge(nil, p, nil)
-	svc := runway.New(runway.Options{Preferences: p, Grok: g, Sources: runway.Sources{LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) {
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Grok: g, Sources: runway.Sources{LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) {
 		codexLoads.Add(1)
 		return codex.Auth{}, errors.New("unexpected Codex refresh")
 	}}})
@@ -127,7 +128,7 @@ func TestLiveRefreshUsesLatestUICostRange(t *testing.T) {
 	e.s.prefs = p
 	requested := make(chan usage.Window, 2)
 	g := newGrokBridge(nil, p, nil)
-	svc := runway.New(runway.Options{Preferences: p, Grok: g, Sources: runway.Sources{
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Grok: g, Sources: runway.Sources{
 		LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) {
 			return codex.APIKeyAuth("synthetic-test"), nil
 		},
@@ -181,7 +182,7 @@ func TestPendingCodexSectionsAfterProviderSwitch(t *testing.T) {
 				resetReads.Add(1)
 				return nil, errors.New("synthetic feed error")
 			}
-			svc := runway.New(runway.Options{Preferences: p, Grok: g, ResetToday: reset, Sources: runway.Sources{
+			svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Grok: g, ResetToday: reset, Sources: runway.Sources{
 				LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) {
 					codexReads.Add(1)
 					return codex.Auth{}, errors.New("Codex refresh is not supported by selected provider")

@@ -22,7 +22,7 @@ The upstream merge preserves history and adopts the Go architecture. Removed Swi
 | G0 Baseline and isolation branch | PASS | Pinned commits, separate worktree, two signed Swift backups |
 | G1 Isolated developer runtime | PARTIAL | Go sandbox/app tests, go build and 4 packaging-policy tests PASS; packaged desktop acceptance pending |
 | G2 Identity/data/lock compatibility | PARTIAL | platform/store/netx/codex/migration tests PASS; preserved identity, in-place migration/auth immutability and shared lock tested; Swift write-back acceptance pending |
-| G3 Codex only and no reactions | NOT RUN | Runtime counters required |
+| G3 Codex only and no reactions | PARTIAL | App/runway/store/export/reset tests PASS; repeated refresh/ticks prove zero Grok calls with positive Codex/status controls; cookie/reaction transport test PASS; desktop acceptance pending |
 | G4 Tray, actions and Widget | NOT RUN | Code and isolated desktop validation required |
 | G5 Personal update trust | NOT RUN | Both signed feeds and mygo archives required |
 | G6 Automated tests and packaging | NOT RUN | Exact candidate SHA and artifacts required |
@@ -32,3 +32,5 @@ The upstream merge preserves history and adopts the Go architecture. Removed Swi
 Task 2 source isolation validated: default builds require a private marked sandbox; UserDefaults is replaced by sandbox JSON, credentials by memory, notifications by an unsupported backend, and background work by offline sources. External CODEX_HOME/GROK_HOME and symlinks are rejected. Replacement builds require an explicit profile and build tag. Full package validation remains part of G6.
 
 Task 3 restores original preference domain, data and lock paths, proxy Keychain service, account export identity, app name/scheme and personal 0.2.0/2000 version. Upstream directory-copy implementation remains testable with an explicit renamed target; personal installation uses no copy. Existing Swift fixtures remain unchanged (account export assertion permits only the deliberate original format name).
+
+Task 4 removes reaction transport, visitor store, UI state, buttons, polling and dedicated tests. Public status uses a cookie-free client, including injected clients. Old visitor files remain untouched. Grok implementations and low-level regression tests remain with explicit feature opt-in; the default runtime never constructs them. Legacy provider choices normalize to Codex while unrelated preferences are retained.

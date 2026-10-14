@@ -2,6 +2,7 @@ package runway
 
 import (
 	"context"
+	"github.com/licoy/quosparr/internal/personal"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -261,7 +262,7 @@ func newService(t *testing.T, f *fake, tweak func(*Options)) (*Service, *rec) {
 	t.Helper()
 	r := &rec{}
 	dir := t.TempDir()
-	o := Options{
+	o := Options{Features: personal.Features{Grok: true},
 		Sources:     f.sources(),
 		Preferences: testPrefs(),
 		Now:         f.clk.Now,

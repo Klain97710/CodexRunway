@@ -4,14 +4,14 @@ import (
 	"context"
 	"strconv"
 	"sync"
-	"sync/atomic"
+
 	"testing"
 	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/l10n"
-	"github.com/licoy/quosparr/internal/resettoday"
+
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
@@ -247,112 +247,5 @@ func TestPanelCostPendingQueryAllowsBack(t *testing.T) {
 	finishDetail(t, queue)
 	if a.panelState.cost.summary != nil {
 		t.Fatal("cancelled query populated closed detail")
-	}
-}
-
-// Keep the gated request, navigation and late completion in one sequential
-// scenario: splitting them would lose the ordering this regression checks.
-func TestPanelReactionPendingClickAllowsBack(t *testing.T) {
-	for _, leave := range []string{"back", "close"} {
-		t.Run(leave, func(t *testing.T) {
-			queue := detailMainQueue(t)
-			started := make(chan context.Context, 1)
-			release := make(chan struct{})
-			var once sync.Once
-			unblock := func() { once.Do(func() { close(release) }) }
-			defer unblock()
-			var queries, posts atomic.Int32
-			snap := resettoday.ReactionDevMock(resettoday.MockYes, 5)
-			fresh := resettoday.ReactionDevMock(resettoday.MockYes, 17)
-			late := resettoday.ReactionDevMock(resettoday.MockYes, 99)
-			acts := PanelActions{
-				QueryReaction: func(context.Context) (resettoday.ReactionSnapshot, error) {
-					if queries.Add(1) == 1 {
-						return snap, nil
-					}
-					return fresh, nil
-				},
-				React: func(ctx context.Context) (resettoday.ReactionPostResult, error) {
-					posts.Add(1)
-					started <- ctx
-					<-release // Deliberately return after cancellation to test stale-result rejection.
-					return resettoday.ReactionPostResult{OK: true, Data: &late}, nil
-				},
-			}
-			a, tt := newPanel(t, nil, panelFixture(), acts)
-			defer a.cancelPanelDetails()
-			tt.SetPreferences(ui.Preferences{ReduceMotion: true, TextScale: 1})
-			finishDetail(t, queue)
-			tt.Frame()
-			if queries.Load() != 1 || posts.Load() != 0 || !tt.HasText("5") || a.panelState.detail != "" {
-				t.Fatal("opening the main-page reaction should only read its current count")
-			}
-			timer := time.AfterFunc(time.Second, unblock)
-			defer timer.Stop()
-			at := time.Now()
-			if err := tt.Click(a.L().Text(l10n.KeyRateLimitResetTodayReactionThank)); err != nil {
-				t.Fatal(err)
-			}
-			t.Logf("reaction with blocked post: %s", time.Since(at))
-			var ctx context.Context
-			select {
-			case ctx = <-started:
-			case <-time.After(time.Second):
-				t.Fatal("reaction click did not start the post")
-			}
-			if !a.panelState.reaction.task.Running || !tt.HasText("6") || !tt.HasText("+1") || posts.Load() != 1 {
-				t.Fatal("pending reaction and optimistic increment were not visible")
-			}
-			if leave == "back" {
-				// Feedback is on the main page now; open a real detail page while
-				// its post is pending, then exercise the actual Back control.
-				if err := tt.Click(a.L().Text(l10n.KeyAccounts)); err != nil {
-					t.Fatal(err)
-				}
-				if a.panelState.detail != detailAccounts || ctx.Err() != nil {
-					t.Fatal("pending post blocked account navigation")
-				}
-				if err := tt.Click(a.L().Text(l10n.KeyBack)); err != nil {
-					t.Fatal(err)
-				}
-			} else {
-				a.panelClosed() // The native close callback, without a real window.
-			}
-			select {
-			case <-release:
-				t.Fatal("UI interaction waited for the blocked post")
-			default:
-			}
-			timer.Stop()
-			if a.panelState.detail != "" || ctx.Err() == nil {
-				t.Fatal("leaving failed to cancel the pending reaction")
-			}
-			if leave == "close" {
-				if a.panelState.reaction.initialized || a.panelState.reaction.task.Running || a.panelState.reaction.snapshot != nil {
-					t.Fatal("closing retained or restarted reaction state")
-				}
-				unblock()
-				finishDetail(t, queue)
-				if a.panelState.reaction.snapshot != nil {
-					t.Fatal("cancelled response populated the closed panel")
-				}
-				tt = ui.NewTester(a.panelView, panelWidth, 860)
-			}
-			// Returning to the main page (or reopening) intentionally reads fresh
-			// feedback; that new generation must survive the old post's completion.
-			finishDetail(t, queue)
-			tt.Frame()
-			if queries.Load() != 2 || posts.Load() != 1 || a.panelState.reaction.task.Running || a.panelState.reaction.snapshot == nil || a.panelState.reaction.snapshot.Count == nil || *a.panelState.reaction.snapshot.Count != 17 || !tt.HasText("17") {
-				t.Fatal("returning did not display exactly one fresh reaction read")
-			}
-			if leave == "back" {
-				unblock()
-				finishDetail(t, queue)
-				tt.Frame()
-			}
-			if a.panelState.reaction.snapshot == nil || a.panelState.reaction.snapshot.Count == nil || *a.panelState.reaction.snapshot.Count != 17 || tt.HasText("99") || tt.HasText("+1") || queries.Load() != 2 || posts.Load() != 1 {
-				t.Fatal("late cancelled post corrupted the new presentation")
-			}
-		})
 	}
 }

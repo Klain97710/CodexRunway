@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/licoy/quosparr/internal/personal"
 	"os"
 	"path/filepath"
 	"testing"
@@ -44,7 +45,7 @@ func TestPanelRuntimeGrokRangeChangeDoesNotRelabelOldCost(t *testing.T) {
 	if before.Cost == nil || before.Cost.Totals.TotalTokens != 110 {
 		t.Fatal("temporary Grok fixture did not scan")
 	}
-	svc := runway.New(runway.Options{Preferences: p, Grok: g})
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Grok: g})
 	defer svc.Close()
 	svc.ReloadAccounts()
 	rt := &liveApp{svc: svc, grok: g, reset: newResetBridge(nil, p, nil)}

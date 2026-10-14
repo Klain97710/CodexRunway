@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"github.com/licoy/quosparr/internal/personal"
 	"os"
 	"testing"
 	"time"
@@ -12,7 +13,7 @@ import (
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/estimate"
 	"github.com/licoy/quosparr/internal/grok"
-	"github.com/licoy/quosparr/internal/resettoday"
+
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
@@ -43,7 +44,7 @@ func runNativePanelHost() error {
 	if err := DirectMygoPaths(mygo.App, home); err != nil {
 		return err
 	}
-	s := NewSettings(store.New(store.NewMemoryDomain(), nil), System{}, UnavailableCredentials{})
+	s := NewSettings(store.New(store.NewMemoryDomain(), nil), System{Features: personal.Features{Grok: true}}, UnavailableCredentials{})
 	if err := s.Load(); err != nil {
 		return err
 	}
@@ -100,37 +101,6 @@ func (h *nativePanelHost) actions() PanelActions {
 		Refresh: func() { h.refresh("") }, RefreshSection: h.refresh,
 		SelectProvider: func(p store.Provider) { h.app.settings.SetSelectedProvider(p) },
 		SwitchAccount:  h.switchAccount, QueryCost: h.queryCost,
-		QueryReaction: func(ctx context.Context) (resettoday.ReactionSnapshot, error) {
-			if err := ctx.Err(); err != nil {
-				return resettoday.ReactionSnapshot{}, err
-			}
-			var snap resettoday.ReactionSnapshot
-			runOnMain(func() {
-				if ctx.Err() == nil {
-					snap = h.reactionSnapshot()
-				}
-			})
-			return snap, ctx.Err()
-		},
-		React: func(ctx context.Context) (resettoday.ReactionPostResult, error) {
-			if err := nativeFixtureDelay(ctx); err != nil {
-				return resettoday.ReactionPostResult{}, err
-			}
-			// Capture the explicit fixture post on the UI thread, just as the real
-			// result is delivered there; no external request is made.
-			var snap resettoday.ReactionSnapshot
-			runOnMain(func() {
-				if ctx.Err() == nil {
-					h.count++
-					h.remaining--
-					snap = h.reactionSnapshot()
-				}
-			})
-			if err := ctx.Err(); err != nil {
-				return resettoday.ReactionPostResult{}, err
-			}
-			return resettoday.ReactionPostResult{OK: true, Data: &snap}, nil
-		},
 	}
 }
 
@@ -198,11 +168,6 @@ func nativeFixtureDelay(ctx context.Context) error {
 	case <-timer.C:
 		return nil
 	}
-}
-
-func (h *nativePanelHost) reactionSnapshot() resettoday.ReactionSnapshot {
-	polarity, count, remaining := resettoday.PolarityYes, h.count, h.remaining
-	return resettoday.ReactionSnapshot{Enabled: true, Ready: true, Polarity: &polarity, Count: &count, Remaining: &remaining, DailyLimit: 2}
 }
 
 func nativePanelHostSnapshot() runway.Snapshot {

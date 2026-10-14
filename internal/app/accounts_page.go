@@ -21,7 +21,11 @@ import (
 func renderAccountsPage(c *ui.Context, u *settingsUI) {
 	l := u.L()
 	f := accountFormOf(u)
-	accountProviderHeader(c, u, f)
+	if u.s.System().Features.Grok {
+		accountProviderHeader(c, u, f)
+	} else {
+		f.kind = 0
+	}
 	rt := currentRuntime()
 	if rt == nil {
 		ui.Text(c, l.Text(l10n.KeyNotLoaded)).FontSize(12).TextColor(c.Theme().TextMuted)

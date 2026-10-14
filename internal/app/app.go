@@ -12,7 +12,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 	"github.com/licoy/quosparr/internal/l10n"
-	"github.com/licoy/quosparr/internal/resettoday"
+
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
@@ -29,8 +29,6 @@ type PanelActions struct {
 	SwitchAccount  func(id string)
 	SelectProvider func(store.Provider)
 	QueryCost      func(context.Context, store.Provider, CostQuery) (usage.Summary, error)
-	QueryReaction  func(context.Context) (resettoday.ReactionSnapshot, error)
-	React          func(context.Context) (resettoday.ReactionPostResult, error)
 	// RepairSessions rebuilds the session index after a backup; the panel
 	// asks for confirmation first.
 	RepairSessions func()

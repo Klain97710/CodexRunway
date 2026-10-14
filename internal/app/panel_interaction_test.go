@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"github.com/licoy/quosparr/internal/personal"
 	"image/png"
 	"testing"
 	"time"
@@ -125,13 +126,13 @@ func TestPanelPrivacyChangeUpdatesIdentity(t *testing.T) {
 }
 
 func TestAccountMenuOpensEditorAndCancelClearsSensitiveDraft(t *testing.T) {
-	s := NewSettings(store.New(store.NewMemoryDomain(), nil), System{}, nil)
+	s := NewSettings(store.New(store.NewMemoryDomain(), nil), System{Features: personal.Features{Grok: true}}, nil)
 	s.prefs = store.DefaultPreferences()
 	s.prefs.Language = store.LanguageEnglish
 	s.applyLocale()
 	u := newSettingsUI(s, SettingsOptions{})
 	f := accountFormOf(u)
-	rt := &liveApp{svc: runway.New(runway.Options{Preferences: s.Prefs()})}
+	rt := &liveApp{svc: runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: s.Prefs()})}
 	t.Cleanup(rt.svc.Close)
 	account := codex.ManagedAccount{ID: "fixture", DisplayName: "Private account", Email: "private@example.com", Alias: "Personal"}
 	tt := ui.NewTester(func(c *ui.Context) {

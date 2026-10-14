@@ -13,7 +13,7 @@ import (
 func TestSessionLoginMigrationFindsPreviousBundleIdentity(t *testing.T) {
 	root := t.TempDir()
 	paths := map[uintptr]string{}
-	for i, id := range []string{"com.github.codex-runway", "com.github.quosparr", "com.quosparr.app", "org.example.other"} {
+	for i, id := range []string{"dev.licoy.codex-runway", "com.github.codex-runway", "com.quosparr.app", "org.example.other"} {
 		path := filepath.Join(root, id+".app")
 		if err := os.MkdirAll(filepath.Join(path, "Contents"), 0o700); err != nil {
 			t.Fatal(err)
@@ -35,7 +35,7 @@ func TestSessionLoginMigrationFindsPreviousBundleIdentity(t *testing.T) {
 	}
 	// No current-path match: only validated previous product identities qualify.
 	found, err := matchingSessionLoginItems(&api, 10, 20, "", true)
-	if err != nil || !found || !slices.Equal(removed, []uintptr{1, 2}) {
+	if err != nil || !found || !slices.Equal(removed, []uintptr{1}) {
 		t.Fatalf("previous login items were not selected safely: found=%v removed=%v err=%v", found, removed, err)
 	}
 }
@@ -86,15 +86,15 @@ func TestPreviousLaunchAgentsRequireMatchingBundleAndCommand(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(app, "Contents"), 0700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(app, "Contents/Info.plist"), []byte(`<plist><dict><key>CFBundleIdentifier</key><string>com.github.codex-runway</string></dict></plist>`), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(app, "Contents/Info.plist"), []byte(`<plist><dict><key>CFBundleIdentifier</key><string>dev.licoy.codex-runway</string></dict></plist>`), 0600); err != nil {
 		t.Fatal(err)
 	}
 	dir := filepath.Join(home, "Library/LaunchAgents")
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	path := filepath.Join(dir, "com.github.codex-runway.plist")
-	content := `<plist><dict><key>Label</key><string>com.github.codex-runway</string><key>ProgramArguments</key><array><string>/usr/bin/open</string><string>-a</string><string>` + app + `</string><string>--args</string><string>--mygo-login</string></array><key>RunAtLoad</key><true/><key>Disabled</key><true/></dict></plist>`
+	path := filepath.Join(dir, "dev.licoy.codex-runway.plist")
+	content := `<plist><dict><key>Label</key><string>dev.licoy.codex-runway</string><key>ProgramArguments</key><array><string>/usr/bin/open</string><string>-a</string><string>` + app + `</string><string>--args</string><string>--mygo-login</string></array><key>RunAtLoad</key><true/><key>Disabled</key><true/></dict></plist>`
 	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		t.Fatal(err)
 	}

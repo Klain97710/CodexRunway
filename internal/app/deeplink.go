@@ -22,7 +22,7 @@ func (a *App) OpenWidgetURL(raw string) bool {
 	case export.ScopeGrok:
 		provider = store.ProviderGrok
 	}
-	if link.Section == export.SectionResetToday {
+	if link.Section == export.SectionResetToday || !a.settings.System().Features.Grok {
 		provider = store.ProviderCodex
 	}
 	a.settings.SetSelectedProvider(provider)

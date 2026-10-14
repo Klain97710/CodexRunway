@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/licoy/quosparr/internal/personal"
 	"os"
 	"runtime"
 
@@ -14,6 +15,7 @@ import (
 // tests and dev runs), so tests and the dev-domain mode replace them. A nil
 // func means "not supported here".
 type System struct {
+	Features personal.Features
 	// PreferredLanguages are the OS languages, for the automatic language.
 	PreferredLanguages func() []string
 	// SetAppearance makes the app follow light, dark or the system.

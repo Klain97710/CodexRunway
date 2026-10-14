@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"github.com/licoy/quosparr/internal/personal"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -91,7 +92,7 @@ func TestPanelOpenLoadsLatestResetThroughLiveQueue(t *testing.T) {
 				return latest, nil
 			}
 			reset.ref.Refresh(context.Background(), true)
-			svc := runway.New(runway.Options{Preferences: prefs, ResetToday: reset})
+			svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: prefs, ResetToday: reset})
 			defer svc.Close()
 			rt := &liveApp{svc: svc, reset: reset}
 			defer rt.closePreferences()
@@ -148,7 +149,7 @@ func TestPanelOpenResetRefreshSurvivesQueuedFullRefresh(t *testing.T) {
 		calls.Add(1)
 		return resettoday.NewStateSnapshot(resettoday.StateNo, time.Now()), nil
 	}
-	svc := runway.New(runway.Options{Preferences: prefs, ResetToday: reset, Sources: runway.Sources{
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: prefs, ResetToday: reset, Sources: runway.Sources{
 		LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) {
 			return codex.Auth{}, errors.New("synthetic signed-out account")
 		},

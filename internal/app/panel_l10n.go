@@ -30,12 +30,6 @@ func init() {
 	extraTexts[xDetailUnavailable] = [7]string{"Detail service unavailable", "详情服务暂不可用", "詳情服務暫不可用", "상세 서비스를 사용할 수 없습니다", "詳細サービスを利用できません", "Сервис подробностей недоступен", "Service de détails indisponible"}
 }
 
-const xReactionFailed textKey = "reactionRequestFailed"
-
-func init() {
-	extraTexts[xReactionFailed] = [7]string{"Feedback request failed; try refreshing", "反馈请求失败，请刷新后重试", "回饋請求失敗，請重新整理後重試", "피드백 요청 실패; 새로고침 후 다시 시도하세요", "フィードバックの送信に失敗しました、更新して再試行してください", "Не удалось отправить отзыв; обновите и повторите", "Échec de la demande de retour ; actualisez et réessayez"}
-}
-
 const xGrokCycleUnavailable textKey = "grokBillingCycleUnavailable"
 
 func init() {

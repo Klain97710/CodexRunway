@@ -38,12 +38,6 @@ func newResetCard(l l10n.Localizer, state runway.ResetTodayState, busy bool) res
 func panelResetToday(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState) {
 	busy := snap.Refresh.Has(runway.SectionResetToday)
 	rc := newResetCard(l, snap.ResetToday, busy)
-	if !st.reaction.initialized && st.startReaction != nil {
-		st.reaction.initialized = true
-		if acts.QueryReaction != nil {
-			st.startReaction(acts, false)
-		}
-	}
 	sectionBlock(c, first, func() {
 		drawSectionHead(c, l, st, sectionSpec{
 			title: rc.sectionTitle(), refreshing: busy, refresh: sectionRefresh(acts, runway.SectionResetToday),
@@ -129,7 +123,7 @@ func resetTypeColor(t *ui.Theme, rt alerts.ResetType) ui.Color {
 	return sys(t, sysGreen)
 }
 
-// hero is the verdict and the reaction button, with the explaining line.
+// hero is the public verdict and its explanation.
 func (rc resetCard) hero(c *ui.Context, acts PanelActions, st *panelState) {
 	t := c.Theme()
 	color := rc.heroColor(t)
@@ -137,16 +131,9 @@ func (rc resetCard) hero(c *ui.Context, acts PanelActions, st *panelState) {
 		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
 			rc.heroTitle(c, color)
 			ui.Spacer(c).Grow(1)
-			rc.reactionButton(c, acts, st)
 		})
 		rc.heroSubtitle(c)
-		if st.reaction.task.Err != nil {
-			message := tx(rc.l, xReactionFailed)
-			if st.reaction.snapshot != nil && st.reaction.snapshot.IsExhausted() {
-				message = rc.l.Text(l10n.KeyRateLimitResetTodayReactionLimitReached)
-			}
-			ui.Text(c, message).FontSize(fsCaption).TextColor(sys(t, sysRed))
-		}
+
 	})
 }
 
@@ -368,71 +355,4 @@ func (rc resetCard) websiteLink(c *ui.Context) {
 	if b.Clicked() {
 		c.OpenURL(resetSiteURL)
 	}
-}
-
-// reactionButton is the capsule next to the verdict: the thanks / please
-// label with the count, a spinner while the count is loading.
-func (rc resetCard) reactionButton(c *ui.Context, acts PanelActions, st *panelState) {
-	t := c.Theme()
-	rs := &st.reaction
-	snap := rs.snapshot
-	loading := rs.task.Running && snap == nil
-	if snap == nil || !snap.IsVisible() {
-		if loading {
-			ui.Row(c).Padding(4, 8).Radius(100).Background(surfaceRaised(t)).Border(1, hairlineColor(t)).Children(func() { ui.Spinner(c).Size(10, 10) })
-		}
-		return
-	}
-	yes := snap.Polarity != nil && *snap.Polarity == resettoday.PolarityYes
-	key, emoji := l10n.KeyRateLimitResetTodayReactionPlease, "\U0001F64F"
-	if yes {
-		key, emoji = l10n.KeyRateLimitResetTodayReactionThank, "\U0001F389"
-	}
-	count := 0
-	if snap.Count != nil {
-		count = *snap.Count
-	}
-	exhausted := snap.IsExhausted()
-	disabled := rs.task.Running || exhausted || acts.React == nil
-	label := rc.l.Text(key)
-	b := ui.ButtonBase(c).Label(label).Disabled(disabled).Padding(4, 8).Gap(4).AlignItems(ui.Center).Radius(100)
-	hovered := b.Hovered() && !disabled
-	fill, border, ink := surfaceRaised(t), hairlineColor(t), t.Text
-	if yes {
-		ink = sys(t, sysGreen)
-		border = ink.Alpha(0.55)
-		if hovered {
-			fill, border = ink.Alpha(0.16), ink.Alpha(0.95)
-		}
-	} else if hovered {
-		fill, border = hoverNeutral(t), t.Text.Alpha(0.35)
-	}
-	b.Background(fill).Border(1, border).Tooltip(rc.reactionHelp(exhausted, count, yes))
-	if !disabled {
-		b.Cursor(ui.CursorPointer)
-	}
-	b.Children(func() {
-		if rs.task.Running {
-			ui.Spinner(c).Size(10, 10)
-		} else {
-			ui.Text(c, emoji).FontSize(fsCaption)
-		}
-		ui.Text(c, label).FontSize(fsCaption).FontWeight(600).TextColor(ink).SingleLine()
-		ui.Text(c, resettoday.FormatCount(count)).FontSize(fsCaption).FontWeight(600).FontFeatures("tnum").TextColor(ink).SingleLine()
-	})
-	if b.Clicked() && st.startReaction != nil {
-		st.startReaction(acts, true)
-	}
-	reactionFloat(c, b, rs)
-}
-
-func (rc resetCard) reactionHelp(exhausted bool, count int, yes bool) string {
-	if exhausted {
-		return rc.l.Text(l10n.KeyRateLimitResetTodayReactionLimitReached)
-	}
-	key := l10n.KeyRateLimitResetTodayReactionPleaseAria
-	if yes {
-		key = l10n.KeyRateLimitResetTodayReactionThankAria
-	}
-	return l10n.Format(rc.l.Text(key), resettoday.FormatCount(count))
 }
