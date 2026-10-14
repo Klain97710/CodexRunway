@@ -10,7 +10,7 @@
 ## Architecture and compatibility
 
 - Go 1.27.1 and mygo v0.4.8 are pinned in go.mod. Do not combine dependency upgrades with this migration or add a frontend framework.
-- Main app: Go + native mygo/ui; macOS 12+. Swift WidgetKit and bridge remain under Sources/QuosparrWidget*; Widget requires macOS 14+.
+- Main app: Go + native mygo/ui; macOS 13+ (user-approved 2026-10-14; macOS 12 stays on Swift). Swift WidgetKit and bridge remain under Sources/QuosparrWidget*; Widget requires macOS 14+.
 - Keep LSUIElement, old app identity, URL scheme, Widget kinds, Keychain service, preference domain, data directory and lock for replacement builds. Source/module names may remain upstream names.
 - Centralize personal configuration in internal/personal and mygo.json (product version source). Developer builds require a separate identity and explicitly marked sandbox.
 - Keep Swift fixture assets read-only; validate compatibility both ways. Preserve unknown fields and never reset damaged data to defaults and overwrite it.

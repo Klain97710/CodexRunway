@@ -19,7 +19,8 @@ SQLITE="$CONTENTS/Resources/libmygo-sqlite3.dylib"
 bash "$ROOT/Scripts/verify-packaged-app.sh" "$APP" "$ARCH" local
 [[ "$(plutil -extract CFBundleIdentifier raw "$CONTENTS/Info.plist")" == "$EXPECTED_ID" ]]
 [[ "$(plutil -extract LSUIElement raw "$CONTENTS/Info.plist")" == true ]]
-[[ "$(plutil -extract LSMinimumSystemVersion raw "$CONTENTS/Info.plist")" == 12.0 ]]
+MINIMUM="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["macos"]["minimumSystemVersion"])' "$CONFIG")"
+[[ "$(plutil -extract LSMinimumSystemVersion raw "$CONTENTS/Info.plist")" == "$MINIMUM" ]]
 [[ "$(plutil -extract LSMinimumSystemVersion raw "$WIDGET/Contents/Info.plist")" == 14.0 ]]
 [[ "$(plutil -extract RunwayWidgetStorageMode raw "$CONTENTS/Info.plist")" == local ]]
 [[ ! -e "$CONTENTS/Frameworks/Sparkle.framework" ]]

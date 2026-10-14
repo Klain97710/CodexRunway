@@ -15,11 +15,11 @@
     "tagPrefix": "personal-v"
   },
   "macos": {
-    "minimumSystemVersion": "12.0",
+    "minimumSystemVersion": "13.0",
     "infoPlist": {
       "LSUIElement": true,
       "SUPublicEDKey": "2rx0XvBCujbFPl3oRQicR2dZIWzknWEsnWr5o2wjK2Y=",
-      "CFBundleVersion": "2000",
+      "CFBundleVersion": "2001",
       "CFBundleURLTypes": [
         {
           "CFBundleURLName": "CodexRunway Widget",

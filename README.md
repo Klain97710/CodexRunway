@@ -1,4 +1,4 @@
-> Migration work in progress: this branch is NOT an accepted replacement. Use `personal/main` for the stable Swift edition. See [migration validation](docs/superpowers/plans/2026-10-14-quosparr-migration-validation.md).
+> Migration work in progress (Go candidate: macOS 13+; macOS 12 stays on Swift): this branch is NOT an accepted replacement. Use `personal/main` for the stable Swift edition. See [migration validation](docs/superpowers/plans/2026-10-14-quosparr-migration-validation.md).
 
 English · [简体中文](./README_ZH.md) · [繁體中文](./README_ZH_HANT.md) · [한국어](./README_KO.md) · [日本語](./README_JA.md) · [Русский](./README_RU.md) · [Français](./README_FR.md)
 

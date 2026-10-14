@@ -31,6 +31,9 @@ for arch in (sys.argv[4].split(",") if len(sys.argv)>4 else ("arm64","x86_64")):
     if version is None: version=enclosure.attrib.get(f"{{{ns}}}shortVersionString")
     if version!=cfg["version"]:
         raise SystemExit("legacy appcast version mismatch")
+    minimum=entries[0].findtext(f"{{{ns}}}minimumSystemVersion")
+    if minimum!=cfg["macos"]["minimumSystemVersion"]:
+        raise SystemExit("legacy appcast minimum system version mismatch")
     if int(enclosure.attrib["length"])!=(dist/name).stat().st_size:
         raise SystemExit("legacy archive length mismatch")
     signature=enclosure.attrib[f"{{{ns}}}edSignature"]
@@ -39,4 +42,4 @@ for arch in (sys.argv[4].split(",") if len(sys.argv)>4 else ("arm64","x86_64")):
     # The official tool verifies the enclosure bytes as well as our Go verifier.
     tool=subprocess.check_output(["bash",str(root/"Scripts/prepare-personal-sparkle-tools.sh")],text=True).strip()
     subprocess.run([tool,"--verify","--ed-key-file","-",str(dist/name),signature],input=os.environ["SPARKLE_PRIVATE_KEY"],text=True,check=True)
-print("Legacy XML feeds and ZIP signatures, versions and lengths verified")
+print("Legacy XML feeds and ZIP signatures, versions, minimum OS and lengths verified")
