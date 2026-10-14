@@ -17,13 +17,40 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
-      - name: Test and compile without launching the desktop application
-        run: |
-          go test -count=1 -timeout=10m ./...
-          go vet ./...
-          go build ./...
-          go test -race -count=1 -timeout=10m ./internal/...
-          go test -tags=quosparr_dev_package -count=1 ./internal/app -run '^TestPackagedDevelopmentUpdate'
+      - name: Automated regression gate without desktop or real Keychain
+        run: python3 Scripts/Tests/verify-personal-regressions.py
+      - name: Frozen Swift Core data readback
+        run: python3 Scripts/Tests/verify-personal-swift-compat.py
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: migration-checks-${{ github.sha }}
+          path: build/regressions/
+          retention-days: 7
+
+  migration-packages:
+    runs-on: macos-26
+    strategy:
+      max-parallel: 1
+      matrix:
+        arch: [arm64, x86_64]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Build isolated developer package and enforce actual minimum OS
+        env:
+          ARCH: ${{ matrix.arch }}
+          RUNWAY_BUILD_PROFILE: migration-dev
+        run: bash Scripts/package-v1-app.sh
+      - uses: actions/upload-artifact@v6
+        with:
+          name: migration-dev-${{ matrix.arch }}-${{ github.sha }}
+          path: build/migration-dev-${{ matrix.arch }}/CodexRunway-macos-*-dev.zip
+          retention-days: 7

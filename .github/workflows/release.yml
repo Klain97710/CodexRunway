@@ -20,6 +20,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
@@ -34,12 +36,8 @@ jobs:
           PY
       - name: Regression gate
         run: |
-          go test -count=1 -timeout=10m ./...
-          go vet ./...
-          go build ./...
-          python3 Scripts/Tests/test-personal-package.py
-          python3 Scripts/Tests/test-personal-release.py
-          python3 Scripts/Tests/test-workflow-drafts.py
+          python3 Scripts/Tests/verify-personal-regressions.py
+          python3 Scripts/Tests/verify-personal-swift-compat.py
       - name: Require a build newer than published personal releases
         env:
           GH_TOKEN: ${{ github.token }}

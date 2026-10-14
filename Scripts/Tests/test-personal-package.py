@@ -13,8 +13,19 @@ spec = importlib.util.spec_from_file_location('migration_runner', ROOT / 'Script
 runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
 
+macho_spec=importlib.util.spec_from_file_location('personal_macho',ROOT/'Scripts/verify-personal-macho.py')
+macho=importlib.util.module_from_spec(macho_spec)
+macho_spec.loader.exec_module(macho)
+
 
 class Profiles(unittest.TestCase):
+    def test_macho_rejects_false_minimum_os_claim(self):
+        with self.assertRaises(ValueError):
+            macho.check_minimum('    minos 13.0\n      sdk 26.2\n','12.0')
+        macho.check_minimum('    minos 13.0\n','13.0')
+        macho.check_minimum('    minos 12.0\n','13.0')
+        with self.assertRaises(ValueError): macho.check_minimum('sdk 12.0','12.0')
+
     def stage(self, env):
         with tempfile.TemporaryDirectory() as temp:
             base = {k: v for k, v in os.environ.items() if not k.startswith(('RUNWAY_', 'V1_'))}

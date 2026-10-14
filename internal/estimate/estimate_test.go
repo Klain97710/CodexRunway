@@ -265,7 +265,7 @@ func TestCorruptOrIncompleteHistoryReadsAsEmptyAndIsReplaced(t *testing.T) {
 
 func TestDefaultHistoryPath(t *testing.T) {
 	got := DefaultHistoryPath("/home/u")
-	if filepath.Base(got) != HistoryFileName || filepath.Base(filepath.Dir(got)) != ".quosparr" {
+	if filepath.Base(got) != HistoryFileName || filepath.Base(filepath.Dir(got)) != ".codex-runway" {
 		t.Fatalf("path = %s", got)
 	}
 }

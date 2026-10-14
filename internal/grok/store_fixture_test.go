@@ -3,6 +3,7 @@ package grok
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -149,7 +150,9 @@ func TestSwiftStoreSequence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(pack) != fx.Pack {
+	// Only the personal export format name changes; the frozen fixture stays intact.
+	expectedPack := strings.Replace(fx.Pack, `"format" : "quosparr-accounts"`, `"format" : "codex-runway-accounts"`, 1)
+	if string(pack) != expectedPack {
 		t.Errorf("pack differs from Swift:\n%s\nwant\n%s", pack, fx.Pack)
 	}
 

@@ -36,6 +36,7 @@ WIDGET_ENTITLEMENTS="$(codesign -d --entitlements :- "$WIDGET" 2>/dev/null)"
 printf '%s' "$HOST_ENTITLEMENTS" | python3 -c 'import plistlib,sys; assert plistlib.loads(sys.stdin.buffer.read())["com.apple.security.cs.disable-library-validation"] is True'
 printf '%s' "$WIDGET_ENTITLEMENTS" | python3 -c 'import plistlib,sys; assert plistlib.loads(sys.stdin.buffer.read())["com.apple.security.app-sandbox"] is True'
 printf '%s' "$WIDGET_ENTITLEMENTS" | python3 -c 'import plistlib,sys; assert plistlib.loads(sys.stdin.buffer.read())["com.apple.security.temporary-exception.files.home-relative-path.read-only"] == ["/" + sys.argv[1] + "/widget-snapshot.json"]' "$SNAPSHOT_DIR"
+python3 "$ROOT/Scripts/verify-personal-macho.py" "$APP" "$CONFIG"
 printf 'Verified Go v1 host, WidgetKit bridge, SQLite, local snapshot permission and final signatures (%s)\n' "$ARCH"
 python3 - "$CONTENTS/Info.plist" "$CONFIG" "$CONTENTS/Resources/AppIcon.icns" <<'PYVERIFY'
 import json,pathlib,plistlib,struct,sys

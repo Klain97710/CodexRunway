@@ -370,7 +370,7 @@ func TestStoreDuplicatesInOneBatchAreBothReturned(t *testing.T) {
 
 func TestDefaultPath(t *testing.T) {
 	got := DefaultPath(filepath.Join("home", "u"))
-	if filepath.Base(got) != "alerts.json" || filepath.Base(filepath.Dir(got)) != ".quosparr" {
+	if filepath.Base(got) != "alerts.json" || filepath.Base(filepath.Dir(got)) != ".codex-runway" {
 		t.Fatalf("path = %s", got)
 	}
 }
