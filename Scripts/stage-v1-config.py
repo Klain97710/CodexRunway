@@ -16,17 +16,25 @@ if int(config["macos"]["infoPlist"]["CFBundleVersion"]) < 100:
 config["main"] = str(root)
 config["icon"] = str(root / config["icon"])
 config["resources"] = [str(root / entry) for entry in config.get("resources", [])]
-if os.environ.get("V1_DEVELOPMENT_PACKAGE", "0") == "1":
+profile = os.environ.get("RUNWAY_BUILD_PROFILE", "migration-dev")
+if profile not in ("migration-dev", "replacement-candidate"):
+    raise SystemExit("unknown RUNWAY_BUILD_PROFILE")
+development = profile == "migration-dev"
+if os.environ.get("V1_DEVELOPMENT_PACKAGE", "1" if development else "0") != ("1" if development else "0"):
+    raise SystemExit("development flag conflicts with build profile")
+if development:
+    config["name"] = "CodexRunway Migration"
+    config["identifier"] = "com.github.codex-runway.migration"
+    config["urlSchemes"] = ["codex-runway-migration"]
+    config["macos"]["infoPlist"]["CFBundleURLTypes"] = [{"CFBundleURLName": "Migration fixtures", "CFBundleURLSchemes": config["urlSchemes"]}]
     config.pop("updates", None)
-elif os.environ.get("V1_UPDATE_CHANNEL", "stable") == "beta":
-    if "-" not in config["version"]:
-        raise SystemExit("beta channel requires a prerelease version in mygo.json")
-    config["updates"].pop("github", None)
-    config["updates"].pop("tagPrefix", None)
-    config["updates"]["url"] = "https://github.com/Licoy/Quosparr/releases/download/v1-beta"
-elif os.environ.get("V1_UPDATE_CHANNEL", "stable") != "stable":
-    raise SystemExit("V1_UPDATE_CHANNEL must be stable or beta")
+    config["macos"]["infoPlist"].pop("SUPublicEDKey", None)
 else:
-    config["updates"]["tagPrefix"] = "v"
+    if os.environ.get("V1_UPDATE_CHANNEL", "stable") != "stable":
+        raise SystemExit("only the personal stable channel is supported")
+    config["updates"]["tagPrefix"] = "personal-v"
+    if config["updates"].get("github") != "Klain97710/CodexRunway":
+        raise SystemExit("replacement updates must use the personal repository")
+config["macos"]["infoPlist"]["RunwayBuildProfile"] = profile
 destination.mkdir(parents=True, exist_ok=True)
 (destination / "mygo.json").write_text(json.dumps(config, indent=2) + "\n")

@@ -20,7 +20,7 @@ The upstream merge preserves history and adopts the Go architecture. Removed Swi
 | Gate | Status | Evidence / outstanding work |
 | --- | --- | --- |
 | G0 Baseline and isolation branch | PASS | Pinned commits, separate worktree, two signed Swift backups |
-| G1 Isolated developer runtime | NOT RUN | Implement sandbox/profile guards before launch |
+| G1 Isolated developer runtime | PARTIAL | Go sandbox/app tests, go build and 4 packaging-policy tests PASS; packaged desktop acceptance pending |
 | G2 Identity/data/lock compatibility | NOT RUN | Synthetic round-trip and lock tests required |
 | G3 Codex only and no reactions | NOT RUN | Runtime counters required |
 | G4 Tray, actions and Widget | NOT RUN | Code and isolated desktop validation required |
@@ -28,3 +28,5 @@ The upstream merge preserves history and adopts the Go architecture. Removed Swi
 | G6 Automated tests and packaging | NOT RUN | Exact candidate SHA and artifacts required |
 | G7 Real two-generation update | NOT RUN | Disposable macOS test environment required |
 | G8 Platform/rollback acceptance | NOT RUN | macOS 12/13, Intel, Widget and rollback evidence required |
+
+Task 2 source isolation validated: default builds require a private marked sandbox; UserDefaults is replaced by sandbox JSON, credentials by memory, notifications by an unsupported backend, and background work by offline sources. External CODEX_HOME/GROK_HOME and symlinks are rejected. Replacement builds require an explicit profile and build tag. Full package validation remains part of G6.

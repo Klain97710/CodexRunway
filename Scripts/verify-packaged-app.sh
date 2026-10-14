@@ -26,7 +26,7 @@ WIDGET_ARCHS="$(lipo -archs "$WIDGET/Contents/MacOS/QuosparrWidget")"
   printf 'Unexpected widget identifier: %s (host: %s)\n' "$WIDGET_ID" "$HOST_ID" >&2
   exit 1
 }
-[[ "$WIDGET_DISPLAY_NAME" == "Quosparr" ]] || {
+[[ "$WIDGET_DISPLAY_NAME" == "$(plutil -extract CFBundleName raw "$APP/Contents/Info.plist")" ]] || {
   printf 'Unexpected widget display name: %s\n' "$WIDGET_DISPLAY_NAME" >&2
   exit 1
 }

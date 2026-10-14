@@ -9,10 +9,17 @@ case "$ARCH" in
   x86_64) GOARCH=amd64 ;;
   *) printf 'Unsupported architecture: %s\n' "$ARCH" >&2; exit 2 ;;
 esac
-DEVELOPMENT="${V1_DEVELOPMENT_PACKAGE:-0}"
+PROFILE="${RUNWAY_BUILD_PROFILE:-migration-dev}"
+case "$PROFILE" in
+  migration-dev) DEVELOPMENT=1; APP_NAME='CodexRunway Migration'; SNAPSHOT_DIR=.codex-runway-migration ;;
+  replacement-candidate) DEVELOPMENT=0; APP_NAME=CodexRunway; SNAPSHOT_DIR=.codex-runway ;;
+  *) printf 'Invalid RUNWAY_BUILD_PROFILE\n' >&2; exit 2 ;;
+esac
+[[ "${V1_DEVELOPMENT_PACKAGE:-$DEVELOPMENT}" == "$DEVELOPMENT" ]] || { printf 'Conflicting build profile\n' >&2; exit 2; }
+export RUNWAY_BUILD_PROFILE="$PROFILE"
 case "$DEVELOPMENT" in 0) SUFFIX= ;; 1) SUFFIX=-dev ;; *) printf 'V1_DEVELOPMENT_PACKAGE must be 0 or 1\n' >&2; exit 2 ;; esac
-WORK="${V1_BUILD_DIR:-$ROOT/build/v1-$ARCH}"
-APP="$WORK/darwin-$GOARCH/Quosparr.app"
+WORK="${V1_BUILD_DIR:-$ROOT/build/$PROFILE-$ARCH}"
+APP="$WORK/darwin-$GOARCH/$APP_NAME.app"
 CONTENTS="$APP/Contents"
 WIDGET="$CONTENTS/PlugIns/QuosparrWidget.appex"
 BRIDGE="$CONTENTS/Frameworks/libQuosparrWidgetBridge.dylib"
@@ -36,13 +43,15 @@ cp "$CONFIG_STAGE/mygo.json" "$WORK/config/mygo.json"
 if [[ "$DEVELOPMENT" == 1 ]]; then
   export GOFLAGS="${GOFLAGS:+$GOFLAGS }-tags=quosparr_dev_package"
   printf 'Development review package: updater disabled, no update manifest is generated\n'
+else
+  export GOFLAGS="${GOFLAGS:+$GOFLAGS }-tags=personal_replacement"
 fi
 go run github.com/egoist/mygo/cmd/mygo build \
   -platform "darwin/$GOARCH" -o "$WORK" -skip-dmg -skip-notarize -sign - "$CONFIG_STAGE"
 # The CLI archive predates the Widget and final signatures; never ship it
 rm -f "$WORK/darwin-$GOARCH"/update-*.json "$WORK/darwin-$GOARCH"/*.tar.gz
 [[ -d "$APP" ]] || { printf 'Missing MyGo bundle: %s\n' "$APP" >&2; exit 1; }
-go version -m "$CONTENTS/MacOS/Quosparr" | python3 -c 'import sys; tags=[line.strip().split("=",1)[1] for line in sys.stdin if line.strip().startswith("build\t-tags=")]; assert any("quosparr_dev_package" in value.split(",") for value in tags) == (sys.argv[1] == "1"), "packaged update mode mismatch"' "$DEVELOPMENT"
+go version -m "$CONTENTS/MacOS/$APP_NAME" | python3 -c 'import sys; tags=[line.strip().split("=",1)[1] for line in sys.stdin if line.strip().startswith("build\t-tags=")]; assert any("quosparr_dev_package" in value.split(",") for value in tags) == (sys.argv[1] == "1"), "packaged update mode mismatch"' "$DEVELOPMENT"
 mkdir -p "$CONTENTS/Frameworks" "$CONTENTS/PlugIns"
 xcrun swiftc -swift-version 5 -O -emit-library \
   -module-cache-path "$WORK/bridge-module-cache" \
@@ -61,8 +70,8 @@ xcodebuild -project "$ROOT/WidgetExtension/QuosparrWidget.xcodeproj" \
   -clonedSourcePackagesDirPath "$ROOT/.build/v1-widget-packages" \
   -packageCachePath "$WORK/package-cache" -skipPackageUpdates \
   RUNWAY_WIDGET_BUNDLE_ID="$HOST_ID.widget" \
-  RUNWAY_APP_GROUP_ID=group.com.quosparr.app \
-  RUNWAY_WIDGET_DISPLAY_NAME=Quosparr RUNWAY_WIDGET_STORAGE_MODE=local \
+  RUNWAY_APP_GROUP_ID="group.$HOST_ID" \
+  RUNWAY_WIDGET_DISPLAY_NAME="$APP_NAME" RUNWAY_WIDGET_STORAGE_MODE=local \
   MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" \
   CODE_SIGNING_ALLOWED=NO ARCHS="$ARCH" ONLY_ACTIVE_ARCH=YES \
   ENABLE_APP_SANDBOX=NO CODE_SIGN_ENTITLEMENTS= \
@@ -74,7 +83,7 @@ for lproj in "$ROOT/Resources"/*.lproj; do
 done
 plutil -replace RunwayWidgetStorageMode -string local "$CONTENTS/Info.plist"
 plutil -replace NSAppDataUsageDescription -string \
-  'Quosparr reads local Codex and Grok configuration to show quota, reset credits, and API-equivalent cost.' \
+  'CodexRunway reads local Codex configuration to show quota, reset credits, and API-equivalent cost.' \
   "$CONTENTS/Info.plist"
 
 # Sign only after every resource is embedded, inside out, then archive that
@@ -82,33 +91,34 @@ plutil -replace NSAppDataUsageDescription -string \
 [[ ! -e "$CONTENTS/Frameworks/Sparkle.framework" ]] || { printf 'Unexpected Sparkle.framework\n' >&2; exit 1; }
 APP_ENTITLEMENTS="$WORK/app-entitlements.plist"
 WIDGET_ENTITLEMENTS="$WORK/widget-entitlements.plist"
+rm -f "$APP_ENTITLEMENTS" "$WIDGET_ENTITLEMENTS"
 plutil -create xml1 "$APP_ENTITLEMENTS"
 /usr/libexec/PlistBuddy -c 'Add :com.apple.security.cs.disable-library-validation bool true' "$APP_ENTITLEMENTS"
 plutil -create xml1 "$WIDGET_ENTITLEMENTS"
 /usr/libexec/PlistBuddy \
   -c 'Add :com.apple.security.app-sandbox bool true' \
   -c 'Add :com.apple.security.temporary-exception.files.home-relative-path.read-only array' \
-  -c 'Add :com.apple.security.temporary-exception.files.home-relative-path.read-only:0 string /.quosparr/widget-snapshot.json' \
+  -c "Add :com.apple.security.temporary-exception.files.home-relative-path.read-only:0 string /$SNAPSHOT_DIR/widget-snapshot.json" \
   "$WIDGET_ENTITLEMENTS"
 runway_codesign "$BRIDGE" "$HOST_ID.widget-bridge"
 runway_codesign "$CONTENTS/Resources/libmygo-sqlite3.dylib" "$HOST_ID.sqlite"
 runway_codesign "$WIDGET" "$HOST_ID.widget" "$WIDGET_ENTITLEMENTS"
 runway_codesign "$APP" "$HOST_ID" "$APP_ENTITLEMENTS"
 bash "$ROOT/Scripts/verify-v1-app.sh" "$APP" "$ARCH" "$WORK/config/mygo.json"
-ZIP="$WORK/Quosparr-macos-$ARCH$SUFFIX.zip"
+ZIP="$WORK/CodexRunway-macos-$ARCH$SUFFIX.zip"
 rm -f "$ZIP"
 ditto -c -k --keepParent "$APP" "$ZIP"
 printf 'Packaged v1: %s\nArchive: %s\n' "$APP" "$ZIP"
 if [[ "$DEVELOPMENT" == 0 ]]; then
   TAR="$WORK/quosparr-$VERSION-darwin-$GOARCH.tar.gz"
-  COPYFILE_DISABLE=1 tar -czf "$TAR" -C "$(dirname "$APP")" Quosparr.app
+  COPYFILE_DISABLE=1 tar -czf "$TAR" -C "$(dirname "$APP")" "$APP_NAME.app"
   go run ./Scripts/release-assets sign -config "$WORK/config/mygo.json" -dir "$WORK" -targets "darwin-$GOARCH"
   DMG_ROOT="$WORK/dmg-root"
   rm -rf "$DMG_ROOT"
   mkdir -p "$DMG_ROOT"
-  ditto "$APP" "$DMG_ROOT/Quosparr.app"
+  ditto "$APP" "$DMG_ROOT/$APP_NAME.app"
   ln -s /Applications "$DMG_ROOT/Applications"
-  hdiutil create -volname Quosparr -srcfolder "$DMG_ROOT" -ov -format UDZO "$WORK/Quosparr-macos-$ARCH.dmg" >/dev/null
+  hdiutil create -volname "$APP_NAME" -srcfolder "$DMG_ROOT" -ov -format UDZO "$WORK/CodexRunway-macos-$ARCH.dmg" >/dev/null
   rm -rf "$DMG_ROOT"
   printf 'Final mygo archive and DMG generated from the verified bundle\n'
 fi

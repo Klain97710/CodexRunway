@@ -16,7 +16,7 @@ import (
 
 	"github.com/egoist/mygo"
 	"github.com/licoy/quosparr/internal/app"
-	"github.com/licoy/quosparr/internal/migration"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/platform"
 	"github.com/licoy/quosparr/internal/sqliteruntime"
 )
@@ -56,7 +56,11 @@ func main() {
 		fmt.Print(app.HelpText)
 		return
 	case app.CommandSelfCheck:
-		home, _ := platform.Home()
+		home, err := startupHome()
+		if err != nil {
+			log.Println(err)
+			os.Exit(1)
+		}
 		app.SelfCheck(os.Stdout, home, appVersion())
 		return
 	}
@@ -73,46 +77,24 @@ func run(command app.Command) int {
 	relaunched := app.TakeRelaunchMark()
 	app.MarkRelaunchable()
 
-	mg := mygo.App
-	mg.SetName("Quosparr")
-
-	// Dev mode (a scratch preferences domain, see app.DevDomainEnv) never
-	// hands over to a running real instance and never changes the machine.
-	st, dev, err := app.OpenStore()
+	dev := personal.Development || os.Getenv(personal.SandboxEnv) != ""
+	home, err := startupHome()
 	if err != nil {
-		log.Println("preferences store:", err)
+		log.Println(err)
 		return 1
 	}
-
-	// A second Go instance hands over to the first, which opens the requested UI.
-	// This comes before the file lock only so that hand-over works; nothing
-	// is read or written until the file lock is held.
+	mg := mygo.App
+	if dev {
+		mg.SetName(personal.DevName)
+	} else {
+		mg.SetName(personal.Name)
+	}
 	if !dev && !mg.RequestSingleInstanceLock() {
 		return 0
 	}
 
-	home, err := platform.Home()
-	if err != nil {
-		log.Println("home directory:", err)
-		return 1
-	}
-	if !dev {
-		legacyLock, err := platform.AcquireLegacyLock(home, func(path string) (*platform.Lock, error) {
-			return app.AcquireInstanceLock(path, relaunched)
-		})
-		if err != nil {
-			log.Println("previous app lock:", err)
-			return 1
-		}
-		defer legacyLock.Release()
-		if migrated, err := migration.Run(home); err != nil {
-			log.Println("app data migration:", err)
-			return 1
-		} else if migrated {
-			log.Println("migrated previous app data to ~/.quosparr; original preserved")
-		}
-	}
-
+	// This edition keeps the Swift directory. Never copy it onto itself or
+	// acquire both the renamed and legacy lock on the same inode.
 	// The same file the Swift app locks: the two can never run together.
 	// A relaunched process waits for the old one to release the lock; the lock
 	// file is never removed.
@@ -131,9 +113,16 @@ func run(command app.Command) int {
 		return 1
 	}
 
-	sys := app.DefaultSystem()
+	st, _, err := app.OpenStore()
+	if err != nil {
+		log.Println("preferences store:", err)
+		return 1
+	}
+	var sys app.System
 	if dev {
 		sys = app.DevSystem()
+	} else {
+		sys = app.DefaultSystem()
 	}
 	// The "check automatically" switch reaches the updater through the
 	// System; the updater is created once the settings are loaded.
@@ -148,13 +137,20 @@ func run(command app.Command) int {
 			}
 		}
 	}
-	creds := app.NewPlatformCredentials()
+	var creds *app.PlatformCredentials
+	if dev {
+		creds = app.DevelopmentCredentials()
+	} else {
+		creds = app.NewPlatformCredentials()
+	}
 	settings = app.NewSettings(st, sys, creds)
-	app.UseProxy(settings, func() {
-		if upd != nil {
-			upd.RequestAutomaticChecks(settings.Prefs().AutomaticallyChecksForUpdates, settings.BackgroundAllowed())
-		}
-	})
+	if !dev {
+		app.UseProxy(settings, func() {
+			if upd != nil {
+				upd.RequestAutomaticChecks(settings.Prefs().AutomaticallyChecksForUpdates, settings.BackgroundAllowed())
+			}
+		})
+	}
 
 	// LoadPreferences already imports the Swift app's legacy domain when the
 	// current one has no settings, so MigrateLegacy is not a separate step.
@@ -166,7 +162,9 @@ func run(command app.Command) int {
 		VerifyProxy: settings.LoadProxy,
 	}
 	report := seams.RunSteps()
-	app.InstallStartupProxy(settings, creds)
+	if !dev {
+		app.InstallStartupProxy(settings, creds)
+	}
 	for _, p := range report.Problems {
 		log.Println("startup:", p)
 	}
@@ -184,11 +182,13 @@ func run(command app.Command) int {
 	// The preference is the only truth for background checks: it is applied
 	// before the updater's scheduler starts (when the app is ready). A dev run
 	// leaves the updater's state alone.
-	upd, err = app.UseUpdater(app.UpdateOptions{
-		Language: app.UpdateLanguage(settings.L().Language()),
-	})
-	if err != nil {
-		log.Println("updater:", err)
+	if !dev {
+		upd, err = app.UseUpdater(app.UpdateOptions{
+			Language: app.UpdateLanguage(settings.L().Language()),
+		})
+		if err != nil {
+			log.Println("updater:", err)
+		}
 	}
 	if upd != nil && !dev {
 		// Each launch checks once (when checks are on), then hourly.
@@ -197,7 +197,12 @@ func run(command app.Command) int {
 		}
 		upd.Reapply(settings)
 	}
-	notifier := app.NewNotifier()
+	var notifier *app.Notifier
+	if dev {
+		notifier = app.DevelopmentNotifier()
+	} else {
+		notifier = app.NewNotifier()
+	}
 	actions := app.Actions{
 		TestNotification: notifier.TestAction(settings.L, app.ShowDialog),
 		Refresh:          app.RequestLiveRefresh,
@@ -213,11 +218,18 @@ func run(command app.Command) int {
 		actions.CheckForUpdates = func() { upd.CheckNow(settings.L()) }
 	}
 
+	if dev {
+		actions.Refresh = nil
+		actions.RepairIndex = nil
+		actions.OpenFolder = nil
+	}
 	var ui *app.App
 	seams.StartBackground = func(ctx context.Context) func() {
-		return app.StartBackground(ctx, app.BackgroundOptions{
-			Home: home, Settings: settings, Notifier: notifier, Version: appVersion(), Host: ui,
-		})
+		opts := app.BackgroundOptions{Home: home, Settings: settings, Notifier: notifier, Version: appVersion(), Host: ui}
+		if dev {
+			return app.StartDevelopmentBackground(ctx, opts)
+		}
+		return app.StartBackground(ctx, opts)
 	}
 	ui = app.New(app.Options{
 		Version: appVersion(), Seams: seams, Report: report, Settings: settings, Actions: actions,
@@ -227,7 +239,9 @@ func run(command app.Command) int {
 	}
 	mg.OnSecondInstance(launch.SecondInstance)
 	mg.OnOpenURL(func(raw string) { mg.WhenReady(func() { ui.OpenWidgetURL(raw) }) })
-	mg.OnActivate(func(bool) { app.RefreshWidgetConfigurations() })
+	if !dev {
+		mg.OnActivate(func(bool) { app.RefreshWidgetConfigurations() })
+	}
 	// A click on a notification (also the one that launched the app) opens the
 	// panel.
 	mg.OnNotificationClick(func(string) { ui.OpenPanel() })
@@ -272,4 +286,12 @@ func devScreenshots(ui *app.App, base string) {
 		_ = os.WriteFile(fmt.Sprintf("%s-%d.png", base, tab), png, 0o600)
 	}
 	mygo.App.Quit()
+}
+
+// Resolve the developer boundary before any data or system store is opened.
+func startupHome() (string, error) {
+	if personal.Development || os.Getenv(personal.SandboxEnv) != "" {
+		return personal.DevelopmentHome()
+	}
+	return platform.Home()
 }

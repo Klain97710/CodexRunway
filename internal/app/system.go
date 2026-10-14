@@ -66,11 +66,9 @@ func DefaultSystem() System {
 // (login item, updater): for manual runs against a scratch preferences
 // domain.
 func DevSystem() System {
-	s := DefaultSystem()
-	s.LoginSupported = false
-	s.OpenAtLogin, s.SetOpenAtLogin, s.LoginStatus, s.ApplyLogin = nil, nil, nil, nil
-	s.LoginAsync = false
-	return s
+	mac := runtime.GOOS == "darwin"
+	return System{PreferredLanguages: l10n.SystemPreferredLanguages, SetAppearance: setMygoAppearance, StatusBarStyles: mac, PanelBackground: mac}
+
 }
 
 func setMygoAppearance(a store.Appearance) {
