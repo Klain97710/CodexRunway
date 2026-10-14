@@ -10,19 +10,19 @@
 
 **Tech Stack:** Go 1.27.1、mygo v0.4.8、purego 与上游锁定依赖；Swift WidgetKit/桥接；GitHub Actions；旧客户端 Sparkle → Go 包，后续 mygo 更新。
 
-**设计依据：** [迁移验证设计](../specs/2026-10-14-quosparr-migration-design.md)。计划已获用户授权执行。源码适配、自动化和本地候选构建已完成，远程 CI 与隔离桌面验收按下表继续；尚未安装候选版。
+**设计依据：** [迁移验证设计](../specs/2026-10-14-quosparr-migration-design.md)。计划已获用户授权执行。源码适配、自动化和本地候选构建已完成，远程 CI 全部通过，隔离桌面验收按下表继续；尚未安装候选版。
 
 ## 执行状态（2026-10-14）
 
 | Task | 当前状态 | 证据 / 剩余 |
 | --- | --- | --- |
 | 1 | 完成 | 隔离 worktree、固定合并、双份 Swift 备份；稳定安装未改 |
-| 2 | 源码完成，桌面未验收 | 隔离与禁用更新测试通过；双架构开发包交给 CI |
+| 2 | 源码完成，桌面未验收 | 隔离与禁用更新测试、双架构开发包 CI 通过 |
 | 3 | 源码和合成数据测试完成 | 固定 Swift Core 双向读回、SQLite 复用通过；真实 Keychain/桌面锁待测 |
 | 4 | 源码和运行层测试完成 | Codex 正向控制、Grok/互动零调用通过；桌面待测 |
 | 5 | 源码、离屏布局与契约测试完成 | 三列/Pro/动作菜单已恢复；旧 Widget 实际刷新待测 |
 | 6 | 源码、离线信任与草稿策略通过 | 两代签名及个人下载限制通过；真实安装链待测 |
-| 7 | 本地回归和双架构打包通过 | CI 绑定提交与最终 2002 构建进行中 |
+| 7 | 自动化和打包完成 | 2002 冻结源码 `6ebc6a0`，双架构包、全部本地及 CI 检查通过 |
 | 8 | NOT RUN | 已提供隔离代理/执行手册；缺一次性 macOS 测试环境 |
 | 9 | NOT RUN | 缺桌面、最低系统、Intel、Widget 和真实回退证据 |
 
@@ -58,7 +58,7 @@
 - [ ] 完整主程序先仅在一次性 VM/专用用户运行。开发机只进行显式目录依赖注入的测试和构建；不覆盖 shell 的 HOME、CODEX_HOME 等现有环境变量来模拟安全隔离。
 - [x] 不原样执行上游 `Scripts/run-dev-app.sh`；它以正式身份和真实用户环境运行。开发入口应默认使用上述隔离档位，对正式候选运行明确提示实际目标路径。
 - [x] 保留 `QUOSPARR_DEV_*` 测试钩子；检查 `QUOSPARR_PREFS_DOMAIN` 仅隔离偏好，不把它当作文件、Keychain 或 Widget 的隔离证明。
-- [ ] 无 secrets 生成两个架构的开发包，验证开发构建标签和 updater-disabled 行为；发布构建缺少密钥必须失败。
+- [x] 无 secrets 生成两个架构的开发包，验证开发构建标签和 updater-disabled 行为；发布构建缺少密钥必须失败。
 - [x] 提交 `build: isolate personal migration development packages`。
 
 **门槛 G1：** 试运行不会触碰日常账号/偏好/登录项/生产更新源。若 VM 尚不可用，继续纯测试与打包，桌面验收标记未执行。
@@ -164,7 +164,7 @@ python3 Scripts/Tests/test-workflow-drafts.py
 
 - [x] Codex 回归覆盖 OAuth/import/API Key、多账号刷新、配额、重置券、估算、成本、Token 图、会话索引修复、隐私开关；故障用 fake 网络和假凭据，OAuth 真实授权只在正常人工冒烟阶段验证。
 - [x] 并发回归覆盖刷新重入、部分失败、超时取消、切号后迟到响应、退出时 goroutine 回收；缓存保留真实采集时间，网络错误日志脱敏；代理失败不能直连。
-- [ ] 依次构建 arm64、x86_64，分开输出目录；在 Task 2 脚本适配后运行：
+- [x] 依次构建 arm64、x86_64，分开输出目录；在 Task 2 脚本适配后运行：
 
 ```bash
 V1_DEVELOPMENT_PACKAGE=1 ARCH=arm64 bash Scripts/package-v1-app.sh
@@ -172,7 +172,7 @@ V1_DEVELOPMENT_PACKAGE=1 ARCH=x86_64 bash Scripts/package-v1-app.sh
 ```
 
 - [x] 生产候选从受控签名环境构建，用适配后的 `verify-v1-app.sh` 验证最终 manifest、Mach-O 架构/最低系统、Widget/桥接/SQLite、动态库 rpath、签名、产品身份、版本和更新公钥；DMG 运行 `hdiutil verify`。构建主机的 SDK 版本不是最低系统运行证明。
-- [ ] 保存产物 SHA、CI run URL、测试统计和失败摘要；验证报告只写结论，不放认证数据。本轮 CI 必需目标为 macOS 两架构，Windows/Linux 构建如保留仅作额外兼容信号，不是已支持声明。
+- [x] 保存产物 SHA、CI run URL、测试统计和失败摘要；验证报告只写结论，不放认证数据。本轮 CI 必需目标为 macOS 两架构，Windows/Linux 构建如保留仅作额外兼容信号，不是已支持声明。
 - [x] 提交 `test: gate personal migration regressions and packaging`。
 
 **门槛 G6：** 自动回归和签名构建全部通过，CI 绑定候选确切 SHA。出现后续代码/资源改动须重打受影响产物，不能沿用旧报告。

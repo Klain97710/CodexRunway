@@ -10,9 +10,30 @@
 - 固定 Swift Core → Go → Swift：偏好、账号索引字段比较通过；Swift/Go 生成的 SQLite 均能复用，精确 Token/费用与时区结果通过。
 - Python 包装、发布、签名与草稿命令回归通过。Sparkle XML 和 ZIP 分别校验；合法签名但缺失/错误最低系统的 feed 被拒绝。
 - 离屏状态栏覆盖七种语言和两种主题，三列布局及 Pro 单行通过。离屏输出不代表桌面系统缩放、窗口和 Widget 验收。
-- 2001 双架构包已通过实际 Mach-O 最低系统、签名、Widget/桥接/SQLite、归档一致性和 DMG 校验。最终 2002 冻结源码包、提交 SHA、校验值与 CI 链接将在执行后追加。
+- 最终 2002 双架构包已通过实际 Mach-O 最低系统、签名、Widget/桥接/SQLite、归档一致性和 DMG 校验。宿主与 Widget 版本/构建一致；两代签名通过。
 
 详细本地日志在忽略的 `build/regressions`；报告保留跳过项。可选桌面/真实 Keychain 探针和上游保留的两项 Grok 日期边界测试不计为 PASS。SQLite 跨实现探针已单独实际执行，并非依赖套件内条件跳过。
+
+## 冻结候选与校验值
+
+源码提交：[`6ebc6a061189fe4b561b2c405810c812b105e13c`](https://github.com/Klain97710/CodexRunway/commit/6ebc6a061189fe4b561b2c405810c812b105e13c)。两个架构二进制的 `vcs.revision` 均为该提交，`vcs.modified=false`。本地完整回归报告也绑定该提交且 `dirty=false`。后续仅记录验收结果的文档提交不改变该冻结候选。
+
+候选文件位于忽略的 `build/personal-candidate`，未上传到 Release。`SHA256SUMS` 自身 SHA256：`83e38f0eba1b530c807c9997c7fddc2551ee5e5d33786f2293123cd1fdf5e1a9`。
+
+```text
+dd5f4b542f4420dc4687ed7e97adbdddef7cd1b8ef81ecc703d6752c4ffa12c2  CodexRunway-macos-arm64.dmg
+45ea1fcccd65c239eba214d8282db8dc726eab240320211908dda10777e8f73d  CodexRunway-macos-arm64.zip
+87ff11b6686568fe0c86ff7e04771471cc76a21b854790dff2db1e7c773ceff9  CodexRunway-macos-x86_64.dmg
+cd7baed051dd2c7ae4700e0ca97d426b62fd9f43a7dc12e6bf59fab5c0c6d2be  CodexRunway-macos-x86_64.zip
+5aefe49efe9454e75946fb7f5eca5521f9da05464d6e4c317ca7a12dcd9e4b4f  appcast-arm64.xml
+0f06031948a3668193951452b8158f3aabcc5e59870129de9ff752831fdb206a  appcast-x86_64.xml
+6306a2563c708f0cbdc9c897812f7ea20c63ea5ec973f83709a1a9a6a55a8570  codex-runway-0.2.0-darwin-amd64.tar.gz
+71d620f7757bab669fc98afeee70d07a24a96b85b956d860541d581a6b9a8d25  codex-runway-0.2.0-darwin-arm64.tar.gz
+7e457a5759811575c57345cd2fadfdced5d4ad60d36dc41ff8988941b82a6a3c  update-darwin-amd64.json
+ea4a13a8319460f71f57b3433d6abd49fa64833bde78025872fb3fc3fe198fc0  update-darwin-arm64.json
+```
+
+GitHub CI：[38520238128](https://github.com/Klain97710/CodexRunway/actions/runs/38520238128)，绑定同一源码 SHA。全部通过：go-checks、arm64 开发包、x86_64 开发包。已下载 CI 回归报告，确认源码 SHA、`dirty=false`、1,756/1,742 测试计数和零失败与本地一致。CI 仅生成隔离开发包和测试日志，不使用发布私钥。
 
 ## 尚未执行的验收
 
