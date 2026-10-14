@@ -1,0 +1,145 @@
+{
+  "cost" : {
+    "calculatedAt" : "2026-06-30T10:00:00Z",
+    "clientRows" : [
+
+    ],
+    "confidence" : "priced",
+    "dailyRows" : [
+      {
+        "creditsReported" : true,
+        "date" : "2026-06-29",
+        "estimatedUSD" : 0.216048,
+        "rawCredits" : 3379.6,
+        "totals" : {
+          "cachedInputTokens" : 200,
+          "outputTokens" : 100,
+          "threads" : 1,
+          "totalTokens" : 1000,
+          "turns" : 3,
+          "uncachedInputTokens" : 700
+        },
+        "totalsReported" : true
+      },
+      {
+        "date" : "2026-06-30",
+        "rawCredits" : 0,
+        "totals" : {
+          "cachedInputTokens" : 0,
+          "outputTokens" : 0,
+          "threads" : 0,
+          "totalTokens" : 0,
+          "turns" : 0,
+          "uncachedInputTokens" : 0
+        }
+      }
+    ],
+    "estimatedUSD" : 1.25,
+    "modelRows" : [
+      {
+        "estimatedUSD" : 1.25,
+        "name" : "gpt-5.5",
+        "rawCredits" : 0,
+        "totals" : {
+          "cachedInputTokens" : 200,
+          "outputTokens" : 100,
+          "threads" : 1,
+          "totalTokens" : 1000,
+          "turns" : 3,
+          "uncachedInputTokens" : 700
+        }
+      }
+    ],
+    "pricingVersion" : "test\/1",
+    "projectRows" : [
+      {
+        "estimatedUSD" : 1.25,
+        "name" : "quosparr",
+        "rawCredits" : 0,
+        "totals" : {
+          "cachedInputTokens" : 200,
+          "outputTokens" : 100,
+          "threads" : 1,
+          "totalTokens" : 1000,
+          "turns" : 3,
+          "uncachedInputTokens" : 700
+        }
+      }
+    ],
+    "rawCredits" : 3379.6,
+    "source" : "localSessions",
+    "totals" : {
+      "cachedInputTokens" : 200,
+      "outputTokens" : 100,
+      "threads" : 1,
+      "totalTokens" : 1000,
+      "turns" : 3,
+      "uncachedInputTokens" : 700
+    },
+    "warnings" : [
+      "analytics-token-parts-missing"
+    ],
+    "window" : {
+      "duration" : 3600,
+      "start" : "2026-06-30T09:00:00Z"
+    }
+  },
+  "generatedAt" : "2026-06-30T10:00:00Z",
+  "quota" : {
+    "additionalWindows" : [
+      {
+        "name" : "GPT-5.3-Codex-Spark",
+        "resetsAt" : "2026-06-30T10:00:00Z",
+        "usedPercent" : 3
+      }
+    ],
+    "creditsBalance" : 12.5,
+    "plan" : "pro",
+    "primary" : {
+      "name" : "5-hour",
+      "resetsAt" : "2026-06-30T11:00:00Z",
+      "usedPercent" : 25
+    },
+    "secondary" : {
+      "name" : "Weekly",
+      "usedPercent" : 60
+    },
+    "updatedAt" : "2026-06-30T10:00:00Z"
+  },
+  "sessions" : {
+    "items" : [
+      {
+        "cwd" : "\/Users\/me\/dev\/quosparr",
+        "estimatedUSD" : 1.25,
+        "id" : "s1",
+        "projectName" : "quosparr",
+        "state" : "needsAttention",
+        "title" : "Fix \"status\" \/ <json>",
+        "totals" : {
+          "cachedInputTokens" : 200,
+          "outputTokens" : 100,
+          "threads" : 1,
+          "totalTokens" : 1000,
+          "turns" : 3,
+          "uncachedInputTokens" : 700
+        },
+        "updatedAt" : "2026-06-30T10:00:00Z"
+      },
+      {
+        "id" : "s2",
+        "projectName" : "Unknown project",
+        "state" : "failed",
+        "title" : "Untitled",
+        "totals" : {
+          "cachedInputTokens" : 0,
+          "outputTokens" : 0,
+          "threads" : 0,
+          "totalTokens" : 0,
+          "turns" : 0,
+          "uncachedInputTokens" : 0
+        },
+        "updatedAt" : "2026-06-30T09:58:59Z"
+      }
+    ]
+  }
+}

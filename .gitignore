@@ -2,6 +2,42 @@
 dist/
 .DS_Store
 *.xcuserstate
+xcuserdata/
+
+# Local Python bytecode and scratch files
+__pycache__/
+*.pyc
+*.pyo
+/tmp/
+
+# Release workflow output
+/dist-v1/
+/release-notes.md
 
 # Promo video workspace
 video/
+
+# Local Claude Code agent definitions
+.claude/
+
+# Go / mygo
+/build/
+/.mygo/
+/quosparr
+/quosparr.exe
+*.test
+*.out
+coverage.*
+
+# Update signing keys never enter the repository
+*.key
+mygo-update.key
+
+# Code signing material (never commit)
+certs/
+*.pfx
+*.p12
+
+# Previous local build output
+/codex-runway
+/codex-runway.exe

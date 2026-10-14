@@ -2,11 +2,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP="${1:-$ROOT/dist/CodexRunway.app}"
+APP="${1:-$ROOT/dist/Quosparr.app}"
 EXPECTED_ARCH="${2:-$(uname -m)}"
 EXPECTED_STORAGE_MODE="${3:-local}"
-EXPECTED_CHANNEL="${4:-development}"
-WIDGET="$APP/Contents/PlugIns/CodexRunwayWidget.appex"
+WIDGET="$APP/Contents/PlugIns/QuosparrWidget.appex"
 
 [[ -d "$APP" ]] || { printf 'Missing app: %s\n' "$APP" >&2; exit 1; }
 [[ -d "$WIDGET" ]] || { printf 'Missing widget extension: %s\n' "$WIDGET" >&2; exit 1; }
@@ -21,35 +20,13 @@ WIDGET_VERSION="$(plutil -extract CFBundleShortVersionString raw "$WIDGET/Conten
 HOST_BUILD="$(plutil -extract CFBundleVersion raw "$APP/Contents/Info.plist")"
 WIDGET_BUILD="$(plutil -extract CFBundleVersion raw "$WIDGET/Contents/Info.plist")"
 STORAGE_MODE="$(plutil -extract RunwayWidgetStorageMode raw "$WIDGET/Contents/Info.plist")"
-WIDGET_ARCHS="$(lipo -archs "$WIDGET/Contents/MacOS/CodexRunwayWidget")"
-HOST_ARCHS="$(lipo -archs "$APP/Contents/MacOS/CodexRunway")"
-
-[[ "$HOST_ARCHS" == "$EXPECTED_ARCH" ]] || {
-  printf 'Unexpected host architecture: %s (expected %s)\n' "$HOST_ARCHS" "$EXPECTED_ARCH" >&2
-  exit 1
-}
-python3 - "$APP/Contents/Info.plist" "$EXPECTED_CHANNEL" <<'PY'
-import base64
-import plistlib
-import sys
-with open(sys.argv[1], 'rb') as source:
-    info = plistlib.load(source)
-assert info['LSUIElement'] is True
-assert info['LSMinimumSystemVersion'] == '12.0'
-assert sys.argv[2] in ('release', 'development')
-assert info['RunwayUpdatesEnabled'] == (sys.argv[2] == 'release')
-if sys.argv[2] == 'release':
-    assert info['CFBundleIdentifier'] == 'com.github.codex-runway'
-    assert info['SURequireSignedFeed'] is True
-    assert info['SUVerifyUpdateBeforeExtraction'] is True
-    assert len(base64.b64decode(info['SUPublicEDKey'], validate=True)) == 32
-PY
+WIDGET_ARCHS="$(lipo -archs "$WIDGET/Contents/MacOS/QuosparrWidget")"
 
 [[ "$WIDGET_ID" == "$HOST_ID.widget" ]] || {
   printf 'Unexpected widget identifier: %s (host: %s)\n' "$WIDGET_ID" "$HOST_ID" >&2
   exit 1
 }
-[[ "$WIDGET_DISPLAY_NAME" == "CodexRunway" ]] || {
+[[ "$WIDGET_DISPLAY_NAME" == "Quosparr" ]] || {
   printf 'Unexpected widget display name: %s\n' "$WIDGET_DISPLAY_NAME" >&2
   exit 1
 }

@@ -1,0 +1,68 @@
+{
+  "accounts" : [
+    {
+      "accountId" : "acct-a",
+      "alias" : "Alpha \/ one",
+      "authMode" : "oauth",
+      "createdAt" : "2023-11-14T22:13:20.123Z",
+      "displayName" : "a@example.com",
+      "email" : "a@example.com",
+      "id" : "oauth-4428a9edcf192bba",
+      "lastUsedAt" : "2023-11-14T22:13:20.123Z",
+      "note" : "néte \"quoted\"",
+      "planType" : "plus",
+      "requiresReauth" : false,
+      "sortIndex" : 0,
+      "subjectId" : "s-acct-a",
+      "subscriptionExpiresAt" : "2099-01-02T03:04:05.000Z",
+      "userId" : "user-Aa1",
+      "username" : "user-Aa1"
+    },
+    {
+      "accountId" : "acct-b",
+      "authMode" : "oauth",
+      "cachedQuota" : {
+        "additionalMeters" : [
+          {
+            "id" : "additional-0-Spark",
+            "name" : "Spark",
+            "usedPercent" : 11,
+            "windowMinutes" : 300
+          }
+        ],
+        "plan" : "plus",
+        "primaryResetsAt" : "2023-11-15T03:13:20.500Z",
+        "primaryUsedPercent" : 42,
+        "primaryWindowMinutes" : 300,
+        "secondaryResetsAt" : "2023-11-21T20:53:20.000Z",
+        "secondaryUsedPercent" : 7,
+        "secondaryWindowMinutes" : 10080,
+        "updatedAt" : "2023-11-14T22:21:40.250Z"
+      },
+      "createdAt" : "2023-11-14T22:14:20.123Z",
+      "displayName" : "b@example.com",
+      "email" : "b@example.com",
+      "id" : "oauth-235a35e3d1d68b96",
+      "lastError" : "boom",
+      "lastQuotaAt" : "2023-11-14T22:21:40.250Z",
+      "planType" : "plus",
+      "requiresReauth" : true,
+      "sortIndex" : 1,
+      "subscriptionExpiresAt" : "2096-10-02T07:06:40.000Z",
+      "username" : "sub-b",
+      "workspaceName" : "WS 日本"
+    },
+    {
+      "accountId" : "api-cd18d789e4a138b4",
+      "authMode" : "apiKey",
+      "createdAt" : "2023-11-14T22:15:20.123Z",
+      "displayName" : "API ···38b4",
+      "id" : "api-cd18d789e4a138b4",
+      "planType" : "api",
+      "requiresReauth" : false,
+      "sortIndex" : 2
+    }
+  ],
+  "activeAccountId" : "oauth-4428a9edcf192bba",
+  "version" : 1
+}

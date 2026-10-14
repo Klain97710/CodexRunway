@@ -1,0 +1,157 @@
+[
+  {
+    "name" : "full",
+    "payloads" : [
+      "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"auth_mode\" : \"oidc\",\n    \"email\" : \"paste@example.com\",\n    \"expires_at\" : \"2099-08-01T12:00:00Z\",\n    \"key\" : \"pk\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"principal_id\" : \"pp\",\n    \"refresh_token\" : \"pr\",\n    \"user_id\" : \"pu\"\n  }\n}"
+    ],
+    "text" : "{\"https://auth.x.ai::desktop-client\":{\"auth_mode\":\"oidc\",\"email\":\"paste@example.com\",\"expires_at\":\"2099-08-01T12:00:00Z\",\"key\":\"pk\",\"oidc_client_id\":\"desktop-client\",\"oidc_issuer\":\"https://auth.x.ai\",\"principal_id\":\"pp\",\"refresh_token\":\"pr\",\"user_id\":\"pu\"}}"
+  },
+  {
+    "name" : "bare",
+    "payloads" : [
+      "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"auth_mode\" : \"oidc\",\n    \"email\" : \"body@example.com\",\n    \"key\" : \"bk\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"principal_id\" : \"bp\",\n    \"refresh_token\" : \"br\",\n    \"user_id\" : \"bu\"\n  }\n}"
+    ],
+    "text" : "{\"email\":\"body@example.com\",\"key\":\"bk\",\"refresh_token\":\"br\",\"user_id\":\"bu\",\"principal_id\":\"bp\"}"
+  },
+  {
+    "name" : "bare_legacy",
+    "payloads" : [
+      "{\n  \"https://accounts.x.ai/sign-in\" : {\n    \"auth_mode\" : \"web_login\",\n    \"email\" : \"legacy-paste@example.com\",\n    \"key\" : \"lk\",\n    \"user_id\" : \"lu\"\n  }\n}"
+    ],
+    "text" : "{\"auth_mode\":\"web_login\",\"email\":\"legacy-paste@example.com\",\"key\":\"lk\",\"user_id\":\"lu\"}"
+  },
+  {
+    "name" : "bare_grok_mode",
+    "payloads" : [
+      "{\n  \"https://accounts.x.ai/sign-in\" : {\n    \"auth_mode\" : \"grok\",\n    \"email\" : \"g@example.com\",\n    \"key\" : \"lk\",\n    \"user_id\" : \"gu\"\n  }\n}"
+    ],
+    "text" : "{\"auth_mode\":\"grok\",\"email\":\"g@example.com\",\"key\":\"lk\",\"user_id\":\"gu\"}"
+  },
+  {
+    "name" : "bare_no_mode_no_refresh",
+    "payloads" : [
+      "{\n  \"https://accounts.x.ai/sign-in\" : {\n    \"auth_mode\" : \"grok\",\n    \"email\" : \"nm@example.com\",\n    \"key\" : \"lk\",\n    \"user_id\" : \"nmu\"\n  }\n}"
+    ],
+    "text" : "{\"email\":\"nm@example.com\",\"key\":\"lk\",\"user_id\":\"nmu\"}"
+  },
+  {
+    "name" : "bare_client",
+    "payloads" : [
+      "{\n  \"https://auth.x.ai::my-client\" : {\n    \"auth_mode\" : \"oidc\",\n    \"email\" : \"c@example.com\",\n    \"key\" : \"ck\",\n    \"oidc_client_id\" : \"my-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"user_id\" : \"cu\"\n  }\n}"
+    ],
+    "text" : "{\"email\":\"c@example.com\",\"key\":\"ck\",\"user_id\":\"cu\",\"oidc_client_id\":\"my-client\"}"
+  },
+  {
+    "name" : "bare_oidc_mode",
+    "payloads" : [
+      "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"auth_mode\" : \"OIDC\",\n    \"email\" : \"o@example.com\",\n    \"key\" : \"ck\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"user_id\" : \"ou\"\n  }\n}"
+    ],
+    "text" : "{\"auth_mode\":\"OIDC\",\"email\":\"o@example.com\",\"key\":\"ck\",\"user_id\":\"ou\"}"
+  },
+  {
+    "name" : "bare_issuer_only",
+    "payloads" : [
+      "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"auth_mode\" : \"oidc\",\n    \"email\" : \"i@example.com\",\n    \"key\" : \"ck\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://other.x.ai\",\n    \"user_id\" : \"iu\"\n  }\n}"
+    ],
+    "text" : "{\"email\":\"i@example.com\",\"key\":\"ck\",\"user_id\":\"iu\",\"oidc_issuer\":\"https://other.x.ai\"}"
+  },
+  {
+    "name" : "camel",
+    "payloads" : [
+      "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"accessToken\" : \"ac\",\n    \"auth_mode\" : \"oidc\",\n    \"email\" : \"camel@example.com\",\n    \"key\" : \"ac\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"principal_id\" : \"cp\",\n    \"refresh_token\" : \"rc\",\n    \"refreshToken\" : \"rc\"\n  }\n}"
+    ],
+    "text" : "{\"email\":\"camel@example.com\",\"accessToken\":\"ac\",\"refreshToken\":\"rc\",\"principal_id\":\"cp\"}"
+  },
+  {
+    "name" : "snake_access",
+    "payloads" : [
+      "{\n  \"https://accounts.x.ai/sign-in\" : {\n    \"access_token\" : \"asn\",\n    \"auth_mode\" : \"grok\",\n    \"email\" : \"sa@example.com\",\n    \"key\" : \"asn\",\n    \"user_id\" : \"sau\"\n  }\n}"
+    ],
+    "text" : "{\"email\":\"sa@example.com\",\"access_token\":\"asn\",\"user_id\":\"sau\"}"
+  },
+  {
+    "name" : "array",
+    "payloads" : [
+      "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"auth_mode\" : \"oidc\",\n    \"email\" : \"one@example.com\",\n    \"key\" : \"a1\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"principal_id\" : \"p1\",\n    \"refresh_token\" : \"r1\",\n    \"user_id\" : \"u1\"\n  }\n}",
+      "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"auth_mode\" : \"oidc\",\n    \"email\" : \"two@example.com\",\n    \"key\" : \"a2\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"principal_id\" : \"p2\",\n    \"refresh_token\" : \"r2\",\n    \"user_id\" : \"u2\"\n  }\n}"
+    ],
+    "text" : "[{\"email\":\"one@example.com\",\"key\":\"a1\",\"refresh_token\":\"r1\",\"user_id\":\"u1\",\"principal_id\":\"p1\"},{\"email\":\"two@example.com\",\"key\":\"a2\",\"refresh_token\":\"r2\",\"user_id\":\"u2\",\"principal_id\":\"p2\"}]"
+  },
+  {
+    "name" : "array_dupes",
+    "payloads" : [
+      "{\n  \"https://accounts.x.ai/sign-in\" : {\n    \"auth_mode\" : \"grok\",\n    \"email\" : \"one@example.com\",\n    \"key\" : \"a1\",\n    \"user_id\" : \"u1\"\n  }\n}"
+    ],
+    "text" : "[{\"email\":\"one@example.com\",\"key\":\"a1\",\"user_id\":\"u1\"},{\"email\":\"one@example.com\",\"key\":\"a1b\",\"user_id\":\"u1\"}]"
+  },
+  {
+    "name" : "notes",
+    "payloads" : [
+      "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"auth_mode\" : \"oidc\",\n    \"email\" : \"notes@example.com\",\n    \"key\" : \"nk\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"refresh_token\" : \"nr\",\n    \"user_id\" : \"nu\"\n  }\n}"
+    ],
+    "text" : "here is my grok auth:\n{\"email\":\"notes@example.com\",\"key\":\"nk\",\"user_id\":\"nu\",\"refresh_token\":\"nr\"}\nthanks"
+  },
+  {
+    "name" : "ndjson",
+    "payloads" : [
+      "{\n  \"https://accounts.x.ai/sign-in\" : {\n    \"auth_mode\" : \"grok\",\n    \"email\" : \"l1@example.com\",\n    \"key\" : \"k1\",\n    \"user_id\" : \"u1\"\n  }\n}"
+    ],
+    "text" : "{\"email\":\"l1@example.com\",\"key\":\"k1\",\"user_id\":\"u1\"}\n{\"email\":\"l2@example.com\",\"key\":\"k2\",\"user_id\":\"u2\"}\nnot json\n"
+  },
+  {
+    "name" : "api_only",
+    "payloads" : [
+
+    ],
+    "text" : "{\"xai::api_key\":{\"auth_mode\":\"api_key\",\"key\":\"xai-key\"}}"
+  },
+  {
+    "name" : "hello",
+    "payloads" : [
+
+    ],
+    "text" : "{\"hello\":\"world\"}"
+  },
+  {
+    "name" : "bare_token",
+    "payloads" : [
+
+    ],
+    "text" : "just-a-bare-token-without-identity-fields"
+  },
+  {
+    "name" : "token_only",
+    "payloads" : [
+
+    ],
+    "text" : "{\"key\":\"token-only-no-identity\"}"
+  },
+  {
+    "name" : "empty",
+    "payloads" : [
+
+    ],
+    "text" : "   "
+  },
+  {
+    "name" : "mixed_array",
+    "payloads" : [
+      "{\n  \"https://accounts.x.ai/sign-in\" : {\n    \"auth_mode\" : \"grok\",\n    \"email\" : \"m@example.com\",\n    \"key\" : \"mk\",\n    \"user_id\" : \"mu\"\n  }\n}"
+    ],
+    "text" : "[{\"hello\":1},{\"email\":\"m@example.com\",\"key\":\"mk\",\"user_id\":\"mu\"},5,\"x\"]"
+  },
+  {
+    "name" : "nested_authroot_in_array",
+    "payloads" : [
+      "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"key\" : \"k\",\n    \"user_id\" : \"na\"\n  }\n}"
+    ],
+    "text" : "[{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"na\"}}]"
+  },
+  {
+    "name" : "unicode_slash",
+    "payloads" : [
+      "{\n  \"https://accounts.x.ai/sign-in\" : {\n    \"auth_mode\" : \"grok\",\n    \"email\" : \"é@example.com\",\n    \"key\" : \"a/b\",\n    \"team_name\" : \"日本\",\n    \"user_id\" : \"uni\"\n  }\n}"
+    ],
+    "text" : "{\"email\":\"é@example.com\",\"key\":\"a/b\",\"user_id\":\"uni\",\"team_name\":\"日本\"}"
+  }
+]

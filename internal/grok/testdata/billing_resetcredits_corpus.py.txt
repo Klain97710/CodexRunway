@@ -1,0 +1,145 @@
+import json,struct,random
+random.seed(11)
+def hx(b): return b.hex()
+def vint(v):
+    out=b''
+    while True:
+        b=v&0x7f; v>>=7
+        if v: out+=bytes([b|0x80])
+        else: out+=bytes([b]); return out
+def ld(field,data): return vint(field<<3|2)+vint(len(data))+data
+def vf(field,val): return vint(field<<3)+vint(val)
+def ts(sec,nanos=None):
+    b=vf(1,sec&0xFFFFFFFFFFFFFFFF)
+    if nanos is not None: b+=vf(2,nanos)
+    return b
+def tok(id=b'restok',s=None,e=None,extra=b''):
+    b=b''
+    if id is not None: b+=ld(10,id)
+    if s is not None: b+=ld(20,s)
+    if e is not None: b+=ld(30,e)
+    return b+extra
+def resp(*toks): return b''.join(ld(10,t) for t in toks)
+def frame(msg,flags=0): return bytes([flags])+struct.pack('>I',len(msg))+msg
+def trailer(status=None,message=None,sep=b'\r\n',extra=b''):
+    t=b''
+    if status is not None: t+=b'grpc-status:'+status+sep
+    if message is not None: t+=b'grpc-message:'+message+sep
+    return frame(t+extra,0x80)
+cases=[]
+NOW=1786601000
+cases.append(b'')
+cases.append(resp(tok(s=ts(NOW-100),e=ts(NOW+100))))
+cases.append(resp(tok(s=ts(NOW-100),e=ts(NOW+100,500000000))))
+cases.append(resp(tok(e=ts(NOW+100)), tok(b'two',s=ts(NOW),e=ts(NOW-5)), tok(b'',e=ts(5)), tok(b'noend',s=ts(5))))
+cases.append(resp(tok(e=ts(0)), tok(b'x',e=b''), tok(b'neg',e=ts(-5)), tok(b'big',e=ts(2**62)), tok(b'huge',e=ts(2**63))))
+cases.append(resp(tok(e=ts(NOW,1500000000))))
+cases.append(resp(tok(e=ts(NOW,2**63+5))))
+cases.append(resp(tok(id=b'\xff\xfe',e=ts(NOW+5))))   # invalid utf8 id
+cases.append(resp(tok(id=b'a',e=ts(NOW+5),extra=ld(10,b'\xff')+ld(10,b'second'))))
+cases.append(resp(tok(e=ts(NOW+5),extra=ld(30,b'garbage-not-proto\xff\xff'))))
+cases.append(resp(tok(e=b'\x80'+ts(NOW+9)))) # bad inner
+cases.append(ld(10,b'\x80') )   # bad token proto
+cases.append(b'\x0a\x05abc')   # truncated length-delimited
+cases.append(b'\x08\x01')  # field 1 varint (ignored)
+cases.append(b'\x09'+b'\x00'*8) # fixed64 ignored
+cases.append(b'\x0d'+b'\x00'*4) # fixed32 ignored
+cases.append(b'\x09'+b'\x00'*7) # truncated fixed64
+cases.append(b'\x0b')       # group start wire 3
+cases.append(b'\x0f')       # wire 7
+cases.append(b'\x80')       # truncated varint tag
+cases.append(vint(1<<63)+b'\x01')
+cases.append(b'\xff'*9+b'\x01'+b'\x00')   # tag varint 10 bytes
+cases.append(b'\xff'*10+b'\x01')   # tag 11 bytes
+cases.append(bytes([0x50])+b'\xff'*9+b'\x01') # field 10 varint, 10-byte value
+cases.append(bytes([0x52])+b'\xff'*9+b'\x01') # field 10 len delim with 10-byte huge len
+cases.append(bytes([0x52])+vint(2**63)+b'x') # len 2^63
+cases.append(bytes([0x52])+vint(2**64-1)+b'x') # len 2^64-1
+cases.append(resp(tok(e=ts(NOW+100)))+b'\x08')  # trailing truncated
+# gRPC web
+good=resp(tok(e=ts(NOW+100)))
+cases.append(frame(good)+trailer(b'0'))
+cases.append(frame(good)+trailer(b'0',b''))
+cases.append(frame(b'')+trailer(b'0'))
+cases.append(frame(b'')+trailer(b'13',b'internal'))
+cases.append(frame(b'')+trailer(b'13',b'in%20ternal%21'))
+cases.append(frame(b'')+trailer(b'13',b'bad%2'))
+cases.append(frame(b'')+trailer(b'13',b'bad%ZZ'))
+cases.append(frame(b'')+trailer(b'13',b'%FF%FE'))
+cases.append(frame(b'')+trailer(b'13',b'%E4%BD%A0'))
+cases.append(frame(b'')+trailer(b'13'))
+cases.append(frame(b'')+trailer(b'  7  ',b'  spaced  '))
+cases.append(frame(b'')+trailer(b'+3',b'plus'))
+cases.append(frame(b'')+trailer(b'abc',b'nostatus'))
+cases.append(frame(b'')+trailer(b'0',b'ok'))
+cases.append(frame(b'')+trailer(b'5',sep=b'\n'))
+cases.append(frame(b'')+trailer(b'5',b'm',sep=b'\r'))
+cases.append(frame(b'')+trailer(b'5',b'm',sep=b'\xc2\x85'))
+cases.append(frame(b'')+trailer(b'5',b'm',sep=b'\xe2\x80\xa8'))
+cases.append(frame(b'')+trailer(b'5',b'm',sep=b'\x0b'))
+cases.append(frame(b'')+trailer(b'5',b'm',sep=b'\x0c'))
+cases.append(frame(b'')+frame(b'GRPC-STATUS: 9\r\nGrpc-Message: Upper\r\n',0x80))
+cases.append(frame(b'')+frame(b'grpc-status:1\r\ngrpc-status:0\r\n',0x80))
+cases.append(frame(b'')+frame(b'grpc-status:0\r\ngrpc-status:2\r\n',0x80))
+cases.append(frame(b'')+frame(b'grpc-status 1\r\n',0x80))
+cases.append(frame(b'')+frame(b'\xff\xfe grpc-status:1',0x80))
+cases.append(frame(good)+frame(b'grpc-status:4',0x81))
+cases.append(frame(good,1))
+cases.append(frame(good,0x81))
+cases.append(frame(good,2))
+cases.append(frame(good,0x40))
+cases.append(frame(good,0x80))
+cases.append(frame(good)[:-1])
+cases.append(frame(good)+b'\x00\x00')
+cases.append(frame(good)+frame(good))
+cases.append(frame(resp(tok(b'a',e=ts(NOW+1))))+frame(resp(tok(b'b',e=ts(NOW+2))))+trailer(b'0'))
+cases.append(b'\x00\x00\x00\x00')  # <5 bytes
+cases.append(b'\x00\x00\x00\x00\x00')
+cases.append(b'\x01\x00\x00\x00\x00')
+cases.append(b'\x80\x00\x00\x00\x00')
+cases.append(b'\x02\x00\x00\x00\x00')
+cases.append(bytes([0x0a]))
+cases.append(b'\x00\xff\xff\xff\xff')
+cases.append(b'\x00\x80\x00\x00\x00')
+# JSON
+def js(s): return s.encode()
+base='{"tokens":[{"tokenId":"t1","validityStart":%s,"validityEnd":%s}]}'
+dates=['"2026-08-12T18:49:00Z"','"2026-08-12T18:49:00.123456Z"','"bad"','""','1789238940','1789238940.5','-5','0','true','false','null','[]','{}','{"seconds":1789238940}','{"seconds":1789238940,"nanos":500000000}','{"seconds":"1789238940","nanos":"250"}','{"seconds":1789238940.9}','{"seconds":1.5,"nanos":2}','{"seconds":true}','{"seconds":false}','{"seconds":null,"nanos":5}','{"nanos":5}','{"seconds":1789238940,"nanos":"x"}','{"seconds":1789238940,"nanos":true}','{"seconds":-1,"nanos":-5}','{"seconds":"+12"}','{"seconds":" 12"}','{"seconds":"1e3"}','{"seconds":1e3}','1e3','1E3','9007199254740993','123456789012345678901234567890','1e300','-1e300','{"seconds":9223372036854775807}','{"seconds":1e18}','{"seconds":"9223372036854775807"}','{"seconds":"9223372036854775808"}','{"seconds":0.5}','"2026-08-12T18:49:00+0100"','" 2026-08-12T18:49:00Z"','"2026-08-12 18:49:00Z"']
+for d in dates:
+    cases.append(js(base%('"2026-08-12T18:49:00Z"',d)))
+    cases.append(js(base%(d,'"2026-09-12T18:49:00Z"')))
+cases.append(js('{"tokens":[{"token_id":"snake","validity_start":"2026-08-12T18:49:00Z","validity_end":"2026-09-12T18:49:00Z"}]}'))
+cases.append(js('{"tokens":[{"tokenId":"camel","token_id":"snake","validityEnd":"2026-09-12T18:49:00Z","validity_end":"2026-10-12T18:49:00Z"}]}'))
+cases.append(js('{"tokens":[{"tokenId":"","token_id":"snake","validityEnd":"2026-09-12T18:49:00Z"}]}'))
+cases.append(js('{"tokens":[{"tokenId":"  ","token_id":" snake ","validityEnd":"2026-09-12T18:49:00Z"}]}'))
+cases.append(js('{"tokens":[{"tokenId":5,"token_id":"snake","validityEnd":"2026-09-12T18:49:00Z"}]}'))
+cases.append(js('{"tokens":[{"tokenId":" pad ","validityEnd":"2026-09-12T18:49:00Z"}]}'))
+cases.append(js('{"tokens":[{"tokenId":"x","validityEnd":"2026-09-12T18:49:00Z","validity_end":"2020-01-01T00:00:00Z"}]}'))
+cases.append(js('{"tokens":[{"tokenId":"x","validityEnd":null,"validity_end":"2026-09-12T18:49:00Z"}]}'))
+cases.append(js('{"tokens":[{"tokenId":"x","validityEnd":"bad","validity_end":"2026-09-12T18:49:00Z"}]}'))
+cases.append(js('{"tokens":[{"tokenId":"x","validityStart":"bad","validity_start":"2026-09-12T18:49:00Z","validityEnd":"2026-09-12T18:49:00Z"}]}'))
+cases.append(js('{"tokens":[1,"a",null,[],{"tokenId":"ok","validityEnd":"2026-09-12T18:49:00Z"},{}]}'))
+cases.append(js('{"tokens":{}}'))
+cases.append(js('{"tokens":null}'))
+cases.append(js('{"tokens":"x"}'))
+cases.append(js('{"other":1}'))
+cases.append(js('{}'))
+cases.append(js('[]'))
+cases.append(js('[1,2]'))
+cases.append(js(' {"tokens":[]} '))
+cases.append(js('\n\t{"tokens":[]}'))
+cases.append(js('null'))
+cases.append(js(' null'))
+cases.append(js('nullx'))
+cases.append(js('{"tokens":[],}'))
+cases.append(js('{"tokens":['))
+cases.append(js('{'))
+cases.append(js('[null]'))
+cases.append(b'\xef\xbb\xbf{"tokens":[]}')
+cases.append(js('{"tokens":[{"tokenId":"a","validityEnd":"2026-09-12T18:49:00Z"},{"tokenId":"a","validityEnd":"2026-09-12T18:49:00Z"}]}'))
+cases.append(js('{"tokens":[{"tokenId":"exp","validityEnd":"2026-08-12T18:49:00Z"}]}'))
+cases.append(js('{"tokens":[{"tokenId":"edge","validityEnd":1786601000}]}'))
+cases.append(js('{"tokens":[{"tokenId":"edge","validityEnd":1786601000.000001}]}'))
+cases.append(js('{"tokens":[{"tokenId":"edge","validityEnd":"2026-08-12T05:23:20Z"}]}'))
+json.dump([hx(c) for c in cases],open('in.json','w'))
+print(len(cases))

@@ -33,7 +33,7 @@ runway_codesign() {
 runway_codesign_self_test() {
   local scratch identifier app requirement observed
   scratch="$(mktemp -d "${TMPDIR:-/tmp}/runway-codesign.XXXXXX")"
-  identifier="com.github.codex-runway.codesign-self-test"
+  identifier="com.quosparr.app.codesign-self-test"
   app="$scratch/Dummy.app"
   mkdir -p "$app/Contents/MacOS"
   cp /bin/echo "$app/Contents/MacOS/Dummy"
@@ -45,7 +45,7 @@ runway_codesign_self_test() {
   <key>CFBundleExecutable</key>
   <string>Dummy</string>
   <key>CFBundleIdentifier</key>
-  <string>com.github.codex-runway.codesign-self-test</string>
+  <string>com.quosparr.app.codesign-self-test</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
 </dict>

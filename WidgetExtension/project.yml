@@ -1,27 +1,22 @@
-name: CodexRunwayWidget
+name: QuosparrWidget
 options:
-  bundleIdPrefix: com.github.codex-runway
+  bundleIdPrefix: com.quosparr.app
   deploymentTarget:
     macOS: "14.0"
-packages:
-  CodexRunwayPackage:
-    path: ..
 targets:
-  CodexRunwayWidget:
+  QuosparrWidget:
     type: app-extension
     platform: macOS
     sources:
-      - path: ../Sources/CodexRunwayWidget
+      - path: ../Sources/QuosparrWidget
     dependencies:
-      - package: CodexRunwayPackage
-        product: CodexRunwayCore
       - sdk: SwiftUI.framework
       - sdk: WidgetKit.framework
     settings:
       base:
         APPLICATION_EXTENSION_API_ONLY: YES
         CODE_SIGNING_ALLOWED: NO
-        CODE_SIGN_ENTITLEMENTS: CodexRunwayWidget.entitlements
+        CODE_SIGN_ENTITLEMENTS: QuosparrWidget.entitlements
         CODE_SIGN_STYLE: Manual
         CURRENT_PROJECT_VERSION: 1000
         ENABLE_APP_SANDBOX: YES
@@ -31,10 +26,10 @@ targets:
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         MARKETING_VERSION: 0.1.0
         PRODUCT_BUNDLE_IDENTIFIER: $(RUNWAY_WIDGET_BUNDLE_ID)
-        PRODUCT_NAME: CodexRunwayWidget
-        RUNWAY_APP_GROUP_ID: group.com.github.codex-runway
-        RUNWAY_WIDGET_DISPLAY_NAME: CodexRunway
+        PRODUCT_NAME: QuosparrWidget
+        RUNWAY_APP_GROUP_ID: group.com.quosparr.app
+        RUNWAY_WIDGET_DISPLAY_NAME: Quosparr
         RUNWAY_WIDGET_STORAGE_MODE: app-group
-        RUNWAY_WIDGET_BUNDLE_ID: com.github.codex-runway.widget
+        RUNWAY_WIDGET_BUNDLE_ID: com.quosparr.app.widget
         SKIP_INSTALL: NO
         SWIFT_VERSION: "6.0"

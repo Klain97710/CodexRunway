@@ -1,0 +1,5 @@
+missing=bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
+orphan=gone
+duplicate=
+stale=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa
+planned=2

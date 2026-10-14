@@ -1,139 +1,18 @@
-name: Release
+name: Personal release (migration gate)
 
 on:
   push:
-    tags:
-      - "personal-v*"
+    tags: ['personal-v*']
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  test:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Test
-        run: swift test
-      - name: Verify release version
-        run: |
-          version="$(plutil -extract CFBundleShortVersionString raw Resources/Info.plist)"
-          test "$GITHUB_REF_NAME" = "personal-v$version"
-
-  package:
-    needs: test
-    runs-on: macos-26
-    steps:
-      - uses: actions/checkout@v7
-      - name: Check Sparkle signing secrets
-        env:
-          SPARKLE_PUBLIC_KEY: ${{ secrets.SPARKLE_PUBLIC_KEY }}
-          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-        run: |
-          test -n "$SPARKLE_PUBLIC_KEY" || { echo "Missing SPARKLE_PUBLIC_KEY secret"; exit 1; }
-          test -n "$SPARKLE_PRIVATE_KEY" || { echo "Missing SPARKLE_PRIVATE_KEY secret"; exit 1; }
-          printf '%s' "$SPARKLE_PRIVATE_KEY" | swift Scripts/verify-update-key.swift
-      - name: Package both architectures
-        env:
-          EXPECTED_MACOS_SDK_MAJOR: "26"
-          INCLUDE_WIDGET: "1"
-          RUNWAY_WIDGET_STORAGE_MODE: local
-          SPARKLE_PUBLIC_KEY: ${{ secrets.SPARKLE_PUBLIC_KEY }}
-          RUNWAY_RELEASE: "1"
-          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-        run: |
-          # One macos-26 runner. Asking for two at once was cancelled:
-          # "The job was not acquired by Runner of type hosted even after multiple attempts".
-          for arch in arm64 x86_64; do
-            ARCH="$arch" bash Scripts/package-app.sh
-            bash Scripts/verify-packaged-app.sh dist/CodexRunway.app "$arch" local release
-            mkdir -p "dist/appcast-$arch"
-            cp "dist/CodexRunway-macos-$arch.zip" "dist/appcast-$arch/"
-            printf '%s' "$SPARKLE_PRIVATE_KEY" | .build/artifacts/sparkle/Sparkle/bin/generate_appcast \
-              --ed-key-file - \
-              --download-url-prefix "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/" \
-              -o "dist/appcast-$arch.xml" \
-              "dist/appcast-$arch"
-          done
-      - uses: actions/upload-artifact@v7
-        with:
-          name: CodexRunway-macos
-          path: |
-            dist/CodexRunway-macos-arm64.zip
-            dist/CodexRunway-macos-x86_64.zip
-            dist/CodexRunway-macos-arm64.app.tar.gz
-            dist/CodexRunway-macos-x86_64.app.tar.gz
-            dist/CodexRunway-macos-arm64.dmg
-            dist/CodexRunway-macos-x86_64.dmg
-            dist/appcast-arm64.xml
-            dist/appcast-x86_64.xml
-
-  release-notes:
+  migration-gate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - name: Generate release notes
-        if: ${{ hashFiles(format('docs/releases/{0}.md', github.ref_name)) == '' }}
-        uses: orhun/git-cliff-action@v4
-        id: cliff
-        with:
-          config: cliff.toml
-          args: --latest --strip header
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-      - name: Write release notes
-        env:
-          CLIFF_CONTENT: ${{ steps.cliff.outputs.content }}
+      - name: Require the personal signing and acceptance pipeline
         run: |
-          if [[ -f "docs/releases/${GITHUB_REF_NAME}.md" ]]; then
-            cp "docs/releases/${GITHUB_REF_NAME}.md" release-notes.md
-          else
-            printf '%s\n' "$CLIFF_CONTENT" > release-notes.md
-            if ! grep -q '[^[:space:]]' release-notes.md; then
-              printf 'macOS builds for Apple Silicon and Intel.\n' > release-notes.md
-            fi
-            cat >> release-notes.md <<'EOF'
-
-          Klain97710 custom edition. Install this edition manually once to switch to its signed update channel. These builds are ad-hoc signed and not notarized. Prefer the .dmg download; if macOS blocks the app, use right-click Open or Privacy & Security > Open Anyway.
-          Desktop widgets are included and require macOS 14 or later.
-          EOF
-          fi
-      - uses: actions/upload-artifact@v7
-        with:
-          name: release-notes
-          path: release-notes.md
-
-  release:
-    needs: [package, release-notes]
-    runs-on: macos-latest
-    steps:
-      - uses: actions/download-artifact@v8
-        with:
-          path: dist
-          merge-multiple: true
-      - uses: actions/download-artifact@v8
-        with:
-          name: release-notes
-          path: .
-      - name: Create GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          tag="${GITHUB_REF_NAME}"
-          (cd dist && shasum -a 256 CodexRunway-macos-* appcast-*.xml > SHA256SUMS)
-          gh release create "$tag" \
-            --repo "$GITHUB_REPOSITORY" \
-            dist/CodexRunway-macos-arm64.zip \
-            dist/CodexRunway-macos-x86_64.zip \
-            dist/CodexRunway-macos-arm64.app.tar.gz \
-            dist/CodexRunway-macos-x86_64.app.tar.gz \
-            dist/CodexRunway-macos-arm64.dmg \
-            dist/CodexRunway-macos-x86_64.dmg \
-            dist/appcast-arm64.xml \
-            dist/appcast-x86_64.xml \
-            dist/SHA256SUMS \
-            --draft \
-            --title "$tag" \
-            --notes-file release-notes.md
+          echo 'Migration releases are disabled until the personal release pipeline is validated.'
+          exit 1

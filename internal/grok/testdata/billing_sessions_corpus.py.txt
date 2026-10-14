@@ -1,0 +1,191 @@
+import json, os, shutil, subprocess, random, sys
+random.seed(5)
+BASE = 1785541392  # 2026-07-31 ~ in UTC
+def turn(ts=None, inp=1000, out=200, tot=None, cached=0, reasoning=0, calls=1, models=None, meta=None, raw_usage=None, extra=None):
+    u = {"inputTokens": inp, "outputTokens": out, "cachedReadTokens": cached, "reasoningTokens": reasoning, "modelCalls": calls}
+    if tot is not None: u["totalTokens"] = tot
+    if models is not None: u["modelUsage"] = models
+    if raw_usage is not None: u = raw_usage
+    o = {"params": {"update": {"sessionUpdate": "turn_completed", "usage": u}}}
+    if ts is not None: o["timestamp"] = ts
+    if meta is not None: o["params"]["_meta"] = meta
+    return json.dumps(o)
+def mu(inp, out, cached=0, tot=None):
+    d = {"inputTokens": inp, "outputTokens": out, "cachedReadTokens": cached}
+    if tot is not None: d["totalTokens"] = tot
+    return d
+def summary(id=None, cwd="/tmp/p", title="T", model="grok-4.5", upd="2026-08-01T00:00:00Z", last=None, msgs=1, **kw):
+    s = {"info": {}}
+    if id is not None: s["info"]["id"] = id
+    if cwd is not None: s["info"]["cwd"] = cwd
+    if title is not None: s["generated_title"] = title
+    if model is not None: s["current_model_id"] = model
+    if upd is not None: s["updated_at"] = upd
+    if last is not None: s["last_active_at"] = last
+    if msgs is not None: s["num_chat_messages"] = msgs
+    s.update(kw)
+    return json.dumps(s)
+scen = []
+def add(name, files, mtimes=None, tz="UTC", recent=5, limit=300, window=None, now=1800000000):
+    scen.append({"name": name, "tz": tz, "files": files, "mtimes": mtimes or {}, "opts": {"recent": recent, "limit": limit, "window": window, "now": now}})
+S = lambda d, f: "sessions/%s/%s" % (d, f)
+
+# 1 basic from the Swift test
+def basic(tz="UTC", window=None, now=1800000000, **kw):
+    f = {S("%2Ftmp/session-1", "summary.json"): summary("session-1", "/tmp/demo-project", "Demo session", last="2026-08-01T01:00:00Z", msgs=4),
+         S("%2Ftmp/session-1", "updates.jsonl"): "\n".join([
+             json.dumps({"timestamp": 1785541389, "params": {"update": {"sessionUpdate": "agent_message_chunk"}}}),
+             turn(1785541392, 1000, 200, 1200, 400, 50, 2, {"grok-4.5-build": mu(1000, 200, 400, 1200)}),
+             turn(1785541492, 500, 100, 600, 100, 10, 1, {"grok-4.5-build": mu(500, 100, 100, 600)})]),
+         S("%2Ftmp/session-2", "summary.json"): summary("session-2", "/tmp/other", None, upd="2026-07-01T00:00:00Z")}
+    add("basic-" + tz, f, {S("%2Ftmp/session-1", "summary.json"): 1800000100, S("%2Ftmp/session-2", "summary.json"): 1800000000}, tz=tz, window=window, now=now, **kw)
+for tz in ["UTC", "Asia/Kolkata", "America/Los_Angeles", "Pacific/Auckland", "America/Havana", "Asia/Tokyo", "America/Sao_Paulo", "Australia/Lord_Howe"]:
+    basic(tz, window=[1785541000 - 86400 * 3, 1785541000 + 86400 * 3])
+    basic(tz)
+
+# 2 limits, ties, ordering
+files, mt = {}, {}
+for i in range(12):
+    d = "%%2Fp%d/s%02d" % (i % 3, i)
+    files[S(d, "summary.json")] = summary("id%d" % i, "/work/proj%d" % (i % 4), "Title %d" % i, upd="2026-0%d-1%dT00:00:00Z" % (1 + i % 9, i % 10))
+    files[S(d, "updates.jsonl")] = turn(BASE + i * 3600, 100 * (i + 1), 10 * i, None, 5 * i, 0, 1, {"grok-4.5": mu(100 * (i + 1), 10 * i, 5 * i)}) + "\n"
+    mt[S(d, "summary.json")] = 1800000000 - (i // 3) * 10  # ties in groups of 3
+for (r, l) in [(5, 300), (0, 300), (3, 3), (10, 4), (20, 20), (2, 0), (0, 0), (-1, 5), (12, 12), (1, 100)]:
+    add("limits-%d-%d" % (r, l), files, mt, recent=r, limit=l)
+
+# 3 summary variants
+cases = {
+ "empty": "", "notjson": "not json", "array": "[]", "null": "null", "emptyobj": "{}",
+ "infostr": json.dumps({"info": "x", "generated_title": "A"}),
+ "idws": json.dumps({"info": {"id": "   ", "cwd": "  /a/b  "}, "generated_title": "  Hi  "}),
+ "idnum": json.dumps({"info": {"id": 5, "cwd": 7}, "generated_title": 5, "session_summary": "SS"}),
+ "titles": json.dumps({"generated_title": "", "session_summary": " \n "}),
+ "model": json.dumps({"current_model_id": "  grok-4.5  "}),
+ "modelblank": json.dumps({"current_model_id": "  "}),
+ "dates1": json.dumps({"last_active_at": "bad", "updated_at": "2026-05-05T05:05:05Z"}),
+ "dates2": json.dumps({"last_active_at": 5, "updated_at": "also bad"}),
+ "dates3": json.dumps({"last_active_at": "2026-05-05T05:05:05.123456+05:30"}),
+ "dates4": json.dumps({"last_active_at": "2026-05-05 05:05:05Z", "updated_at": "2026-01-01T00:00:00Z"}),
+ "msgs-int": json.dumps({"num_chat_messages": 7}), "msgs-float": json.dumps({"num_chat_messages": 7.0}),
+ "msgs-frac": json.dumps({"num_chat_messages": 7.5, "num_messages": 3}), "msgs-str": json.dumps({"num_chat_messages": "7", "num_messages": 4}),
+ "msgs-bool": json.dumps({"num_chat_messages": True, "num_messages": 4}), "msgs-false": json.dumps({"num_chat_messages": False, "num_messages": 4}),
+ "msgs-neg": json.dumps({"num_chat_messages": -3}), "msgs-null": json.dumps({"num_chat_messages": None, "num_messages": 9}),
+ "msgs-big": json.dumps({"num_chat_messages": 12345678901234}), "msgs-huge": json.dumps({"num_chat_messages": 1e30, "num_messages": 2}),
+ "msgs-exp": json.dumps({"num_chat_messages": 1e3}),
+ "cwd-root": json.dumps({"info": {"cwd": "/"}}), "cwd-trail": json.dumps({"info": {"cwd": "/a/b/"}}),
+ "cwd-rel": json.dumps({"info": {"cwd": "rel/dir"}}), "cwd-name": json.dumps({"info": {"cwd": "proj"}}), "cwd-uni": json.dumps({"info": {"cwd": "/tmp/\u00e9/\u4e2d"}}),
+ "bom": "\ufeff" + json.dumps({"generated_title": "bom"}), "trailing-comma": '{"generated_title":"tc",}', "dupkey": '{"generated_title":"first","generated_title":"second"}',
+}
+files, mt = {}, {}
+for i, (k, v) in enumerate(cases.items()):
+    d = "x/%s" % k
+    files[S(d, "summary.json")] = v
+    mt[S(d, "summary.json")] = 1700000000 + i * 100
+add("summaries", files, mt, recent=100, limit=100)
+# hidden / dir named summary.json / nested / other files
+files = {S("a/b/c/d/s1", "summary.json"): summary("deep", "/x/deep"), S(".hidden/s2", "summary.json"): summary("hidden"),
+         S("a/.h/s3", "summary.json"): summary("hidden2"), S("a/s4", "summary.json.bak"): summary("bak"), S("a/s5", "Summary.json"): summary("case"),
+         S("a/s6/summary.json", "inner.txt"): "dir named summary.json", S("a/s7", "summary.json"): summary(None, "/x/noid"), "sessions/summary.json": summary("top")}
+add("tree", files, {k: 1800000000 - i for i, k in enumerate(files)}, recent=20, limit=20)
+
+# 4 updates variants
+def one(name, upd, summ=None, window=None, tz="UTC", **kw):
+    f = {S("a/s", "summary.json"): summ or summary("s", "/tmp/u", "T", "grok-4.5", last="2026-08-01T12:30:00Z"), S("a/s", "updates.jsonl"): upd}
+    add(name, f, {S("a/s", "summary.json"): 1800000000}, tz=tz, window=window or [1700000000, 1900000000], **kw)
+T = turn
+one("u-blank-lines", "\n\n" + T(BASE, models={"grok-4.5": mu(10, 5)}) + "\n\n\n" + T(BASE + 5, models={"grok-4.5": mu(7, 3)}))
+one("u-crlf", T(BASE, models={"grok-4.5": mu(10, 5)}) + "\r\n" + T(BASE + 5, models={"grok-4.5": mu(7, 3)}) + "\r\n")
+one("u-no-newline", T(BASE, models={"grok-4.5": mu(10, 5)}))
+one("u-bad-lines", "{bad turn_completed \"usage\"\n" + T(BASE) + "\nturn_completed \"usage\"\n[1,\"turn_completed\",\"usage\"]\n")
+one("u-wrong-update", json.dumps({"timestamp": BASE, "params": {"update": {"sessionUpdate": "turn_completed_x", "usage": {"inputTokens": 5}}}}) + "\n" + json.dumps({"timestamp": BASE, "params": {"update": {"sessionUpdate": "turn_completed", "usage": 5}}}) + "\n" + json.dumps({"timestamp": BASE, "params": {"update": {"sessionUpdate": "turn_completed"}}}) + "\n" + json.dumps({"timestamp": BASE, "params": {"update": [], "usage": {}}}) + "\n" + json.dumps({"timestamp": BASE, "params": {"update": {"sessionUpdate": ["turn_completed"], "usage": {"inputTokens": 5}}}}))
+for k, ts in {"int": BASE, "float": BASE + 0.75, "str": "1785541392", "bool": True, "false": False, "neg": -86400 * 3, "null": None, "zero": 0, "big": 4102444800, "ms": 1785541392000, "frac-neg": -0.5, "exp": 1.785541392e9}.items():
+    one("u-ts-" + k, T(ts, models={"grok-4.5": mu(100, 10)}) if ts is not None else json.dumps({"timestamp": None, "params": {"update": {"sessionUpdate": "turn_completed", "usage": {"inputTokens": 100, "outputTokens": 10}}}}), window=[-10**10, 10**11])
+for e in [11, 12, 13, 14, 15, 16, 17, 18, 19, 30]:
+    for sign in [1, -1]:
+        v = sign * 10.0 ** e
+        one("u-hugets-%d-%d" % (e, sign), json.dumps({"timestamp": v, "params": {"update": {"sessionUpdate": "turn_completed", "usage": {"inputTokens": 100, "outputTokens": 10}}}}), window=[-10**10, 10**11])
+for v in [253402300799, 253402300800, 1e11, 3e11, 6e11, 9e11, 2.5e12, 1e12 - 1, -62135596800, -62135596801, -6.3e10, -1e11, -3e11]:
+    one("u-farts-%s" % v, json.dumps({"timestamp": v, "params": {"update": {"sessionUpdate": "turn_completed", "usage": {"inputTokens": 100, "outputTokens": 10}}}}), window=[-10**10, 10**11])
+for k, meta in {"agent": {"agentTimestampMs": BASE * 1000 + 500}, "stream": {"streamStartMs": BASE * 1000}, "turn": {"turnStartMs": BASE * 1000}, "order": {"turnStartMs": 1000, "streamStartMs": (BASE + 86400) * 1000, "agentTimestampMs": (BASE + 2 * 86400) * 1000},
+                "str": {"agentTimestampMs": "1785541392000", "turnStartMs": BASE * 1000}, "bool": {"agentTimestampMs": True}, "empty": {}, "notobj": 5, "null-agent": {"agentTimestampMs": None, "turnStartMs": BASE * 1000}}.items():
+    o = {"params": {"_meta": meta, "update": {"sessionUpdate": "turn_completed", "usage": {"inputTokens": 100, "outputTokens": 10}}}}
+    one("u-meta-" + k, json.dumps(o), window=[-10**10, 10**11])
+for tz in ["UTC", "Asia/Kolkata", "America/Los_Angeles", "Pacific/Auckland", "America/Havana", "America/Sao_Paulo", "Australia/Lord_Howe", "Asia/Tokyo"]:
+    # turns around local midnight, DST edges
+    lines = []
+    for t in [1773000000 + k * 1800 for k in range(0, 200)] + [1790000000 + k * 1800 for k in range(0, 100)]:
+        lines.append(T(t, 10, 1, None, 0, 0, 1, {"grok-4.5": mu(10, 1)}))
+    one("u-midnight-" + tz, "\n".join(lines), tz=tz, window=[1773100000, 1773400000])
+    one("u-midnight-all-" + tz, "\n".join(lines), tz=tz, window=[1700000000, 1900000000])
+    for w in [[1773021600, 1773108000], [1773021599, 1773021601], [1772928000, 1772928001], [1773003600, 1773007200]]:
+        one("u-win-%s-%d" % (tz, w[0]), "\n".join(lines), tz=tz, window=w)
+# token fields
+for k, u in {
+  "str": {"inputTokens": "100", "outputTokens": "10", "totalTokens": "110"}, "float": {"inputTokens": 100.4, "outputTokens": 10.5, "cachedReadTokens": 2.5, "totalTokens": 0.4},
+  "half": {"inputTokens": 0.5, "outputTokens": 1.5, "cachedReadTokens": 2.5}, "neg": {"inputTokens": -5, "outputTokens": 10, "cachedReadTokens": -3, "totalTokens": -9},
+  "bool": {"inputTokens": True, "outputTokens": False, "totalTokens": True}, "null": {"inputTokens": None, "outputTokens": 5},
+  "total0": {"inputTokens": 100, "outputTokens": 10, "totalTokens": 0}, "totalbig": {"inputTokens": 1, "outputTokens": 1, "totalTokens": 9007199254740993},
+  "cached>in": {"inputTokens": 100, "outputTokens": 10, "cachedReadTokens": 500}, "long": {"inputTokens": 200000, "outputTokens": 1000, "cachedReadTokens": 50000},
+  "long-1": {"inputTokens": 199999, "outputTokens": 1000, "cachedReadTokens": 50000}, "exp": {"inputTokens": 1e3, "outputTokens": 1.5e1}, "empty": {}, "arr": {"inputTokens": [5], "outputTokens": {"a": 1}},
+  "reason": {"inputTokens": 10, "outputTokens": 10, "reasoningTokens": 7, "modelCalls": 3}, "int64": {"inputTokens": 4611686018427387904, "outputTokens": 1},
+  "int64max": {"inputTokens": 9223372036854775807, "outputTokens": 0, "totalTokens": 5},
+}.items():
+    one("u-tok-" + k, T(BASE, raw_usage=u, models=None), window=[-10**10, 10**11])
+    uu = dict(u); uu["modelUsage"] = {"grok-4.5": dict(u), "mystery": dict(u)}
+    one("u-tokm-" + k, T(BASE, raw_usage=uu), window=[-10**10, 10**11])
+# models
+mods = {
+  "none-fallback": None, "empty": {}, "nondict": {"grok-4.5": 5, "x": [], "y": None}, "mixed": {"grok-4.5": mu(10, 1), "grok-4.5-build": mu(20, 2), "other": mu(30, 3)},
+  "case": {"GROK-4.5": mu(10, 1), " grok-4.5 ": mu(10, 1)}, "latest": {"grok-4.5-latest": mu(10, 1), "grok-4.7-fast": mu(1000, 100), "grok-build-0.1": mu(5, 5)},
+  "snap": {"grok-4.5-2026-07-08": mu(10, 1), "grok-4.5-2026-07-08-build": mu(10, 1)}, "unknown-only": {"nope": mu(10, 1), "nope2": mu(10, 1)},
+  "empty-name": {"": mu(10, 1)}, "uni": {"modèl-é": mu(10, 1), "Zeta": mu(1, 1), "alpha": mu(1, 1), "beta2": mu(1, 1), "beta10": mu(1, 1)},
+}
+for k, m in mods.items():
+    for fm in ["grok-4.5", None, "", "unknown-fb", "  grok-4.6  "]:
+        s = summary("s", "/tmp/m", "T", fm if fm is not None else None, last="2026-08-01T12:30:00Z")
+        if fm is None:
+            s = json.dumps({"info": {"id": "s", "cwd": "/tmp/m"}, "last_active_at": "2026-08-01T12:30:00Z"})
+        one("m-%s-%s" % (k, fm), T(BASE, 1000, 100, None, 100, 0, 1, m) + "\n" + T(BASE + 1, 500, 50, None, 0, 0, 1, m), summ=s, window=[-10**10, 10**11])
+# multi-session projects, same tokens ties, names sort
+files, mt = {}, {}
+names = ["/w/Zed", "/w/alpha", "/w/beta", "/w/eclair", "/w/b10", "/w/b2", "/w/", "", "/w/Zed"]
+for i, n in enumerate(names):
+    d = "g/s%d" % i
+    files[S(d, "summary.json")] = json.dumps({"info": {"id": "s%d" % i, "cwd": n}, "generated_title": "t%d" % i})
+    files[S(d, "updates.jsonl")] = T(BASE + i, 100, 10, None, 0, 0, 1, {"grok-4.5": mu(100, 10)}) + "\n"
+    mt[S(d, "summary.json")] = 1800000000 - i
+add("projects", files, mt, recent=20, limit=20, window=[-10**10, 10**11])
+# pricing mix across sessions + totals; many days
+files, mt = {}, {}
+for i in range(30):
+    d = "m/s%d" % i
+    files[S(d, "summary.json")] = summary("s%d" % i, "/w/p%d" % (i % 5), "t", ["grok-4.5", "grok-4.7-fast", "grok-4.3", "weird", "grok-build-0.1"][i % 5])
+    files[S(d, "updates.jsonl")] = "\n".join(T(BASE - 86400 * (j * 3 + i % 4), random.randint(0, 300000), random.randint(0, 5000), None, random.randint(0, 1000), 0, 1, {["grok-4.5", "grok-4.7-fast", "grok-4.3", "weird", "grok-build-0.1"][(i + j) % 5]: mu(random.randint(0, 300000), random.randint(0, 5000), random.randint(0, 1000))}) for j in range(6))
+    mt[S(d, "summary.json")] = 1800000000 - i * 7
+for tz in ["UTC", "America/Los_Angeles"]:
+    add("many-" + tz, files, mt, tz=tz, recent=5, limit=300, window=[BASE - 86400 * 20, BASE - 86400 * 3])
+    add("many-all-" + tz, files, mt, tz=tz, recent=40, limit=300, window=None, now=BASE + 86400 * 2)
+    add("many-ytd-" + tz, files, mt, tz=tz, recent=3, limit=300, window=None, now=1800000000)
+add("empty-home", {}, {})
+add("no-updates", {S("a/s", "summary.json"): summary("s", "/p")}, {})
+add("empty-updates", {S("a/s", "summary.json"): summary("s", "/p"), S("a/s", "updates.jsonl"): ""}, {})
+json.dump(scen, open("spec.json", "w"), ensure_ascii=False)
+
+root = "/tmp/grokgold/sess/run"
+shutil.rmtree(root, ignore_errors=True)
+gold = []
+for n, sc in enumerate(scen):
+    home = "%s/%d" % (root, n)
+    os.makedirs(home, exist_ok=True)
+    for rel, content in sc["files"].items():
+        p = os.path.join(home, rel); os.makedirs(os.path.dirname(p), exist_ok=True)
+        open(p, "w", encoding="utf-8", newline="").write(content)
+    for rel, t in sc["mtimes"].items():
+        os.utime(os.path.join(home, rel), (t, t))
+    env = dict(os.environ, TZ=sc["tz"])
+    r = subprocess.run(["./sess", home, json.dumps(sc["opts"])], capture_output=True, text=True, env=env)
+    if r.returncode != 0:
+        print("FAIL", n, sc["name"], r.returncode, r.stderr[-300:]); gold.append(None); continue
+    gold.append(json.loads(r.stdout))
+json.dump(gold, open("gold.json", "w"))
+print(len(scen), sum(g is None for g in gold))

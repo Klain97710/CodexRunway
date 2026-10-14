@@ -1,0 +1,122 @@
+[
+  {
+    "emails" : "e***@***.com",
+    "in" : "example@qq.com",
+    "mask" : "e***@***.com"
+  },
+  {
+    "emails" : "m***@***.com",
+    "in" : "maxwmm1999@outlook.com",
+    "mask" : "m***@***.com"
+  },
+  {
+    "emails" : "  e***@***.com  ",
+    "in" : "  example@qq.com  ",
+    "mask" : "e***@***.com"
+  },
+  {
+    "emails" : "u***@***.com",
+    "in" : "user@mail.qq.com",
+    "mask" : "u***@***.com"
+  },
+  {
+    "emails" : "a@***.com",
+    "in" : "a@qq.com",
+    "mask" : "a@***.com"
+  },
+  {
+    "emails" : "u***@***",
+    "in" : "user@localhost",
+    "mask" : "u***@***"
+  },
+  {
+    "emails" : "alice",
+    "in" : "alice",
+    "mask" : "a***"
+  },
+  {
+    "emails" : "张三",
+    "in" : "张三",
+    "mask" : "张***"
+  },
+  {
+    "emails" : "a",
+    "in" : "a",
+    "mask" : "a"
+  },
+  {
+    "emails" : "",
+    "in" : "",
+    "mask" : ""
+  },
+  {
+    "emails" : "   ",
+    "in" : "   ",
+    "mask" : "   "
+  },
+  {
+    "emails" : "e***@***.com: missing",
+    "in" : "example@qq.com: missing",
+    "mask" : "e***@***.com: missing"
+  },
+  {
+    "emails" : "see e***@***.com.",
+    "in" : "see example@qq.com.",
+    "mask" : "see e***@***.com."
+  },
+  {
+    "emails" : "no address here",
+    "in" : "no address here",
+    "mask" : "n***"
+  },
+  {
+    "emails" : "e***@***.com",
+    "in" : "e***@***.com",
+    "mask" : "e***@***.com"
+  },
+  {
+    "emails" : "@x.com",
+    "in" : "@x.com",
+    "mask" : "@x.com"
+  },
+  {
+    "emails" : "a@",
+    "in" : "a@",
+    "mask" : "a@"
+  },
+  {
+    "emails" : "a@***.",
+    "in" : "a@b.",
+    "mask" : "a@***."
+  },
+  {
+    "emails" : "x@***@z.com",
+    "in" : "x@y@z.com",
+    "mask" : "x@***@z.com"
+  },
+  {
+    "emails" : "foo b***@***.org tail",
+    "in" : "foo bar@baz.org tail",
+    "mask" : "foo b***@***.org tail"
+  },
+  {
+    "emails" : "mail me (a@***.co), or <c@***.io>;",
+    "in" : "mail me (a@b.co), or <c@d.io>;",
+    "mask" : "mail me (a@***.co), or <c@***.io>;"
+  },
+  {
+    "emails" : "é***@***.com",
+    "in" : "éx@y.com",
+    "mask" : "é***@***.com"
+  },
+  {
+    "emails" : "👨‍👩‍👧 family",
+    "in" : "👨‍👩‍👧 family",
+    "mask" : "👨‍👩‍👧***"
+  },
+  {
+    "emails" : "@",
+    "in" : "@",
+    "mask" : "@"
+  }
+]

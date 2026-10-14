@@ -1,47 +1,41 @@
-# AGENTS.md
+# CodexRunway personal Go migration
 
-## 项目定位
+## Scope and baselines
 
-CodexRunway 是一个原生 macOS 状态栏应用，用 Swift 编写，用于读取本机 Codex 配置和会话数据，展示配额、reset credits、API 等价成本，并修复本机会话索引。
+- This branch migrates the Klain97710 CodexRunway edition onto upstream Quosparr Go + mygo/ui. It is not an accepted daily replacement yet.
+- Follow `docs/superpowers/plans/2026-10-14-quosparr-migration-validation.md`; retain Swift stable code on `personal/legacy-swift` and keep `personal/main` stable until acceptance.
+- User-required behavior: Codex only; no Grok runtime or reset reactions; remaining-quota tray columns `5h | bar | %`, `7d | bar | %`; Pro hides standard 5h in the tray only; action-only context menu.
+- Work sequentially in the main agent. No subagents. Independent read-only tools may run in parallel.
 
-## 技术边界
+## Architecture and compatibility
 
-- 使用 Swift 6、SwiftPM、AppKit、SwiftUI、Foundation。
-- macOS 最低版本为 12.0。
-- 默认不引入第三方依赖；标准库和系统框架能解决的问题不要加包。在线更新功能批准使用 Sparkle。
-- 不创建 Xcode project，除非用户明确要求。
-- 状态栏应用必须保持 `LSUIElement=true`，不要显示 Dock 图标。
+- Go 1.27.1 and mygo v0.4.8 are pinned in go.mod. Do not combine dependency upgrades with this migration or add a frontend framework.
+- Main app: Go + native mygo/ui; macOS 12+. Swift WidgetKit and bridge remain under Sources/QuosparrWidget*; Widget requires macOS 14+.
+- Keep LSUIElement, old app identity, URL scheme, Widget kinds, Keychain service, preference domain, data directory and lock for replacement builds. Source/module names may remain upstream names.
+- Centralize personal configuration in internal/personal and mygo.json (product version source). Developer builds require a separate identity and explicitly marked sandbox.
+- Keep Swift fixture assets read-only; validate compatibility both ways. Preserve unknown fields and never reset damaged data to defaults and overwrite it.
+- Product strings support en, zh-Hans, zh-Hant, ko, ja, ru, fr. Keep Go and Swift snapshot contracts compatible.
 
-## 隐私与安全
+## Data and execution safety
 
-- 不要在日志、测试输出、README、issue 模板中输出 access token、refresh token、API key。
-- CodexRunway 自有目录统一使用 `~/.codex-runway`，默认只保存非密钥的派生数据，不将应用缓存写入 `~/.codex`。
-- 多账号凭据是唯一例外：仅允许存放在 `~/.codex-runway/accounts/<id>/auth.json`（目录 `0700`、文件 `0600`，原子写入）。账号索引 `index.json` 不得包含 token。
-- 读取 `~/.codex/auth.json` 时只使用必要字段。
-- 修改官方 `~/.codex/auth.json` 仅限：OAuth refresh 回写、以及用户主动切号时的原子写入。
-- 刷新非当前托管账号 token 时只写账号库副本，不得写官方 `auth.json`；刷新当前账号时同步官方 auth 与账号库副本。
-- 会话修复只允许处理 `session_index.jsonl`，写入前必须备份。
-- 不删除 `~/.codex/sessions/**`、`~/.codex/archived_sessions/**` 或全局状态文件。
+- Never log or commit tokens, keys, credentials, account identifiers or full auth documents. Tests use synthetic fixtures.
+- Do not launch the migration desktop app against real user data. A temporary HOME alone does not isolate Keychain/UserDefaults. Full GUI acceptance requires a disposable VM or dedicated test user.
+- Keep the installed Swift app unchanged until acceptance. No real auth in failure tests; no system proxy/DNS changes on this host.
+- Production application data remains ~/.codex-runway; credential directories 0700, auth files and snapshots 0600, atomic writes. Acquire the legacy-compatible single lock before migrations or writes; skip upstream directory renaming when source and destination coincide.
+- Official Codex auth changes are limited to legitimate OAuth refresh or user-requested account switching. Non-current account refresh only writes the managed copy; reject stale writes after external switch/logout.
+- Session repair only edits session_index.jsonl after backup; never delete session directories.
+- Development packages disable updates, login items, system credential access and real notifications. Retained Grok code requires explicit test opt-in, never a user setting.
 
-## 代码约定
+## Builds and releases
 
-- 核心逻辑放在 `Sources/CodexRunwayCore`，UI 放在 `Sources/CodexRunway`。
-- UI 不直接解析 JSON、不直接扫描文件；通过 core API 获取结果。
-- 所有用户可见文案必须通过 `L10n`，新增 key 需要同时补英文和简体中文。
-- 函数保持短小，优先用简单结构体和函数，不做多 provider 抽象。
-- 错误信息可以面向用户，但不要包含本地密钥或完整认证 JSON。
-- 新行为优先补 `Tests/CodexRunwayCoreTests`。
+- Never run upstream development/packaging scripts against production until adapted to the approved isolation profile.
+- Only personal-v* tags may trigger releases. Branch CI has read-only permissions, no signing secrets, and creates artifacts only.
+- All releases are drafts with latest=false until separately accepted. Never overwrite personal-v0.1.0 or published assets.
+- Own repository only: Klain97710/CodexRunway. No fallback to upstream updates. Validate initial URLs, manifest assets, redirects and signature errors.
+- Preserve the existing Sparkle key and sign both XML feed and ZIP for installed Swift clients; Go uses a separate mygo key. Do not embed Sparkle runtime in Go.
+- Bundle SQLite, Swift bridge and Widget, sign inside-out, then generate archives from the final bundle. Cross-compilation and registration do not prove native Intel/minimum-macOS/Widget acceptance.
+- Record PASS/FAIL/NOT RUN honestly. Missing VM/hardware blocks replacement acceptance, not source work and candidate builds.
 
-## 常用命令
+## Checks
 
-```bash
-swift test
-swift run CodexRunway --self-check
-bash Scripts/package-app.sh
-```
-
-## 文档规则
-
-- README 和源码不要包含外部参考应用名称、链接或代码片段。
-- 用户可见文档应说明隐私边界、ad-hoc signed app、开发命令和功能状态。
-- 价格表必须带版本日期；未知模型不要估算为精确费用。
+Use go test, go vet, go build and race tests plus personal packaging/release checks in the plan. Audit tests before host execution. Never run the desktop entry point as a shortcut for isolated tests. Keep generated builds, signing keys and local screenshots out of Git.

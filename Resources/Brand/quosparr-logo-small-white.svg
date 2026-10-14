@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
+  <title id="title">Quosparr compact white logo</title>
+  <defs>
+    <path id="bird-body" d="M23 85L86 117C101 102 109 78 120 60C133 41 156 35 178 41C198 47 211 62 212 76L212 102C210 130 202 153 181 173C164 189 138 197 108 194C83 192 62 178 49 156L22 164L39 134Z"/>
+    <mask id="negative-space" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256">
+      <rect width="256" height="256" fill="#FFFFFF"/>
+      <circle cx="176" cy="66" r="9" fill="#000000"/>
+      <path d="M95 125C109 111 129 104 149 106C165 108 173 119 172 133C170 147 157 157 141 162C130 165 119 165 114 163C124 163 134 161 143 157C156 153 166 144 167 133C169 122 161 113 148 111C130 109 111 115 95 125Z" fill="#000000"/>
+      <path d="M153 151L190 181L185 187L148 156Z" fill="#000000"/>
+    </mask>
+  </defs>
+  <g id="symbol" fill="#FFFFFF">
+    <g mask="url(#negative-space)"><use href="#bird-body"/></g>
+    <path d="M212 76L235 92L212 102Z"/>
+  </g>
+</svg>

@@ -1,0 +1,58 @@
+{
+  "homes" : [
+    {
+      "env" : "/Volumes/iso",
+      "home" : "/Volumes/iso"
+    },
+    {
+      "env" : "~",
+      "home" : "/Users/example"
+    },
+    {
+      "env" : "~/alt",
+      "home" : "/Users/example/alt"
+    },
+    {
+      "env" : "",
+      "home" : "/Users/example/.grok"
+    },
+    {
+      "env" : "rel/path",
+      "home" : "/private/tmp/grokgen/rel/path"
+    },
+    {
+      "env" : "/a/../b",
+      "home" : "/b"
+    }
+  ],
+  "sanitize" : [
+    {
+      "dir" : "grok-abc",
+      "id" : "grok-abc"
+    },
+    {
+      "dir" : "a_b_c",
+      "id" : "a/b c"
+    },
+    {
+      "dir" : "..",
+      "id" : ".."
+    },
+    {
+      "dir" : "grok-account",
+      "id" : ""
+    },
+    {
+      "dir" : "日本-1",
+      "id" : "日本-1"
+    },
+    {
+      "dir" : "x.y_z",
+      "id" : "x.y_z"
+    },
+    {
+      "dir" : "é",
+      "id" : "é"
+    }
+  ]
+}

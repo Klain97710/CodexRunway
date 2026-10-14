@@ -1,0 +1,107 @@
+package app
+
+import (
+	"github.com/egoist/mygo/ui"
+	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/runway"
+	"github.com/licoy/quosparr/internal/store"
+)
+
+// sectionBlock is the ruled section rhythm of the main page: an inset
+// hairline above every section except the first, then 16pt of air (8pt on
+// top of the first section).
+func sectionBlock(c *ui.Context, first *bool, body func()) {
+	top := float32(16)
+	if *first {
+		top, *first = 8, false
+	} else {
+		hairline(c)
+	}
+	ui.Column(c).Gap(8).Padding(top, 0, 16, 0).Children(body)
+}
+
+// panelBody follows the saved module order and provider support.
+func panelBody(c *ui.Context, l l10n.Localizer, prefs store.Preferences, snap runway.Snapshot, acts PanelActions, state *panelState) {
+	snap.Provider = prefs.SelectedProvider
+	snap.Codex = providerView(l, snap, prefs.APICostSummaryRange)
+	grok := prefs.SelectedProvider == store.ProviderGrok
+	first := true
+	for _, m := range store.NormalizeModuleOrder(prefs.MainPanelModuleOrder) {
+		if grok && m == store.ModuleResetCredits && snap.Grok.ResetCreditSummary == nil {
+			continue
+		}
+		if panelModuleOn(m, prefs, grok) {
+			panelModule(c, l, m, prefs, snap, acts, &first, state)
+		}
+	}
+}
+
+func panelModuleOn(m store.Module, p store.Preferences, grok bool) bool {
+	if grok && (m == store.ModuleQuotaEstimate || m == store.ModuleSessionRepair || m == store.ModuleRateLimitResetToday) {
+		return false
+	}
+	switch m {
+	case store.ModuleQuota:
+		return p.ShowsQuotaSummary
+	case store.ModuleTokenUsage:
+		return p.ShowsTokenUsageHeatmap
+	case store.ModuleRateLimitResetToday:
+		return p.ShowsRateLimitResetToday
+	case store.ModuleQuotaEstimate:
+		return p.ShowsQuotaEstimateSummary
+	case store.ModuleResetCredits:
+		return p.ShowsResetCreditsSummary
+	case store.ModuleAPICost:
+		return p.ShowsCostSummary
+	case store.ModuleSessionRepair:
+		return p.ShowsSessionRepairSummary
+	case store.ModuleRecentSessions:
+		return p.ShowsRecentSessions
+	default:
+		return false
+	}
+}
+
+func panelModule(c *ui.Context, l l10n.Localizer, m store.Module, prefs store.Preferences, snap runway.Snapshot, acts PanelActions, first *bool, state *panelState) {
+	grok := prefs.SelectedProvider == store.ProviderGrok
+	switch m {
+	case store.ModuleQuota:
+		if grok {
+			panelGrokQuota(c, l, snap, acts, first, state)
+		} else {
+			panelCodexQuota(c, l, snap, acts, first, state)
+		}
+	case store.ModuleTokenUsage:
+		panelToken(c, l, prefs.TokenUsageChartStyle, snap, acts, first, state)
+	case store.ModuleRateLimitResetToday:
+		panelResetToday(c, l, snap, acts, first, state)
+	case store.ModuleQuotaEstimate:
+		panelEstimate(c, l, snap, acts, first, state)
+	case store.ModuleResetCredits:
+		panelCredits(c, l, snap, acts, first, state)
+	case store.ModuleAPICost:
+		panelCost(c, l, snap, acts, first, state)
+	case store.ModuleSessionRepair:
+		panelRepair(c, l, snap, acts, first, state)
+	case store.ModuleRecentSessions:
+		panelRecent(c, l, snap, grok, acts, first, state)
+	}
+}
+
+func sectionRefresh(acts PanelActions, sec runway.Section) func() {
+	if acts.RefreshSection == nil {
+		return nil
+	}
+	fn := acts.RefreshSection
+	return func() { fn(sec) }
+}
+
+// sectionEmpty is the "Calculating..." / "Not loaded" line of a section
+// without data.
+func sectionEmpty(c *ui.Context, l l10n.Localizer, refreshing bool) {
+	key := l10n.KeyNotLoaded
+	if refreshing {
+		key = l10n.KeyCalculating
+	}
+	calloutDim(c, l.Text(key))
+}

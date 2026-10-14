@@ -1,0 +1,125 @@
+{
+  "credentials" : {
+    "grok-4a73f8fe4efefad" : "{\"https://accounts.x.ai/sign-in\":{\"auth_mode\":\"grok\",\"email\":\"legacy@example.com\",\"key\":\"lk\",\"user_id\":\"user-l\"}}",
+    "grok-8a85164237722e9f" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"auth_mode\" : \"oidc\",\n    \"create_time\" : \"2026-07-30T12:00:00Z\",\n    \"email\" : \"Zed@example.com\",\n    \"expires_at\" : \"2099-08-01T12:00:00Z\",\n    \"key\" : \"tok-access-2\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"principal_id\" : \"principal-user-z\",\n    \"principal_type\" : \"User\",\n    \"refresh_token\" : \"tok-refresh-2\",\n    \"user_id\" : \"user-z\",\n    \"x_extra\" : {\n      \"keep\" : \"me/too\",\n      \"n\" : 1\n    }\n  }\n}",
+    "grok-69f79a7b187251c8" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"auth_mode\" : \"oidc\",\n    \"create_time\" : \"2026-07-30T12:00:00Z\",\n    \"email\" : \"alpha@example.com\",\n    \"expires_at\" : \"2099-08-01T12:00:00Z\",\n    \"key\" : \"tok-access\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"principal_id\" : \"principal-user-a\",\n    \"principal_type\" : \"User\",\n    \"refresh_token\" : \"tok-refresh\",\n    \"team_id\" : \"T-9\",\n    \"team_name\" : \"Team T-9\",\n    \"user_id\" : \"user-a\",\n    \"x_extra\" : {\n      \"keep\" : \"me/too\",\n      \"n\" : 1\n    }\n  }\n}"
+  },
+  "exportedCount" : 3,
+  "failures" : [
+    "missing: account not found"
+  ],
+  "ids" : [
+    "grok-8a85164237722e9f",
+    "grok-69f79a7b187251c8",
+    "grok-4a73f8fe4efefad"
+  ],
+  "index" : "{\n  \"accounts\" : [\n    {\n      \"createdAt\" : \"2026-07-31T12:00:00.124Z\",\n      \"id\" : \"grok-8a85164237722e9f\",\n      \"identity\" : {\n        \"clientID\" : \"desktop-client\",\n        \"email\" : \"Zed@example.com\",\n        \"expiresAt\" : \"2099-08-01T12:00:00.000Z\",\n        \"hasAccessToken\" : true,\n        \"hasRefreshToken\" : true,\n        \"issuer\" : \"https://auth.x.ai\",\n        \"kind\" : \"oauth\",\n        \"principalID\" : \"principal-user-z\",\n        \"principalType\" : \"User\",\n        \"scope\" : \"https://auth.x.ai::desktop-client\",\n        \"userID\" : \"user-z\"\n      },\n      \"lastUsedAt\" : \"2026-07-31T12:00:00.124Z\",\n      \"requiresReauth\" : false,\n      \"sortIndex\" : 1\n    },\n    {\n      \"alias\" : \"Alpha / é\",\n      \"cachedQuota\" : {\n        \"includedLimitCents\" : 10000,\n        \"includedUsagePercent\" : 42.25,\n        \"includedUsedCents\" : 4225,\n        \"isUnifiedBillingUser\" : true,\n        \"onDemandEnabled\" : false,\n        \"period\" : {\n          \"kind\" : \"weekly\",\n          \"resetsAt\" : \"2026-08-01T16:00:00.500Z\",\n          \"startsAt\" : \"2026-07-25T17:20:00.000Z\"\n        },\n        \"plan\" : \"SuperGrok\",\n        \"prepaidBalanceCents\" : 500,\n        \"productUsage\" : [\n          {\n            \"product\" : \"GrokBuild\",\n            \"usagePercent\" : 12.5\n          }\n        ],\n        \"source\" : \"current\",\n        \"updatedAt\" : \"2026-07-31T12:05:00.250Z\"\n      },\n      \"createdAt\" : \"2026-07-31T12:01:00.124Z\",\n      \"id\" : \"grok-69f79a7b187251c8\",\n      \"identity\" : {\n        \"clientID\" : \"desktop-client\",\n        \"email\" : \"alpha@example.com\",\n        \"expiresAt\" : \"2099-08-01T12:00:00.000Z\",\n        \"hasAccessToken\" : true,\n        \"hasRefreshToken\" : true,\n        \"issuer\" : \"https://auth.x.ai\",\n        \"kind\" : \"oauth\",\n        \"principalID\" : \"principal-user-a\",\n        \"principalType\" : \"User\",\n        \"scope\" : \"https://auth.x.ai::desktop-client\",\n        \"teamID\" : \"T-9\",\n        \"teamName\" : \"Team T-9\",\n        \"userID\" : \"user-a\"\n      },\n      \"lastQuotaAt\" : \"2026-07-31T12:05:00.250Z\",\n      \"lastUsedAt\" : \"2026-07-31T12:05:00.124Z\",\n      \"requiresReauth\" : false,\n      \"sortIndex\" : 2\n    },\n    {\n      \"createdAt\" : \"2026-07-31T12:02:00.124Z\",\n      \"id\" : \"grok-4a73f8fe4efefad\",\n      \"identity\" : {\n        \"email\" : \"legacy@example.com\",\n        \"hasAccessToken\" : true,\n        \"hasRefreshToken\" : false,\n        \"kind\" : \"legacySession\",\n        \"scope\" : \"https://accounts.x.ai/sign-in\",\n        \"userID\" : \"user-l\"\n      },\n      \"lastError\" : \"authentication_required\",\n      \"requiresReauth\" : true,\n      \"sortIndex\" : 0\n    }\n  ],\n  \"currentAccountID\" : \"grok-69f79a7b187251c8\",\n  \"version\" : 1\n}",
+  "ordered" : [
+    "grok-4a73f8fe4efefad",
+    "grok-8a85164237722e9f",
+    "grok-69f79a7b187251c8"
+  ],
+  "pack" : "{\n  \"accounts\" : [\n    {\n      \"credential\" : {\n        \"https://auth.x.ai::desktop-client\" : {\n          \"auth_mode\" : \"oidc\",\n          \"create_time\" : \"2026-07-30T12:00:00Z\",\n          \"email\" : \"Zed@example.com\",\n          \"expires_at\" : \"2099-08-01T12:00:00Z\",\n          \"key\" : \"tok-access-2\",\n          \"oidc_client_id\" : \"desktop-client\",\n          \"oidc_issuer\" : \"https://auth.x.ai\",\n          \"principal_id\" : \"principal-user-z\",\n          \"principal_type\" : \"User\",\n          \"refresh_token\" : \"tok-refresh-2\",\n          \"user_id\" : \"user-z\",\n          \"x_extra\" : {\n            \"keep\" : \"me/too\",\n            \"n\" : 1\n          }\n        }\n      },\n      \"displayName\" : \"Zed@example.com\",\n      \"email\" : \"Zed@example.com\",\n      \"id\" : \"grok-8a85164237722e9f\"\n    },\n    {\n      \"alias\" : \"Alpha / é\",\n      \"credential\" : {\n        \"https://auth.x.ai::desktop-client\" : {\n          \"auth_mode\" : \"oidc\",\n          \"create_time\" : \"2026-07-30T12:00:00Z\",\n          \"email\" : \"alpha@example.com\",\n          \"expires_at\" : \"2099-08-01T12:00:00Z\",\n          \"key\" : \"tok-access\",\n          \"oidc_client_id\" : \"desktop-client\",\n          \"oidc_issuer\" : \"https://auth.x.ai\",\n          \"principal_id\" : \"principal-user-a\",\n          \"principal_type\" : \"User\",\n          \"refresh_token\" : \"tok-refresh\",\n          \"team_id\" : \"T-9\",\n          \"team_name\" : \"Team T-9\",\n          \"user_id\" : \"user-a\",\n          \"x_extra\" : {\n            \"keep\" : \"me/too\",\n            \"n\" : 1\n          }\n        }\n      },\n      \"displayName\" : \"Alpha / é\",\n      \"email\" : \"alpha@example.com\",\n      \"id\" : \"grok-69f79a7b187251c8\"\n    },\n    {\n      \"credential\" : {\n        \"https://accounts.x.ai/sign-in\" : {\n          \"auth_mode\" : \"grok\",\n          \"email\" : \"legacy@example.com\",\n          \"key\" : \"lk\",\n          \"user_id\" : \"user-l\"\n        }\n      },\n      \"displayName\" : \"legacy@example.com\",\n      \"email\" : \"legacy@example.com\",\n      \"id\" : \"grok-4a73f8fe4efefad\"\n    }\n  ],\n  \"appVersion\" : \"0.0.87\",\n  \"exportedAt\" : \"2026-07-31T12:13:20.500Z\",\n  \"format\" : \"quosparr-accounts\",\n  \"provider\" : \"grok\",\n  \"version\" : 1\n}",
+  "previewEmptyStore" : {
+    "failures" : [
+
+    ],
+    "items" : [
+      {
+        "alias" : "",
+        "conflict" : "willAdd",
+        "credential" : "{\"https://auth.x.ai::desktop-client\":{\"auth_mode\":\"oidc\",\"create_time\":\"2026-07-30T12:00:00Z\",\"email\":\"Zed@example.com\",\"expires_at\":\"2099-08-01T12:00:00Z\",\"key\":\"tok-access-2\",\"oidc_client_id\":\"desktop-client\",\"oidc_issuer\":\"https://auth.x.ai\",\"principal_id\":\"principal-user-z\",\"principal_type\":\"User\",\"refresh_token\":\"tok-refresh-2\",\"user_id\":\"user-z\",\"x_extra\":{\"keep\":\"me/too\",\"n\":1}}}",
+        "detail" : "Zed@example.com",
+        "displayName" : "Zed@example.com",
+        "existing" : "",
+        "id" : "grok-beda5acb5a84ae02"
+      },
+      {
+        "alias" : "Alpha / é",
+        "conflict" : "willAdd",
+        "credential" : "{\"https://auth.x.ai::desktop-client\":{\"auth_mode\":\"oidc\",\"create_time\":\"2026-07-30T12:00:00Z\",\"email\":\"alpha@example.com\",\"expires_at\":\"2099-08-01T12:00:00Z\",\"key\":\"tok-access\",\"oidc_client_id\":\"desktop-client\",\"oidc_issuer\":\"https://auth.x.ai\",\"principal_id\":\"principal-user-a\",\"principal_type\":\"User\",\"refresh_token\":\"tok-refresh\",\"team_id\":\"T-9\",\"team_name\":\"Team T-9\",\"user_id\":\"user-a\",\"x_extra\":{\"keep\":\"me/too\",\"n\":1}}}",
+        "detail" : "alpha@example.com",
+        "displayName" : "Alpha / é",
+        "existing" : "",
+        "id" : "grok-976db02df7f6c6f3"
+      },
+      {
+        "alias" : "",
+        "conflict" : "willAdd",
+        "credential" : "{\"https://accounts.x.ai/sign-in\":{\"auth_mode\":\"grok\",\"email\":\"legacy@example.com\",\"key\":\"lk\",\"user_id\":\"user-l\"}}",
+        "detail" : "legacy@example.com",
+        "displayName" : "legacy@example.com",
+        "existing" : "",
+        "id" : "grok-3ce040358ef298c7"
+      }
+    ],
+    "sourceIsPack" : true
+  },
+  "previewNone" : {
+    "failures" : [
+      "no_credentials"
+    ],
+    "items" : [
+
+    ],
+    "sourceIsPack" : false
+  },
+  "previewPaste" : {
+    "failures" : [
+
+    ],
+    "items" : [
+      {
+        "alias" : "",
+        "conflict" : "willAdd",
+        "credential" : "{\n  \"https://accounts.x.ai/sign-in\" : {\n    \"auth_mode\" : \"grok\",\n    \"email\" : \"p1@example.com\",\n    \"key\" : \"k1\",\n    \"user_id\" : \"u1\"\n  }\n}",
+        "detail" : "p1@example.com",
+        "displayName" : "p1@example.com",
+        "existing" : "",
+        "id" : "grok-1f2845fcef5bc12b"
+      }
+    ],
+    "sourceIsPack" : false
+  },
+  "previewWithStore" : {
+    "failures" : [
+
+    ],
+    "items" : [
+      {
+        "alias" : "",
+        "conflict" : "willUpdate",
+        "credential" : "{\"https://auth.x.ai::desktop-client\":{\"auth_mode\":\"oidc\",\"create_time\":\"2026-07-30T12:00:00Z\",\"email\":\"Zed@example.com\",\"expires_at\":\"2099-08-01T12:00:00Z\",\"key\":\"tok-access-2\",\"oidc_client_id\":\"desktop-client\",\"oidc_issuer\":\"https://auth.x.ai\",\"principal_id\":\"principal-user-z\",\"principal_type\":\"User\",\"refresh_token\":\"tok-refresh-2\",\"user_id\":\"user-z\",\"x_extra\":{\"keep\":\"me/too\",\"n\":1}}}",
+        "detail" : "Zed@example.com",
+        "displayName" : "Zed@example.com",
+        "existing" : "Zed@example.com",
+        "id" : "grok-beda5acb5a84ae02"
+      },
+      {
+        "alias" : "Alpha / é",
+        "conflict" : "willUpdate",
+        "credential" : "{\"https://auth.x.ai::desktop-client\":{\"auth_mode\":\"oidc\",\"create_time\":\"2026-07-30T12:00:00Z\",\"email\":\"alpha@example.com\",\"expires_at\":\"2099-08-01T12:00:00Z\",\"key\":\"tok-access\",\"oidc_client_id\":\"desktop-client\",\"oidc_issuer\":\"https://auth.x.ai\",\"principal_id\":\"principal-user-a\",\"principal_type\":\"User\",\"refresh_token\":\"tok-refresh\",\"team_id\":\"T-9\",\"team_name\":\"Team T-9\",\"user_id\":\"user-a\",\"x_extra\":{\"keep\":\"me/too\",\"n\":1}}}",
+        "detail" : "alpha@example.com",
+        "displayName" : "Alpha / é",
+        "existing" : "Alpha / é",
+        "id" : "grok-976db02df7f6c6f3"
+      },
+      {
+        "alias" : "",
+        "conflict" : "willUpdate",
+        "credential" : "{\"https://accounts.x.ai/sign-in\":{\"auth_mode\":\"grok\",\"email\":\"legacy@example.com\",\"key\":\"lk\",\"user_id\":\"user-l\"}}",
+        "detail" : "legacy@example.com",
+        "displayName" : "legacy@example.com",
+        "existing" : "legacy@example.com",
+        "id" : "grok-3ce040358ef298c7"
+      }
+    ],
+    "sourceIsPack" : true
+  },
+  "sources" : [
+    "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"auth_mode\" : \"oidc\",\n    \"create_time\" : \"2026-07-30T12:00:00Z\",\n    \"email\" : \"Zed@example.com\",\n    \"expires_at\" : \"2099-08-01T12:00:00Z\",\n    \"key\" : \"tok-access\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"principal_id\" : \"principal-user-z\",\n    \"principal_type\" : \"User\",\n    \"refresh_token\" : \"tok-refresh\",\n    \"user_id\" : \"user-z\",\n    \"x_extra\" : {\n      \"keep\" : \"me/too\",\n      \"n\" : 1\n    }\n  }\n}",
+    "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"auth_mode\" : \"oidc\",\n    \"create_time\" : \"2026-07-30T12:00:00Z\",\n    \"email\" : \"alpha@example.com\",\n    \"expires_at\" : \"2099-08-01T12:00:00Z\",\n    \"key\" : \"tok-access\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"principal_id\" : \"principal-user-a\",\n    \"principal_type\" : \"User\",\n    \"refresh_token\" : \"tok-refresh\",\n    \"team_id\" : \"T-9\",\n    \"team_name\" : \"Team T-9\",\n    \"user_id\" : \"user-a\",\n    \"x_extra\" : {\n      \"keep\" : \"me/too\",\n      \"n\" : 1\n    }\n  }\n}",
+    "{\"https://accounts.x.ai/sign-in\":{\"auth_mode\":\"grok\",\"email\":\"legacy@example.com\",\"key\":\"lk\",\"user_id\":\"user-l\"}}",
+    "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"auth_mode\" : \"oidc\",\n    \"create_time\" : \"2026-07-30T12:00:00Z\",\n    \"email\" : \"Zed@example.com\",\n    \"expires_at\" : \"2099-08-01T12:00:00Z\",\n    \"key\" : \"tok-access-2\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"principal_id\" : \"principal-user-z\",\n    \"principal_type\" : \"User\",\n    \"refresh_token\" : \"tok-refresh-2\",\n    \"user_id\" : \"user-z\",\n    \"x_extra\" : {\n      \"keep\" : \"me/too\",\n      \"n\" : 1\n    }\n  }\n}"
+  ]
+}

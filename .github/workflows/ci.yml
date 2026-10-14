@@ -1,35 +1,29 @@
-name: CI
+name: Personal migration CI
 
 on:
   push:
     branches: [main, 'personal/**']
   pull_request:
 
-jobs:
-  test:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Swift version
-        run: swift --version
-      - name: Test Swift
-        run: swift test
+permissions:
+  contents: read
 
-  build:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go-checks:
     runs-on: macos-26
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [arm64, x86_64]
     steps:
       - uses: actions/checkout@v7
-      - name: Package ${{ matrix.arch }}
-        env:
-          EXPECTED_MACOS_SDK_MAJOR: "26"
-          INCLUDE_WIDGET: "1"
-          RUNWAY_BUNDLE_ID: com.github.codex-runway.dev
-          RUNWAY_APP_GROUP_ID: group.com.github.codex-runway.dev
-          RUNWAY_WIDGET_STORAGE_MODE: local
-        run: ARCH=${{ matrix.arch }} bash Scripts/package-app.sh
-      - name: Verify embedded widget ${{ matrix.arch }}
-        run: bash Scripts/verify-packaged-app.sh dist/CodexRunway.app ${{ matrix.arch }} local
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Test and compile without launching the desktop application
+        run: |
+          go test -count=1 -timeout=10m ./...
+          go vet ./...
+          go build ./...
+          go test -race -count=1 -timeout=10m ./internal/...
+          go test -tags=quosparr_dev_package -count=1 ./internal/app -run '^TestPackagedDevelopmentUpdate'

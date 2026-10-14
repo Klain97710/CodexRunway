@@ -1,0 +1,132 @@
+package app
+
+import (
+	"strings"
+
+	"github.com/egoist/mygo/ui"
+	"github.com/licoy/quosparr/internal/l10n"
+)
+
+func (f *accountForm) closeEditor() {
+	f.mode, f.editID, f.paste, f.apiKey = "", "", "", ""
+	f.alias, f.note, f.switchName, f.editorError = "", "", "", ""
+	f.selection = nil
+}
+
+func accountEditorTitle(l l10n.Localizer, f *accountForm) string {
+	key := l10n.KeyAccountsAddPaste
+	switch f.mode {
+	case "switch":
+		key = l10n.KeyAccountsSwitchConfirmTitle
+	case "apikey":
+		key = l10n.KeyAccountsAddAPIKey
+	case "alias":
+		key = l10n.KeyAlias
+	case "note":
+		key = l10n.KeyAccountsNote
+	case "paste":
+		if f.kind == 1 {
+			key = l10n.KeyGrokAccountsAddPaste
+		}
+	}
+	return l.Text(key)
+}
+
+func accountEditor(c *ui.Context, u *settingsUI, f *accountForm) {
+	if f.mode == "" {
+		return
+	}
+	l, open := u.L(), true
+	ui.Modal(c.Key("account-editor"), &open, func() {
+		ui.Text(c, accountEditorTitle(l, f)).FontSize(17).FontWeight(600)
+		accountEditorFields(c, u, f)
+		if f.editorError != "" {
+			ui.Text(c, f.editorError).FontSize(12).TextColor(c.Theme().Danger)
+		}
+		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+			if f.busy {
+				ui.Spinner(c).Size(14, 14)
+			}
+			ui.Spacer(c).Grow(1)
+			if PillButton(c, nil, l.Text(l10n.KeyCancel), f.busy).Clicked() {
+				f.closeEditor()
+			}
+			empty := f.mode == "paste" && strings.TrimSpace(f.paste) == "" || f.mode == "apikey" && strings.TrimSpace(f.apiKey) == ""
+			confirm := l.Text(l10n.KeyOk)
+			if f.mode == "switch" {
+				confirm = l.Text(l10n.KeyAccountsMakeCurrent)
+			}
+			if PillButton(c, nil, confirm, f.busy || empty || f.mode == "").Clicked() {
+				u.submitAccountEditor(f)
+			}
+		})
+	}).Width(520)
+	if !open && !f.busy {
+		f.closeEditor()
+	}
+}
+
+func accountEditorFields(c *ui.Context, u *settingsUI, f *accountForm) {
+	l := u.L()
+	switch f.mode {
+	case "switch":
+		ui.Text(c, l.Textf(l10n.KeyAccountsSwitchConfirmMessage, f.switchName)).FontSize(12)
+		ui.Checkbox(c.Key("restart-after-switch"), &f.restartAfterSwitch, l.Text(l10n.KeyAccountsRestartCodexAfterSwitch)).Disabled(!codexRestartSupported || f.busy)
+		if !codexRestartSupported {
+			ui.Text(c, tx(l, xCodexRestartMac)).FontSize(11).TextColor(c.Theme().TextMuted)
+		}
+	case "paste":
+		hint := l.Text(l10n.KeyAccountsPasteHint)
+		if f.kind == 1 {
+			hint = l.Text(l10n.KeyGrokAccountsPasteHint)
+		}
+		ui.Text(c, hint).FontSize(12).TextColor(c.Theme().TextMuted)
+		ui.TextArea(c.Key("acct-paste"), &f.paste).Lines(6, 8).Label(hint).Disabled(f.busy)
+	case "apikey":
+		ui.Text(c, l.Text(l10n.KeyAccountsAPIKeyHint)).FontSize(12).TextColor(c.Theme().TextMuted)
+		ui.TextInput(c.Key("acct-key"), &f.apiKey).Password().Label(l.Text(l10n.KeyAccountsAddAPIKey)).Disabled(f.busy)
+	case "alias":
+		ui.TextInput(c.Key("acct-edit"), &f.alias).Label(l.Text(l10n.KeyAlias)).Disabled(f.busy)
+	case "note":
+		ui.TextArea(c.Key("acct-note"), &f.note).Lines(3, 6).Label(l.Text(l10n.KeyAccountsNote)).Disabled(f.busy)
+	}
+}
+
+func (u *settingsUI) submitAccountEditor(f *accountForm) {
+	l := u.L()
+	mode, id, kind := f.mode, f.editID, f.kind
+	paste, key, alias, note, restart := f.paste, f.apiKey, f.alias, f.note, f.restartAfterSwitch
+	u.accountEditAct(f, func() (string, bool) {
+		switch mode {
+		case "paste":
+			return pasteAccount(l, kind, paste)
+		case "apikey":
+			return addAPIKey(l, key)
+		case "switch":
+			return rtSwitchCodexResult(l, id, restart)
+		default:
+			msg := saveAccountMeta(l, kind, mode, id, alias, note)
+			return msg, msg == ""
+		}
+	})
+}
+
+// Keep the form and draft available after failures; completion is explicit.
+func (u *settingsUI) accountEditAct(f *accountForm, action func() (string, bool)) {
+	if f.busy {
+		return
+	}
+	f.busy, f.editorError = true, ""
+	go func() {
+		message, ok := action()
+		u.post(func() {
+			f.busy = false
+			if ok {
+				f.closeEditor()
+				f.status = message
+			} else {
+				f.editorError = message
+			}
+		})
+	}()
+}

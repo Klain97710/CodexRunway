@@ -1,0 +1,48 @@
+{
+  "accounts" : [
+    {
+      "alias" : "Alpha / one",
+      "credential" : {
+        "auth_mode" : "chatgpt",
+        "last_refresh" : "2026-06-29T00:00:00Z",
+        "tokens" : {
+          "access_token" : "eyJhbGciOiJub25lIn0.eyJleHAiOjQxMDAwMDAwMDAsInN1YiI6InMtYWNjdC1hIn0.",
+          "account_id" : "acct-a",
+          "id_token" : "eyJhbGciOiJub25lIn0.eyJlbWFpbCI6ImFAZXhhbXBsZS5jb20iLCJodHRwczpcL1wvYXBpLm9wZW5haS5jb21cL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdC1hIiwiY2hhdGdwdF9wbGFuX3R5cGUiOiJwbHVzIiwiY2hhdGdwdF9zdWJzY3JpcHRpb25fYWN0aXZlX3VudGlsIjoiMjA5OS0wMS0wMlQwMzowNDowNSswMDowMCIsImNoYXRncHRfdXNlcl9pZCI6InVzZXItQWExIn19.",
+          "refresh_token" : "refresh-a-token-value-padding"
+        }
+      },
+      "displayName" : "a@example.com",
+      "email" : "a@example.com",
+      "id" : "oauth-4428a9edcf192bba"
+    },
+    {
+      "credential" : {
+        "auth_mode" : "chatgpt",
+        "last_refresh" : "2026-06-29T00:00:00Z",
+        "tokens" : {
+          "access_token" : "eyJhbGciOiJub25lIn0.eyJleHAiOjQxMDAwMDAwMDAsInN1YiI6InMtYWNjdC1iIn0.",
+          "account_id" : "acct-b",
+          "id_token" : "eyJhbGciOiJub25lIn0.eyJlbWFpbCI6ImJAZXhhbXBsZS5jb20iLCJodHRwczpcL1wvYXBpLm9wZW5haS5jb21cL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdC1iIiwiY2hhdGdwdF9wbGFuX3R5cGUiOiJwbHVzIiwiY2hhdGdwdF9zdWJzY3JpcHRpb25fYWN0aXZlX3VudGlsIjoiMjA5OS0wMS0wMlQwMzowNDowNSswMDowMCJ9LCJzdWIiOiJzdWItYiJ9.",
+          "refresh_token" : "refresh-b-token-value-padding"
+        }
+      },
+      "displayName" : "b@example.com",
+      "email" : "b@example.com",
+      "id" : "oauth-235a35e3d1d68b96"
+    },
+    {
+      "credential" : {
+        "auth_mode" : "apikey",
+        "OPENAI_API_KEY" : "sk-test-key-1234567890"
+      },
+      "displayName" : "API ···38b4",
+      "id" : "api-cd18d789e4a138b4"
+    }
+  ],
+  "appVersion" : "0.0.87",
+  "exportedAt" : "2023-11-14T22:13:20.500Z",
+  "format" : "quosparr-accounts",
+  "provider" : "codex",
+  "version" : 1
+}

@@ -1,0 +1,35 @@
+{
+  "mode": [
+    "regular"
+  ],
+  "listen_host": "127.0.0.1",
+  "listen_port": 8080,
+  "allow_hosts": [
+    "^github\\.com(?::443)?$"
+  ],
+  "ssl_insecure": false,
+  "upstream_cert": false,
+  "connection_strategy": "lazy",
+  "flow_detail": 0,
+  "termlog_verbosity": "error",
+  "command_history": false,
+  "onboarding": false,
+  "map_local": [
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/latest/download/appcast\\-arm64\\.xml$|/private/tmp/runway-update-vm/candidate/quosparr-appcast-arm64.xml",
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/download/beta\\-v1\\.0\\.0\\-beta\\.1/Quosparr\\-macos\\-arm64\\.zip$|/private/tmp/runway-update-vm/candidate/Quosparr-macos-arm64.zip",
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/latest/download/appcast\\-x86_64\\.xml$|/private/tmp/runway-update-vm/candidate/quosparr-appcast-x86_64.xml",
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/download/beta\\-v1\\.0\\.0\\-beta\\.1/Quosparr\\-macos\\-x86_64\\.zip$|/private/tmp/runway-update-vm/candidate/Quosparr-macos-x86_64.zip",
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/download/v1\\-beta/update\\-darwin\\-arm64\\.json$|/private/tmp/runway-update-vm/candidate/update-darwin-arm64.json",
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/download/v1\\-beta/quosparr\\-1\\.0\\.0\\-beta\\.1\\-darwin\\-arm64\\.tar\\.gz$|/private/tmp/runway-update-vm/candidate/quosparr-1.0.0-beta.1-darwin-arm64.tar.gz",
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/download/v1\\-beta/update\\-darwin\\-amd64\\.json$|/private/tmp/runway-update-vm/candidate/update-darwin-amd64.json",
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/download/v1\\-beta/quosparr\\-1\\.0\\.0\\-beta\\.1\\-darwin\\-amd64\\.tar\\.gz$|/private/tmp/runway-update-vm/candidate/quosparr-1.0.0-beta.1-darwin-amd64.tar.gz",
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/download/v1\\-beta/update\\-windows\\-amd64\\.json$|/private/tmp/runway-update-vm/candidate/update-windows-amd64.json",
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/download/v1\\-beta/quosparr\\-1\\.0\\.0\\-beta\\.1\\-windows\\-amd64\\.tar\\.gz$|/private/tmp/runway-update-vm/candidate/quosparr-1.0.0-beta.1-windows-amd64.tar.gz",
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/download/v1\\-beta/update\\-windows\\-arm64\\.json$|/private/tmp/runway-update-vm/candidate/update-windows-arm64.json",
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/download/v1\\-beta/quosparr\\-1\\.0\\.0\\-beta\\.1\\-windows\\-arm64\\.tar\\.gz$|/private/tmp/runway-update-vm/candidate/quosparr-1.0.0-beta.1-windows-arm64.tar.gz",
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/download/v1\\-beta/update\\-linux\\-amd64\\.json$|/private/tmp/runway-update-vm/candidate/update-linux-amd64.json",
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/download/v1\\-beta/quosparr\\-1\\.0\\.0\\-beta\\.1\\-linux\\-amd64\\.tar\\.gz$|/private/tmp/runway-update-vm/candidate/quosparr-1.0.0-beta.1-linux-amd64.tar.gz",
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/download/v1\\-beta/update\\-linux\\-arm64\\.json$|/private/tmp/runway-update-vm/candidate/update-linux-arm64.json",
+    "|~m GET|^https://github\\.com/Licoy/codex\\-runway/releases/download/v1\\-beta/quosparr\\-1\\.0\\.0\\-beta\\.1\\-linux\\-arm64\\.tar\\.gz$|/private/tmp/runway-update-vm/candidate/quosparr-1.0.0-beta.1-linux-arm64.tar.gz"
+  ]
+}

@@ -2,7 +2,7 @@
 
 ## Bootstrap Icons
 
-CodexRunway vendors two SVG icon paths from Bootstrap Icons:
+Quosparr vendors two SVG icon paths from Bootstrap Icons:
 
 - `cloud-arrow-down`
 - `github`

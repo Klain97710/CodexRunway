@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  printf 'Usage: %s -v 0.0.4 [-p]\n' "$(basename "$0")" >&2
+  printf 'Usage: %s -v 1.0.2 [-p]\n' "$(basename "$0")" >&2
   exit 2
 }
 
@@ -34,12 +34,12 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
   exit 1
 fi
 
-PLIST="Resources/Info.plist"
+CONFIG="mygo.json"
 TAG="v$VERSION"
-CURRENT_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST")"
+CURRENT_VERSION="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["version"])' "$CONFIG")"
 
 if [[ "$CURRENT_VERSION" == "$VERSION" ]]; then
-  printf 'Info.plist is already at %s.\n' "$VERSION" >&2
+  printf '%s is already at %s.\n' "$CONFIG" "$VERSION" >&2
   exit 1
 fi
 
@@ -54,18 +54,23 @@ if git remote get-url origin >/dev/null 2>&1 &&
   exit 1
 fi
 
-IFS=. read -r MAJOR MINOR PATCH <<<"$VERSION"
-BUILD=$((10#$MAJOR * 1000000 + 10#$MINOR * 1000 + 10#$PATCH))
+# The build number only grows; Sparkle compares it with every published build.
+BUILD="$(python3 - "$CONFIG" "$VERSION" <<'PY'
+import json, sys
+path, version = sys.argv[1:]
+with open(path) as f:
+    config = json.load(f)
+plist = config["macos"]["infoPlist"]
+plist["CFBundleVersion"] = str(int(plist["CFBundleVersion"]) + 1)
+config["version"] = version
+with open(path, "w") as f:
+    f.write(json.dumps(config, indent=2, ensure_ascii=False) + "\n")
+print(plist["CFBundleVersion"])
+PY
+)"
 
-VERSION="$VERSION" BUILD="$BUILD" perl -0pi -e '
-  $short = s{(<key>CFBundleShortVersionString</key>\s*<string>)[^<]*(</string>)}{$1$ENV{VERSION}$2};
-  $build = s{(<key>CFBundleVersion</key>\s*<string>)[^<]*(</string>)}{$1$ENV{BUILD}$2};
-  die "Missing version keys\n" unless $short && $build;
-' "$PLIST"
-plutil -lint "$PLIST" >/dev/null
-
-git add "$PLIST"
-git commit -m "chore(release): bump version to $VERSION"
+git add "$CONFIG"
+git commit -m "chore(release): 升级版本至 $VERSION"
 git tag -a "$TAG" -m "Release $TAG"
 
 if [[ "$PUSH" -eq 1 ]]; then

@@ -1,0 +1,159 @@
+credits null OK 0 0 0 false unavailable
+credits 0 OK 0 0 0 true unavailable
+credits 5 OK 4617315517961601024 0 0 true unavailable
+credits 5.0 OK 4617315517961601024 0 0 true unavailable
+credits 5.5 OK 4617878467915022336 0 0 true unavailable
+credits 1e3 OK 4652007308841189376 0 0 true unavailable
+credits 1E3 OK 4652007308841189376 0 0 true unavailable
+credits -1 ERR
+credits "5" OK 4617315517961601024 0 0 true unavailable
+credits "5.5" OK 4617878467915022336 0 0 true unavailable
+credits "abc" ERR
+credits "" ERR
+credits " 5" ERR
+credits "+5" OK 4617315517961601024 0 0 true unavailable
+credits "0x10" OK 4625196817309499392 0 0 true unavailable
+credits true ERR
+credits false ERR
+credits [] ERR
+credits {} ERR
+credits 01 ERR
+credits 1. ERR
+credits .5 ERR
+credits - ERR
+credits 9223372036854775807 OK 4890909195324358656 0 0 true unavailable
+credits 9223372036854775808 OK 4890909195324358656 0 0 true unavailable
+credits 1e999 ERR
+credits "1e3" OK 4652007308841189376 0 0 true unavailable
+credits "Infinity" ERR
+credits "NaN" ERR
+credits "inf" ERR
+credits 12345678901234567890 OK 4892433759222981601 0 0 true unavailable
+credits 1.0e2 OK 4636737291354636288 0 0 true unavailable
+credits 0.1e1 OK 4607182418800017408 0 0 true unavailable
+credits -0 OK 0 0 0 true unavailable
+credits -0.0 OK 0 0 0 true unavailable
+credits "0x1p3" OK 4620693217682128896 0 0 true unavailable
+credits "5 " ERR
+credits "1_000" ERR
+credits 1e-400 OK 0 0 0 true unavailable
+credits 5e-1 OK 4602678819172646912 0 0 true unavailable
+credits "-5" ERR
+credits "1." OK 4607182418800017408 0 0 true unavailable
+credits "5e2" OK 4647503709213818880 0 0 true unavailable
+credits "٥" ERR
+credits "05" OK 4617315517961601024 0 0 true unavailable
+credits "-0" OK 0 0 0 true unavailable
+credits "9223372036854775808" OK 4890909195324358656 0 0 true unavailable
+credits 1.5e300 OK 9097811302482466869 0 0 true unavailable
+credits "1e400" ERR
+credits "0x1p-2" OK 4598175219545276416 0 0 true unavailable
+credits "+inf" ERR
+credits "1,5" ERR
+credits "1e+3" OK 4652007308841189376 0 0 true unavailable
+turns null OK 0 0 0 false unavailable
+turns 0 OK 0 0 0 false unavailable
+turns 5 OK 0 5 0 false unavailable
+turns 5.0 OK 0 5 0 false unavailable
+turns 5.5 ERR
+turns 1e3 OK 0 1000 0 false unavailable
+turns 1E3 OK 0 1000 0 false unavailable
+turns -1 ERR
+turns "5" OK 0 5 0 false unavailable
+turns "5.5" ERR
+turns "abc" ERR
+turns "" ERR
+turns " 5" ERR
+turns "+5" OK 0 5 0 false unavailable
+turns "0x10" ERR
+turns true ERR
+turns false ERR
+turns [] ERR
+turns {} ERR
+turns 01 ERR
+turns 1. ERR
+turns .5 ERR
+turns - ERR
+turns 9223372036854775807 OK 0 9223372036854775807 0 false unavailable
+turns 9223372036854775808 ERR
+turns 1e999 ERR
+turns "1e3" ERR
+turns "Infinity" ERR
+turns "NaN" ERR
+turns "inf" ERR
+turns 12345678901234567890 ERR
+turns 1.0e2 OK 0 100 0 false unavailable
+turns 0.1e1 OK 0 1 0 false unavailable
+turns -0 OK 0 0 0 false unavailable
+turns -0.0 OK 0 0 0 false unavailable
+turns "0x1p3" ERR
+turns "5 " ERR
+turns "1_000" ERR
+turns 1e-400 OK 0 0 0 false unavailable
+turns 5e-1 ERR
+turns "-5" ERR
+turns "1." ERR
+turns "5e2" ERR
+turns "٥" ERR
+turns "05" OK 0 5 0 false unavailable
+turns "-0" OK 0 0 0 false unavailable
+turns "9223372036854775808" ERR
+turns 1.5e300 ERR
+turns "1e400" ERR
+turns "0x1p-2" ERR
+turns "+inf" ERR
+turns "1,5" ERR
+turns "1e+3" ERR
+text_total_tokens null OK 0 0 0 false unavailable
+text_total_tokens 0 OK 0 0 0 false unavailable
+text_total_tokens 5 OK 0 0 5 false tokensOnly
+text_total_tokens 5.0 OK 0 0 5 false tokensOnly
+text_total_tokens 5.5 ERR
+text_total_tokens 1e3 OK 0 0 1000 false tokensOnly
+text_total_tokens 1E3 OK 0 0 1000 false tokensOnly
+text_total_tokens -1 ERR
+text_total_tokens "5" OK 0 0 5 false tokensOnly
+text_total_tokens "5.5" ERR
+text_total_tokens "abc" ERR
+text_total_tokens "" ERR
+text_total_tokens " 5" ERR
+text_total_tokens "+5" OK 0 0 5 false tokensOnly
+text_total_tokens "0x10" ERR
+text_total_tokens true ERR
+text_total_tokens false ERR
+text_total_tokens [] ERR
+text_total_tokens {} ERR
+text_total_tokens 01 ERR
+text_total_tokens 1. ERR
+text_total_tokens .5 ERR
+text_total_tokens - ERR
+text_total_tokens 9223372036854775807 OK 0 0 9223372036854775807 false tokensOnly
+text_total_tokens 9223372036854775808 ERR
+text_total_tokens 1e999 ERR
+text_total_tokens "1e3" ERR
+text_total_tokens "Infinity" ERR
+text_total_tokens "NaN" ERR
+text_total_tokens "inf" ERR
+text_total_tokens 12345678901234567890 ERR
+text_total_tokens 1.0e2 OK 0 0 100 false tokensOnly
+text_total_tokens 0.1e1 OK 0 0 1 false tokensOnly
+text_total_tokens -0 OK 0 0 0 false unavailable
+text_total_tokens -0.0 OK 0 0 0 false unavailable
+text_total_tokens "0x1p3" ERR
+text_total_tokens "5 " ERR
+text_total_tokens "1_000" ERR
+text_total_tokens 1e-400 OK 0 0 0 false unavailable
+text_total_tokens 5e-1 ERR
+text_total_tokens "-5" ERR
+text_total_tokens "1." ERR
+text_total_tokens "5e2" ERR
+text_total_tokens "٥" ERR
+text_total_tokens "05" OK 0 0 5 false tokensOnly
+text_total_tokens "-0" OK 0 0 0 false unavailable
+text_total_tokens "9223372036854775808" ERR
+text_total_tokens 1.5e300 ERR
+text_total_tokens "1e400" ERR
+text_total_tokens "0x1p-2" ERR
+text_total_tokens "+inf" ERR
+text_total_tokens "1,5" ERR
+text_total_tokens "1e+3" ERR

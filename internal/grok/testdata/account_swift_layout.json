@@ -1,0 +1,45 @@
+[
+  {
+    "name" : "merge_full",
+    "official" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"zeta\":1,\"Alpha\":2,\"alpha\":3,\"_under\":4,\"Ünï\":5,\"日本\":6,\"path\":\"a/b\\/c\",\"nested\":{\"b\":[1,2.5,{\"y\":null,\"X\":true}],\"a\":{}},\"emptyArr\":[],\"num\":[1.0,0.10,1e3,-0,12345678901234567890,3.14159],\"esc\":\"q\\\"uote\\\\back\\nnl\\ttab\\u0001ctl\",\"uni\":\"é😀 x\",\"slash2\":\"https:\\/\\/x.ai\"},\"xai::api_key\":{\"key\":\"api\",\"Z\":1,\"a\":2}}",
+    "out" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"Beta\" : [\n      3,\n      2,\n      1\n    ],\n    \"email\" : \"t@x.ai\",\n    \"key\" : \"tk\",\n    \"user_id\" : \"tu\",\n    \"x/y\" : \"p/q\"\n  },\n  \"xai::api_key\" : {\n    \"a\" : 2,\n    \"key\" : \"api\",\n    \"Z\" : 1\n  }\n}",
+    "target" : "{\"https://auth.x.ai::desktop-client\":{\"email\":\"t@x.ai\",\"key\":\"tk\",\"user_id\":\"tu\",\"Beta\":[3,2,1],\"x/y\":\"p/q\"}}"
+  },
+  {
+    "name" : "merge_nil_official",
+    "out" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"Beta\" : [\n      3,\n      2,\n      1\n    ],\n    \"email\" : \"t@x.ai\",\n    \"key\" : \"tk\",\n    \"user_id\" : \"tu\",\n    \"x/y\" : \"p/q\"\n  }\n}",
+    "target" : "{\"https://auth.x.ai::desktop-client\":{\"email\":\"t@x.ai\",\"key\":\"tk\",\"user_id\":\"tu\",\"Beta\":[3,2,1],\"x/y\":\"p/q\"}}"
+  },
+  {
+    "name" : "refresh_layout",
+    "official" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"zeta\":1,\"Alpha\":2,\"alpha\":3,\"_under\":4,\"Ünï\":5,\"日本\":6,\"path\":\"a/b\\/c\",\"nested\":{\"b\":[1,2.5,{\"y\":null,\"X\":true}],\"a\":{}},\"emptyArr\":[],\"num\":[1.0,0.10,1e3,-0,12345678901234567890,3.14159],\"esc\":\"q\\\"uote\\\\back\\nnl\\ttab\\u0001ctl\",\"uni\":\"é😀 x\",\"slash2\":\"https:\\/\\/x.ai\"},\"xai::api_key\":{\"key\":\"api\",\"Z\":1,\"a\":2}}",
+    "out" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"_under\" : 4,\n    \"alpha\" : 3,\n    \"Alpha\" : 2,\n    \"emptyArr\" : [\n\n    ],\n    \"esc\" : \"q\\\"uote\\\\back\\nnl\\ttab\\u0001ctl\",\n    \"expires_at\" : \"2026-07-31T12:01:00Z\",\n    \"key\" : \"na\",\n    \"nested\" : {\n      \"a\" : {\n\n      },\n      \"b\" : [\n        1,\n        2.5,\n        {\n          \"X\" : true,\n          \"y\" : null\n        }\n      ]\n    },\n    \"num\" : [\n      1,\n      0.10000000000000001,\n      1000,\n      0,\n      12345678901234567890,\n      3.1415899999999999\n    ],\n    \"path\" : \"a/b/c\",\n    \"refresh_token\" : \"nr\",\n    \"slash2\" : \"https://x.ai\",\n    \"uni\" : \"é😀 x\",\n    \"Ünï\" : 5,\n    \"user_id\" : \"u\",\n    \"zeta\" : 1,\n    \"日本\" : 6\n  },\n  \"xai::api_key\" : {\n    \"a\" : 2,\n    \"key\" : \"api\",\n    \"Z\" : 1\n  }\n}"
+  },
+  {
+    "name" : "merge_multi",
+    "official" : "{\"https://auth.x.ai::old\":{\"email\":\"o@x.ai\",\"key\":\"ko\",\"user_id\":\"ou\"},\"xai::api_key\":{\"key\":\"official-api\"},\"https://idp.example.com::c\":{\"key\":\"custom\",\"user_id\":\"cu\"},\"https://accounts.x.ai/sign-in\":{\"key\":\"oldlegacy\",\"user_id\":\"x\"}}",
+    "out" : "{\n  \"https://auth.x.ai::bb\" : {\n    \"email\" : \"b@x.ai\",\n    \"key\" : \"kb\",\n    \"user_id\" : \"bu\"\n  },\n  \"https://idp.example.com::c\" : {\n    \"key\" : \"custom\",\n    \"user_id\" : \"cu\"\n  },\n  \"xai::api_key\" : {\n    \"key\" : \"official-api\"\n  }\n}",
+    "target" : "{\"https://accounts.x.ai/sign-in\":{\"email\":\"l@x.ai\",\"key\":\"k\",\"user_id\":\"lu\"},\"https://auth.x.ai::bb\":{\"email\":\"b@x.ai\",\"key\":\"kb\",\"user_id\":\"bu\"},\"xai::api_key\":{\"key\":\"target-api\"}}"
+  },
+  {
+    "name" : "merge_api_only_official",
+    "official" : "{\"xai::api_key\":{\"key\":\"official-api\"}}",
+    "out" : "{\n  \"https://auth.x.ai::bb\" : {\n    \"email\" : \"b@x.ai\",\n    \"key\" : \"kb\",\n    \"user_id\" : \"bu\"\n  },\n  \"xai::api_key\" : {\n    \"key\" : \"official-api\"\n  }\n}",
+    "target" : "{\"https://accounts.x.ai/sign-in\":{\"email\":\"l@x.ai\",\"key\":\"k\",\"user_id\":\"lu\"},\"https://auth.x.ai::bb\":{\"email\":\"b@x.ai\",\"key\":\"kb\",\"user_id\":\"bu\"},\"xai::api_key\":{\"key\":\"target-api\"}}"
+  },
+  {
+    "name" : "escapes_numbers",
+    "official" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"e1\":\"b\\bf\\fl\\u001fv\\u000bd\\u007fz\\u0000n\\u00e9\\ud83d\\ude00\\u2029 \\r\",\"n\":[1e20,1E-7,0.000001,123456789.123456789,-1.5e300,5e-324,100000000000000000000,9223372036854775807,9223372036854775808,-9223372036854775808,-9223372036854775809,18446744073709551615,18446744073709551616,0.5,100,1.0e2,1E2,-0.0,2e0,0.1e1,123456789012345678]}}",
+    "out" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"e1\" : \"b\\bf\\fl\\u001fv\\u000bdz\\u0000né😀  \\r\",\n    \"key\" : \"na\",\n    \"n\" : [\n      1e+20,\n      9.9999999999999995e-08,\n      9.9999999999999995e-07,\n      123456789.123456789,\n      -1.5000000000000001e+300,\n      4.9406564584124654e-324,\n      100000000000000000000,\n      9223372036854775807,\n      9223372036854775808,\n      -9223372036854775808,\n      -9223372036854775809,\n      18446744073709551615,\n      18446744073709551616,\n      0.5,\n      100,\n      100,\n      100,\n      -0,\n      2,\n      1,\n      123456789012345678\n    ],\n    \"user_id\" : \"u\"\n  }\n}"
+  },
+  {
+    "name" : "key_order",
+    "official" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"a-b\":0,\"a_b\":1,\"a b\":2,\"a.b\":3,\"a\\/b\":4,\"a:b\":5,\"a1\":6,\"a2\":7,\"a10\":8,\"A\":9,\"b\":10,\"B\":11,\"aB\":12,\"Ab\":13,\"ab\":14,\"AB\":15,\"a\":16,\"_\":17,\"-\":18,\".\":19,\"0\":20,\"9\":21,\"Z\":22,\"z\":23,\"é\":24,\"e\":25,\"f\":26,\"E\":27,\"ÿ\":28,\"y\":29,\"z1\":30,\"Ω\":31,\"ω\":32,\"я\":33,\"ä\":34,\"a~\":35,\"a!\":36,\"a@\":37,\"a#\":38,\"a$\":39,\"a%\":40,\"a^\":41,\"a&\":42,\"a*\":43,\"a(\":44,\"a+\":45,\"a=\":46,\"a|\":47,\"a?\":48,\"a,\":49,\"a;\":50,\"a'\":51,\"a\\\"\":52,\"a<\":53,\"a`\":54,\"key2\":55,\"key_2\":56,\"key-2\":57,\"Key\":58,\"KEY\":59,\"keys\":60,\"ǆ\":61,\"ß\":62,\"ss\":63,\"ﬁ\":64,\"fi\":65,\"ø\":66,\"o\":67,\"p\":68,\"œ\":69,\"oe\":70,\"æ\":71,\"ae\":72,\"å\":73,\"aa\":74}}",
+    "out" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"_\" : 17,\n    \"-\" : 18,\n    \".\" : 19,\n    \"0\" : 20,\n    \"9\" : 21,\n    \"a\" : 16,\n    \"A\" : 9,\n    \"å\" : 73,\n    \"ä\" : 34,\n    \"a b\" : 2,\n    \"a_b\" : 1,\n    \"a-b\" : 0,\n    \"a,\" : 49,\n    \"a;\" : 50,\n    \"a:b\" : 5,\n    \"a!\" : 36,\n    \"a?\" : 48,\n    \"a.b\" : 3,\n    \"a'\" : 51,\n    \"a\\\"\" : 52,\n    \"a(\" : 44,\n    \"a@\" : 37,\n    \"a*\" : 43,\n    \"a/b\" : 4,\n    \"a&\" : 42,\n    \"a#\" : 38,\n    \"a%\" : 40,\n    \"a`\" : 54,\n    \"a^\" : 41,\n    \"a+\" : 45,\n    \"a<\" : 53,\n    \"a=\" : 46,\n    \"a|\" : 47,\n    \"a~\" : 35,\n    \"a$\" : 39,\n    \"a1\" : 6,\n    \"a2\" : 7,\n    \"a10\" : 8,\n    \"aa\" : 74,\n    \"ab\" : 14,\n    \"aB\" : 12,\n    \"Ab\" : 13,\n    \"AB\" : 15,\n    \"ae\" : 72,\n    \"æ\" : 71,\n    \"b\" : 10,\n    \"B\" : 11,\n    \"ǆ\" : 61,\n    \"e\" : 25,\n    \"E\" : 27,\n    \"é\" : 24,\n    \"f\" : 26,\n    \"fi\" : 65,\n    \"ﬁ\" : 64,\n    \"key\" : \"na\",\n    \"Key\" : 58,\n    \"KEY\" : 59,\n    \"key_2\" : 56,\n    \"key-2\" : 57,\n    \"key2\" : 55,\n    \"keys\" : 60,\n    \"o\" : 67,\n    \"ø\" : 66,\n    \"oe\" : 70,\n    \"œ\" : 69,\n    \"p\" : 68,\n    \"ss\" : 63,\n    \"ß\" : 62,\n    \"user_id\" : \"u\",\n    \"y\" : 29,\n    \"ÿ\" : 28,\n    \"z\" : 23,\n    \"Z\" : 22,\n    \"z1\" : 30,\n    \"ω\" : 32,\n    \"Ω\" : 31,\n    \"я\" : 33\n  }\n}"
+  },
+  {
+    "name" : "scope_order",
+    "official" : "{\"xai::api_key\":{\"key\":\"a\"},\"https://auth.x.ai::zeta\":{\"key\":\"k\",\"user_id\":\"u\"},\"https://auth.x.ai::Alpha\":{\"key\":\"k\",\"user_id\":\"u2\"},\"Https://x\":{\"a\":1},\"_x\":{},\"1\":[]}",
+    "out" : "{\n  \"_x\" : {\n\n  },\n  \"1\" : [\n\n  ],\n  \"https://auth.x.ai::Alpha\" : {\n    \"key\" : \"na\",\n    \"user_id\" : \"u2\"\n  },\n  \"https://auth.x.ai::zeta\" : {\n    \"key\" : \"k\",\n    \"user_id\" : \"u\"\n  },\n  \"Https://x\" : {\n    \"a\" : 1\n  },\n  \"xai::api_key\" : {\n    \"key\" : \"a\"\n  }\n}"
+  }
+]

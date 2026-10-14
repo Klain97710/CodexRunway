@@ -1,0 +1,17 @@
+import json
+K='"subscription_tier_display"'
+c=[]
+b='{%s:"SuperGrok"}'%K
+c+=[b,'{%s:"SuperGrok",}'%K,'{%s:"SuperGrok"},'%K,'\ufeff'+b,'  '+b+' \n',b+'junk',b+b,'[%s]'%b,
+ '{%s:"A",%s:"SuperGrok Heavy"}'%(K,K),'{%s:"SuperGrok Heavy",%s:"A"}'%(K,K),
+ '{"subscription_tier_display":"Super\\u0047rok"}','{"subscription_tier_display":"a\tb"}','{"subscription_tier_display":"bad\\x"}','{"subscription_tier_display":"\\ud83d"}','{"subscription_tier_display":"\\ud83d\\ude00"}','{"subscription_tier_display":"a\u0000b"}','{"subscription_tier_display":"a\\u0000b"}',
+ '{%s:"SuperGrok"} // c'%K,'/*c*/'+b,'{%s:NaN}'%K,'{%s:"x",\n"y":Infinity}'%K,"{%s:'x'}"%K,'{%s:"x" "y":1}'%K,'{%s:"x"::1}'%K,'{,%s:"SuperGrok"}'%K,'{%s:"SuperGrok",,}'%K,'{"a":[1,2,],%s:"SuperGrok"}'%K,'{"a":[,1],%s:"SuperGrok"}'%K,'{"a":01,%s:"SuperGrok"}'%K,'{"a":1.,%s:"SuperGrok"}'%K,'{"a":-,%s:"SuperGrok"}'%K,'{"a":1e,%s:"SuperGrok"}'%K,'{"a":.5,%s:"SuperGrok"}'%K,'{"a":+1,%s:"SuperGrok"}'%K,'{"a":0x10,%s:"SuperGrok"}'%K,'{"a":-0,%s:"SuperGrok"}'%K,'{"a":tru,%s:"SuperGrok"}'%K,'{"a":nul,%s:"SuperGrok"}'%K,'{"a":True,%s:"SuperGrok"}'%K,
+ '{"a":1e999,%s:"SuperGrok"}'%K,'{"a":123456789012345678901234567890123,%s:"SuperGrok"}'%K,'{"a":"\\u12",%s:"SuperGrok"}'%K,'{"a":"\\uD800",%s:"SuperGrok"}'%K,'{"a":"\\uDC00",%s:"SuperGrok"}'%K,'{"a":"\x01",%s:"SuperGrok"}'%K,'{"a":"\x7f",%s:"SuperGrok"}'%K,'{"a":"\u2028",%s:"SuperGrok"}'%K,
+ '{"a":%s,%s:"SuperGrok"}'%('['*600+']'*600,K),'{"a":%s,%s:"SuperGrok"}'%('['*510+']'*510,K),'{"a":%s,%s:"SuperGrok"}'%('['*511+']'*511,K),'{"a":%s,%s:"SuperGrok"}'%('['*512+']'*512,K),'{"a":%s,%s:"SuperGrok"}'%('['*513+']'*513,K),
+ '\ufeff\ufeff'+b,'\x00'+b,'\x0b'+b,'\x0c'+b,'\xa0'+b,'\u2003'+b, b+'\x00', b+' ', b+'\n\n', b+'\ufeff',
+ '{ %s : "SuperGrok" }'%K,'{\n\t%s\r\n:\r\n"SuperGrok"}'%K,
+ '{"subscriptionTierDisplay":"A","subscription_tier_display":"SuperGrok"}','{"subscription_tier_display":null,"subscription_tier":"Free"}','{"subscription_tier_display":"  ","subscription_tier":"Free"}','{"SUBSCRIPTION_TIER_DISPLAY":"SuperGrok"}',
+ '{"subscription\\u005ftier_display":"SuperGrok"}','{"subscription_tier_display ":"SuperGrok"}','{"subscription_tier_display":"SuperGrok"}'.replace('_','\u200b_',1),
+]
+json.dump(c,open('settings_inputs.json','w'),ensure_ascii=False)
+print(len(c))

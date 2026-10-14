@@ -1,0 +1,20 @@
+{
+  "accounts" : [
+    {
+      "alias" : "G",
+      "credential" : {
+        "k" : {
+          "a" : 1,
+          "b" : "x/y"
+        }
+      },
+      "displayName" : "Grok A",
+      "email" : "g@x.ai",
+      "id" : "g1"
+    }
+  ],
+  "exportedAt" : "2023-11-14T22:13:20.000Z",
+  "format" : "quosparr-accounts",
+  "provider" : "grok",
+  "version" : 1
+}

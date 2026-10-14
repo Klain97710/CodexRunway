@@ -1,0 +1,594 @@
+{
+  "refreshErrors" : [
+    {
+      "error" : "invalidManagedCredential",
+      "name" : "oauth_full"
+    }
+  ],
+  "rows" : [
+    {
+      "accessToken" : "k-access",
+      "displayName" : "Person@Example.com",
+      "identity" : "{\n  \"clientID\" : \"desktop-client\",\n  \"email\" : \"Person@Example.com\",\n  \"expiresAt\" : \"2099-08-01T12:00:00.000Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : true,\n  \"issuer\" : \"https://auth.x.ai\",\n  \"kind\" : \"oauth\",\n  \"principalID\" : \"Principal-123\",\n  \"principalType\" : \"User\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"teamID\" : \"Team-456\",\n  \"teamName\" : \"Example Team\",\n  \"userID\" : \"User-789\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"auth_mode\":\"oidc\",\"email\":\"Person@Example.com\",\"expires_at\":\"2099-08-01T12:00:00Z\",\"key\":\"k-access\",\"oidc_client_id\":\"desktop-client\",\"oidc_issuer\":\"https://auth.x.ai\",\"principal_id\":\"Principal-123\",\"principal_type\":\"User\",\"refresh_token\":\"k-refresh\",\"team_id\":\"Team-456\",\"team_name\":\"Example Team\",\"user_id\":\"User-789\"}}",
+      "name" : "oauth_full",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"auth_mode\" : \"oidc\",\n    \"email\" : \"Person@Example.com\",\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"principal_id\" : \"Principal-123\",\n    \"principal_type\" : \"User\",\n    \"refresh_token\" : \"new-refresh\",\n    \"team_id\" : \"Team-456\",\n    \"team_name\" : \"Example Team\",\n    \"user_id\" : \"User-789\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"auth_mode\" : \"oidc\",\n    \"email\" : \"Person@Example.com\",\n    \"expires_at\" : \"2099-08-01T12:00:00Z\",\n    \"key\" : \"a3\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"principal_id\" : \"Principal-123\",\n    \"principal_type\" : \"User\",\n    \"refresh_token\" : \"k-refresh\",\n    \"team_id\" : \"Team-456\",\n    \"team_name\" : \"Example Team\",\n    \"user_id\" : \"User-789\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"auth_mode\" : \"oidc\",\n    \"email\" : \"Person@Example.com\",\n    \"expires_at\" : \"2099-08-01T12:00:00Z\",\n    \"key\" : \"a2\",\n    \"oidc_client_id\" : \"desktop-client\",\n    \"oidc_issuer\" : \"https://auth.x.ai\",\n    \"principal_id\" : \"Principal-123\",\n    \"principal_type\" : \"User\",\n    \"refresh_token\" : \"k-refresh\",\n    \"team_id\" : \"Team-456\",\n    \"team_name\" : \"Example Team\",\n    \"user_id\" : \"User-789\"\n  }\n}",
+      "refreshToken" : "k-refresh",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-f7310b50bf1b466"
+    },
+    {
+      "accessToken" : "k-legacy",
+      "displayName" : "legacy@example.com",
+      "identity" : "{\n  \"email\" : \"legacy@example.com\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"legacySession\",\n  \"scope\" : \"https://accounts.x.ai/sign-in\",\n  \"userID\" : \"legacy-user\"\n}",
+      "input" : "{\"https://accounts.x.ai/sign-in\":{\"auth_mode\":\"grok\",\"email\":\"legacy@example.com\",\"key\":\"k-legacy\",\"user_id\":\"legacy-user\"}}",
+      "name" : "legacy",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://accounts.x.ai/sign-in\" : {\n    \"auth_mode\" : \"grok\",\n    \"email\" : \"legacy@example.com\",\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"legacy-user\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://accounts.x.ai/sign-in\" : {\n    \"auth_mode\" : \"grok\",\n    \"email\" : \"legacy@example.com\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"legacy-user\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://accounts.x.ai/sign-in\" : {\n    \"auth_mode\" : \"grok\",\n    \"email\" : \"legacy@example.com\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"legacy-user\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://accounts.x.ai/sign-in"
+      ],
+      "stableID" : "grok-6e0d02d53b4e7fd2"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "P-Only",
+      "identity" : "{\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"principalID\" : \"P-Only\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"principal_id\":\"P-Only\"}}",
+      "name" : "principal_only",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"principal_id\" : \"P-Only\",\n    \"refresh_token\" : \"new-refresh\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"key\" : \"a3\",\n    \"principal_id\" : \"P-Only\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"key\" : \"a2\",\n    \"principal_id\" : \"P-Only\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-9675dbd2339a8939"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "Only@Example.com",
+      "identity" : "{\n  \"email\" : \"Only@Example.com\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"email\":\"Only@Example.com\"}}",
+      "name" : "email_only",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"email\" : \"Only@Example.com\",\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"email\" : \"Only@Example.com\",\n    \"key\" : \"a3\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"email\" : \"Only@Example.com\",\n    \"key\" : \"a2\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-21a407cb0f96e6a7"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "a@b.c",
+      "identity" : "{\n  \"email\" : \"a@b.c\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"issuer\" : \"HTTPS://Auth.X.AI\",\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"teamID\" : \"T1\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"email\":\"a@b.c\",\"team_id\":\"T1\",\"oidc_issuer\":\"HTTPS://Auth.X.AI\"}}",
+      "name" : "email_team",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"email\" : \"a@b.c\",\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"oidc_issuer\" : \"HTTPS://Auth.X.AI\",\n    \"refresh_token\" : \"new-refresh\",\n    \"team_id\" : \"T1\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"email\" : \"a@b.c\",\n    \"key\" : \"a3\",\n    \"oidc_issuer\" : \"HTTPS://Auth.X.AI\",\n    \"team_id\" : \"T1\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"email\" : \"a@b.c\",\n    \"key\" : \"a2\",\n    \"oidc_issuer\" : \"HTTPS://Auth.X.AI\",\n    \"team_id\" : \"T1\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-28d46212d7841f0d"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "pad@example.com",
+      "identity" : "{\n  \"email\" : \"pad@example.com\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u1\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"  k  \",\"email\":\"  pad@example.com  \",\"user_id\":\" u1 \",\"refresh_token\":\"   \"}}",
+      "name" : "padded",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"email\" : \"  pad@example.com  \",\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \" u1 \"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"email\" : \"  pad@example.com  \",\n    \"key\" : \"a3\",\n    \"refresh_token\" : \"   \",\n    \"user_id\" : \" u1 \"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"email\" : \"  pad@example.com  \",\n    \"key\" : \"a2\",\n    \"refresh_token\" : \"   \",\n    \"user_id\" : \" u1 \"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-e7323644b2bfe73b"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2099-01-02T03:04:05.678Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T03:04:05.678Z\"}}",
+      "name" : "fractional_ms",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05.678Z\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05.678Z\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2099-01-02T03:04:05.678Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T03:04:05.678912Z\"}}",
+      "name" : "fractional_6",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05.678912Z\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05.678912Z\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2099-01-02T03:04:05.500Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T03:04:05.5Z\"}}",
+      "name" : "fractional_1",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05.5Z\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05.5Z\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2099-01-01T19:04:05.000Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T03:04:05+08:00\"}}",
+      "name" : "offset",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05+08:00\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05+08:00\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2099-01-02T08:34:05.250Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T03:04:05.250-05:30\"}}",
+      "name" : "offset_frac",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05.250-05:30\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05.250-05:30\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "error" : "invalidManagedCredential",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02t03:04:05z\"}}",
+      "name" : "lowercase_tz",
+      "ok" : false
+    },
+    {
+      "error" : "invalidManagedCredential",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T03:04:05\"}}",
+      "name" : "no_tz",
+      "ok" : false
+    },
+    {
+      "error" : "invalidManagedCredential",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"soon\"}}",
+      "name" : "bad_date",
+      "ok" : false
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2020-01-01T00:00:00.000Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2020-01-01T00:00:00Z\"}}",
+      "name" : "expired_no_refresh",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2020-01-01T00:00:00Z\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2020-01-01T00:00:00Z\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : true,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2020-01-01T00:00:00.000Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : true,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2020-01-01T00:00:00Z\",\"refresh_token\":\"r\"}}",
+      "name" : "expired_refresh",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2020-01-01T00:00:00Z\",\n    \"key\" : \"a3\",\n    \"refresh_token\" : \"r\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2020-01-01T00:00:00Z\",\n    \"key\" : \"a2\",\n    \"refresh_token\" : \"r\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshToken" : "r",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "displayName" : "u",
+      "identity" : "{\n  \"hasAccessToken\" : false,\n  \"hasRefreshToken\" : true,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"user_id\":\"u\",\"refresh_token\":\"r\"}}",
+      "name" : "no_access",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"key\" : \"a3\",\n    \"refresh_token\" : \"r\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"key\" : \"a2\",\n    \"refresh_token\" : \"r\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshToken" : "r",
+      "requiresReauth" : true,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "error" : "noManagedCredential",
+      "input" : "{\"xai::api_key\":{\"auth_mode\":\"api_key\",\"key\":\"k\"}}",
+      "name" : "api_key_only",
+      "ok" : false
+    },
+    {
+      "error" : "invalidManagedCredential",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\"}}",
+      "name" : "no_identity",
+      "ok" : false
+    },
+    {
+      "error" : "invalidManagedCredential",
+      "input" : "{\"https://auth.x.ai::desktop-client\":\"nope\"}",
+      "name" : "scope_not_object",
+      "ok" : false
+    },
+    {
+      "accessToken" : "k3",
+      "displayName" : "a@x.ai",
+      "identity" : "{\n  \"email\" : \"a@x.ai\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::aa\",\n  \"userID\" : \"au\"\n}",
+      "input" : "{\"https://accounts.x.ai/sign-in\":{\"email\":\"l@x.ai\",\"key\":\"k\",\"user_id\":\"lu\"},\"https://auth.x.ai::zz\":{\"email\":\"o@x.ai\",\"key\":\"k2\",\"user_id\":\"ou\"},\"https://auth.x.ai::aa\":{\"email\":\"a@x.ai\",\"key\":\"k3\",\"user_id\":\"au\"}}",
+      "name" : "both_scopes",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://accounts.x.ai/sign-in\" : {\n    \"email\" : \"l@x.ai\",\n    \"key\" : \"k\",\n    \"user_id\" : \"lu\"\n  },\n  \"https://auth.x.ai::aa\" : {\n    \"email\" : \"a@x.ai\",\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"au\"\n  },\n  \"https://auth.x.ai::zz\" : {\n    \"email\" : \"o@x.ai\",\n    \"key\" : \"k2\",\n    \"user_id\" : \"ou\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://accounts.x.ai/sign-in\" : {\n    \"email\" : \"l@x.ai\",\n    \"key\" : \"k\",\n    \"user_id\" : \"lu\"\n  },\n  \"https://auth.x.ai::aa\" : {\n    \"email\" : \"a@x.ai\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"au\"\n  },\n  \"https://auth.x.ai::zz\" : {\n    \"email\" : \"o@x.ai\",\n    \"key\" : \"k2\",\n    \"user_id\" : \"ou\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://accounts.x.ai/sign-in\" : {\n    \"email\" : \"l@x.ai\",\n    \"key\" : \"k\",\n    \"user_id\" : \"lu\"\n  },\n  \"https://auth.x.ai::aa\" : {\n    \"email\" : \"a@x.ai\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"au\"\n  },\n  \"https://auth.x.ai::zz\" : {\n    \"email\" : \"o@x.ai\",\n    \"key\" : \"k2\",\n    \"user_id\" : \"ou\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://accounts.x.ai/sign-in",
+        "https://auth.x.ai::aa",
+        "https://auth.x.ai::zz"
+      ],
+      "stableID" : "grok-2478fc6aa57c7ce3"
+    },
+    {
+      "error" : "invalidRoot",
+      "input" : "[1,2]",
+      "name" : "not_object",
+      "ok" : false
+    },
+    {
+      "error" : "invalidRoot",
+      "input" : "nope",
+      "name" : "not_json",
+      "ok" : false
+    },
+    {
+      "error" : "noManagedCredential",
+      "input" : "{}",
+      "name" : "empty_object",
+      "ok" : false
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"email\":5,\"team_id\":true}}",
+      "name" : "non_string_fields",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"email\" : 5,\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"team_id\" : true,\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"email\" : 5,\n    \"key\" : \"a3\",\n    \"team_id\" : true,\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"email\" : 5,\n    \"key\" : \"a2\",\n    \"team_id\" : true,\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "ü@例え.jp",
+      "identity" : "{\n  \"email\" : \"ü@例え.jp\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"teamName\" : \"日本語 チーム\",\n  \"userID\" : \"Ü-ID\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"email\":\"ü@例え.jp\",\"user_id\":\"Ü-ID\",\"team_name\":\"日本語 チーム\"}}",
+      "name" : "unicode",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"email\" : \"ü@例え.jp\",\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"team_name\" : \"日本語 チーム\",\n    \"user_id\" : \"Ü-ID\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"email\" : \"ü@例え.jp\",\n    \"key\" : \"a3\",\n    \"team_name\" : \"日本語 チーム\",\n    \"user_id\" : \"Ü-ID\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"email\" : \"ü@例え.jp\",\n    \"key\" : \"a2\",\n    \"team_name\" : \"日本語 チーム\",\n    \"user_id\" : \"Ü-ID\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-5f67260307c2efd2"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2099-01-01T19:04:05.000Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T03:04:05+0800\"}}",
+      "name" : "d_offset_nocolon",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05+0800\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05+0800\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2099-01-01T19:04:05.000Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T03:04:05+08\"}}",
+      "name" : "d_offset_hour",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05+08\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05+08\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "error" : "invalidManagedCredential",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T03:04:05,5Z\"}}",
+      "name" : "d_comma_frac",
+      "ok" : false
+    },
+    {
+      "error" : "invalidManagedCredential",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02 03:04:05Z\"}}",
+      "name" : "d_space_sep",
+      "ok" : false
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2099-01-02T03:04:05.000Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\" 2099-01-02T03:04:05Z \"}}",
+      "name" : "d_leading_space",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \" 2099-01-02T03:04:05Z \",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \" 2099-01-02T03:04:05Z \",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2099-01-02T03:04:05.000Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-1-2T03:04:05Z\"}}",
+      "name" : "d_short_month",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-1-2T03:04:05Z\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-1-2T03:04:05Z\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2099-01-03T00:00:00.000Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T24:00:00Z\"}}",
+      "name" : "d_hour24",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T24:00:00Z\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T24:00:00Z\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2099-03-02T00:00:00.000Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-02-30T00:00:00Z\"}}",
+      "name" : "d_feb30",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-02-30T00:00:00Z\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-02-30T00:00:00Z\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "error" : "invalidManagedCredential",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T03:04:60Z\"}}",
+      "name" : "d_sec60",
+      "ok" : false
+    },
+    {
+      "error" : "invalidManagedCredential",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T03:04:05.Z\"}}",
+      "name" : "d_empty_frac",
+      "ok" : false
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2099-01-02T03:04:05.000Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T03:04:05.1239999999999Z\"}}",
+      "name" : "d_long_frac",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05.1239999999999Z\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05.1239999999999Z\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2099-01-02T03:04:05.999Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T03:04:05.9996Z\"}}",
+      "name" : "d_frac_999",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05.9996Z\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05.9996Z\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"1999-01-02T03:04:05.000Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"12099-01-02T03:04:05Z\"}}",
+      "name" : "d_year5",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"12099-01-02T03:04:05Z\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"12099-01-02T03:04:05Z\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : true,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "error" : "invalidManagedCredential",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02\"}}",
+      "name" : "d_date_only",
+      "ok" : false
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2099-01-02T03:34:05.999Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T03:04:05.999-00:30\"}}",
+      "name" : "d_neg_offset_ms",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05.999-00:30\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05.999-00:30\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"2099-01-01T18:04:05.000Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"2099-01-02T03:04:05+99:99\"}}",
+      "name" : "d_offset_9999",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05+99:99\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2099-01-02T03:04:05+99:99\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"1970-01-01T00:00:00.000Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"1970-01-01T00:00:00Z\"}}",
+      "name" : "d_epoch",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"1970-01-01T00:00:00Z\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"1970-01-01T00:00:00Z\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : true,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"expiresAt\" : \"1969-12-31T23:59:59.999Z\",\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":\"1969-12-31T23:59:59.9996Z\"}}",
+      "name" : "d_pre_epoch",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"1969-12-31T23:59:59.9996Z\",\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"1969-12-31T23:59:59.9996Z\",\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : true,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    },
+    {
+      "accessToken" : "k",
+      "displayName" : "u",
+      "identity" : "{\n  \"hasAccessToken\" : true,\n  \"hasRefreshToken\" : false,\n  \"kind\" : \"oauth\",\n  \"scope\" : \"https://auth.x.ai::desktop-client\",\n  \"userID\" : \"u\"\n}",
+      "input" : "{\"https://auth.x.ai::desktop-client\":{\"key\":\"k\",\"user_id\":\"u\",\"expires_at\":1785499200}}",
+      "name" : "d_number",
+      "ok" : true,
+      "refreshed" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : \"2026-07-31T13:00:00Z\",\n    \"key\" : \"new-access\",\n    \"refresh_token\" : \"new-refresh\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedBlankRefresh" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : 1785499200,\n    \"key\" : \"a3\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "refreshedNoRotation" : "{\n  \"https://auth.x.ai::desktop-client\" : {\n    \"expires_at\" : 1785499200,\n    \"key\" : \"a2\",\n    \"user_id\" : \"u\"\n  }\n}",
+      "requiresReauth" : false,
+      "scopes" : [
+        "https://auth.x.ai::desktop-client"
+      ],
+      "stableID" : "grok-72801e7a24fe500c"
+    }
+  ]
+}

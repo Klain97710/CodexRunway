@@ -1,0 +1,16 @@
+quosparr://widget?provider=both&section=overview	both/overview
+quosparr://widget/?provider=codex&section=quota	codex/quota
+quosparr://widget?provider=bad&section=quota	-
+https://widget?provider=codex&section=quota	-
+quosparr://widget?provider=codex&section=quota&extra=1	-
+quosparr://widget?provider=codex	-
+quosparr://widget?section=tokens&provider=grok	grok/tokens
+quosparr://widget/x?provider=codex&section=quota	-
+quosparr://other?provider=codex&section=quota	-
+QUOSPARR://widget?provider=codex&section=quota	-
+quosparr://widget?provider=codex&provider=grok	-
+quosparr://widget?provider=%63odex&section=resetToday	codex/resetToday
+quosparr://widget?provider&section=quota	-
+quosparr://widget?provider=codex&section=quota#frag	codex/quota
+quosparr://widget	-
+quosparr:widget?provider=codex&section=quota	-

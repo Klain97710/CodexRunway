@@ -1,0 +1,6 @@
+{"timestamp":"2026-06-28T23:58:00Z","type":"session_meta","payload":{"cwd":"/Users/me/dev/quosparr"}}
+{"timestamp":"2026-06-28T23:59:00Z","type":"event_msg","payload":{"type":"token_count","info":{"last_token_usage":{"input_tokens":1000,"cached_input_tokens":200,"output_tokens":50,"reasoning_output_tokens":0}}},"turn_context":{"model":"gpt-5.5"}}
+{"timestamp":"2026-06-29T00:01:00Z","type":"event_msg","payload":{"type":"token_count","info":{"last_token_usage":{"input_tokens":2000,"cached_input_tokens":0,"output_tokens":100,"reasoning_output_tokens":0}}},"turn_context":{"model":"gpt-5.5"}}
+{"timestamp":"2026-06-29T00:02:00Z","type":"event_msg","payload":{"type":"task_complete","turn_id":"t1"}}
+{"timestamp":"2026-06-29T12:00:00Z","type":"event_msg","payload":{"type":"token_count","info":{"last_token_usage":{"input_tokens":500,"cached_input_tokens":100,"output_tokens":20,"reasoning_output_tokens":0}}},"turn_context":{"model":"mystery-model"}}
+not json at all

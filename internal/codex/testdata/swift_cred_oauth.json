@@ -1,0 +1,10 @@
+{
+  "auth_mode" : "chatgpt",
+  "last_refresh" : "2026-06-29T00:00:00Z",
+  "tokens" : {
+    "access_token" : "eyJhbGciOiJub25lIn0.eyJleHAiOjQxMDAwMDAwMDAsInN1YiI6InMtYWNjdC1hIn0.",
+    "account_id" : "acct-a",
+    "id_token" : "eyJhbGciOiJub25lIn0.eyJlbWFpbCI6ImFAZXhhbXBsZS5jb20iLCJodHRwczpcL1wvYXBpLm9wZW5haS5jb21cL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdC1hIiwiY2hhdGdwdF9wbGFuX3R5cGUiOiJwbHVzIiwiY2hhdGdwdF9zdWJzY3JpcHRpb25fYWN0aXZlX3VudGlsIjoiMjA5OS0wMS0wMlQwMzowNDowNSswMDowMCIsImNoYXRncHRfdXNlcl9pZCI6InVzZXItQWExIn19.",
+    "refresh_token" : "refresh-a-token-value-padding"
+  }
+}

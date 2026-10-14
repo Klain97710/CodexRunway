@@ -1,0 +1,2 @@
+# Generated sources and byte-for-byte Swift fixtures must keep their LF bytes.
+* text=auto eol=lf

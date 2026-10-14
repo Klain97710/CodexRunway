@@ -1,0 +1,125 @@
+import json, itertools
+c = []
+W = '"type":"USAGE_PERIOD_TYPE_WEEKLY","start":"2026-08-06T00:00:00Z","end":"2026-08-13T00:00:00Z"'
+# handwritten from Swift tests + variants
+c += [
+ '{"config":{"creditUsagePercent":42.5,"currentPeriod":{%s},"monthlyLimit":{"val":9999},"used":{"val":9999},"onDemandCap":{"val":5000},"onDemandUsed":{"val":300},"prepaidBalance":{"val":1250},"productUsage":[{"product":"GrokBuild","usagePercent":30.0},{"product":"GrokImagine","usagePercent":8.5},{"product":"GrokChat","usagePercent":4.0}],"isUnifiedBillingUser":true},"on_demand_enabled":true,"subscription_tier":"SuperGrok Heavy"}' % W,
+ '{"config":{"currentPeriod":{"type":"USAGE_PERIOD_TYPE_WEEKLY","start":"2026-08-06T16:46:56.082611+00:00","end":"2026-08-13T16:46:56.082611+00:00"},"onDemandCap":{"val":0},"onDemandUsed":{"val":0},"isUnifiedBillingUser":true,"prepaidBalance":{"val":0},"billingPeriodStart":"2026-08-06T16:46:56.082611+00:00","billingPeriodEnd":"2026-08-13T16:46:56.082611+00:00"}}',
+ '{"config":{"creditUsagePercent":0,"currentPeriod":{%s}}}' % W,
+ '{"config":{"monthlyLimit":{"val":2000},"used":{"val":850},"onDemandCap":{"val":500},"onDemandUsed":{"val":25},"billingPeriodStart":"2026-06-01T00:00:00Z","billingPeriodEnd":"2026-07-01T00:00:00Z"},"onDemandEnabled":false,"subscriptionTier":"SuperGrok"}',
+ '{"billingCycle":{"billingPeriodStart":"2026-06-01T00:00:00Z","billingPeriodEnd":"2026-07-01T00:00:00Z"},"monthlyLimit":{"val":4000},"onDemandCap":{"val":900},"on_demand_enabled":true,"usage":{"includedUsed":{"val":1000},"onDemandUsed":{"val":75},"totalUsed":{"val":1200}}}',
+ '{"config":{"creditUsagePercent":12.25,"currentPeriod":{"type":"USAGE_PERIOD_TYPE_MONTHLY","start":"2026-06-01T00:00:00Z","end":"2026-07-01T00:00:00Z"},"monthlyLimit":{"val":100},"used":{"val":99},"prepaidBalance":{},"onDemandCap":{},"onDemandUsed":{}}}',
+ '{"config":{"creditUsagePercent":10,"currentPeriod":{"type":"USAGE_PERIOD_TYPE_WEEKLY","start":"not-a-date","end":"2026-07-01T00:00:00Z"}}}',
+ '{"config":{"creditUsagePercent":22.5,"currentPeriod":{"type":"USAGE_PERIOD_TYPE_DAILY","start":"2026-07-01T00:00:00Z","end":"2026-07-02T00:00:00Z"}}}',
+ '{"config":{"creditUsagePercent":33,"productUsage":{"GrokBuild":33}}}',
+ '{"config": {}}',
+ '{"config":{"creditUsagePercent":"42.5"}}',
+ '["not","an","object"]',
+ '{"config":{},"monthlyLimit":{"val":1000},"usage":{"totalUsed":{"val":250}}}',
+ '{"config":{"creditUsagePercent":1e400}}',
+ '{"config":{"monthlyLimit":{"val":15000},"used":{"val":277},"billingPeriodStart":"2026-08-01T00:00:00+00:00","billingPeriodEnd":"2026-09-01T00:00:00+00:00"}}',
+ '{"config":{"creditUsagePercent":12,"currentPeriod":{%s},"resetCredits":{"available_count":9},"tokens":[{"tokenId":"x"}]}}' % W,
+ '{"subscription_tier_display":"SuperGrok","force_update":false}',
+ '{"subscription_tier_display":"SuperGrok Heavy"}',
+ '{"subscriptionTierDisplay":"supergrok lite"}',
+ '{"subscription_tier":"GrokPro"}',
+ '{"subscriptionTier":" x premium+ "}',
+ '{"subscription_tier_display":"","subscription_tier":"Tier 9"}',
+ '{"subscription_tier_display":5,"subscriptionTier":"Free"}',
+ '{}', '', 'null', '[]', '1', '"x"', 'true', '{"config":null}', '{"config":5}', '{"config":[]}',
+]
+# JSON syntax quirks
+base = '{"config":{"creditUsagePercent":5,"currentPeriod":{"type":"USAGE_PERIOD_TYPE_WEEKLY"}}}'
+c += [
+ '{"config":{"creditUsagePercent":5,},}',
+ '{"config":{"creditUsagePercent":5,}}',
+ '﻿' + base,
+ '  \n\t' + base + '  \n',
+ base + 'junk', base + base, base + ',',
+ '{"config":{"creditUsagePercent":5,"creditUsagePercent":6}}',
+ '{"config":{"creditUsagePercent":6,"creditUsagePercent":5}}',
+ '{"config":{"creditUsagePercent":5},"config":{"creditUsagePercent":7}}',
+ '{"config":{"creditUsagePercent":5},"config":{}}',
+ '{"config":{"creditUsagePercent":5} // c\n}',
+ '{"config":{"creditUsagePercent":/*c*/5}}',
+ "{'config':{'creditUsagePercent':5}}",
+ '{"config":{"creditUsagePercent":NaN}}',
+ '{"config":{"creditUsagePercent":Infinity}}',
+ '{"config":{"creditUsagePercent":-Infinity}}',
+ '{"config":{"creditUsagePercent":+5}}',
+ '{"config":{"creditUsagePercent":05}}',
+ '{"config":{"creditUsagePercent":5.}}',
+ '{"config":{"creditUsagePercent":.5}}',
+ '{"config":{"creditUsagePercent":-0}}',
+ '{"config":{"creditUsagePercent":-0.0}}',
+ '{"config":{"creditUsagePercent":1E2}}',
+ '{"config":{"creditUsagePercent":1e-2}}',
+ '{"config":{"creditUsagePercent":"1e2"}}',
+ '{"config":{"creditUsagePercent":" 5 "}}',
+ '{"config":{"creditUsagePercent":"abc"}}',
+ '{"config":{"creditUsagePercent":"nan"}}',
+ '{"config":{"creditUsagePercent":"inf"}}',
+ '{"config":{"creditUsagePercent":"0x10"}}',
+ '{"config":{"creditUsagePercent":"５"}}',
+ '{"config":{"creditUsagePercent":true}}',
+ '{"config":{"creditUsagePercent":null,"currentPeriod":{"type":"USAGE_PERIOD_TYPE_WEEKLY"}}}',
+ '{"config":{"creditUsagePercent":[5]}}',
+ '{"config":{"creditUsagePercent":9223372036854775807}}',
+ '{"config":{"creditUsagePercent":18446744073709551615}}',
+ '{"config":{"creditUsagePercent":123456789012345678901234567890}}',
+ '{"config":{"creditUsagePercent":5.000000000000000000001}}',
+ '{"config":{"creditUsagePercent":0.1}}',
+ '{"config":{"creditUsagePercent":1e308}}',
+ '{"config":{"creditUsagePercent":1.7976931348623157e308}}',
+ '{"config":{"creditUsagePercent":4.9e-324}}',
+ '{"config":{"creditUsagePercent":1e-400}}',
+ '{"config":{"creditUsagePercent":-5}}',
+ '{"config":{"creditUsagePercent":1e3}}',
+ '{"config":{"creditUsagePercent":100.5}}',
+]
+# Cent shapes
+for v in ['15000','15000.0','15000.4','15000.5','15000.6','-15000.5','1e3','1E3','1.5e3','"15000"','" 15000 "','"15000.5"','"1e3"','"abc"','"0x10"','true','null','[]','{}','{"val":null}','{"val":"12"}','{"val":12.5}','{"val":12.5e1}','{"val":true}','{"val":[]}','{"val":{}}','{"other":5}','9223372036854775807','9223372036854775808','-9223372036854775808','-9223372036854775809','1e19','1e30','1e400','{"val":9223372036854775807}','{"val":9223372036854775808}','{"val":1e30}','"9223372036854775808"','"1e30"','{"val":"1e30"}','0','-0','-0.0','0.4','0.5','1.5','2.5','-0.5','-1.5','"+5"','"-5"','"５"','"5 "','"\\n5"', '7']:
+    c.append('{"config":{"monthlyLimit":%s,"used":{"val":5},"creditUsagePercent":1}}' % v)
+    c.append('{"monthlyLimit":%s,"usage":{"totalUsed":%s}}' % (v, v))
+    c.append('{"config":{"monthlyLimit":{"val":100},"used":%s,"prepaidBalance":%s}}' % (v, v))
+# product usage
+for p in ['[{"product":" GrokBuild ","usagePercent":1}]','[{"product":"","usagePercent":1}]','[{"product":"   ","usagePercent":1}]','[{"usagePercent":1}]','[{"product":"A"}]','[{"product":"A","usagePercent":"7.5"}]','[{"product":"A","usagePercent":"x"}]','[{"product":"A","usagePercent":1e400}]','[{"product":"A","usagePercent":null}]','[{"product":5,"usagePercent":1},{"product":"B","usagePercent":2}]','[1,2,{"product":"B","usagePercent":2}]','[{"product":"b","usagePercent":1},{"product":"A","usagePercent":1},{"product":"a","usagePercent":1},{"product":"B","usagePercent":1}]','[{"product":"é","usagePercent":1},{"product":"e","usagePercent":1},{"product":"E","usagePercent":1},{"product":"z","usagePercent":1}]','[{"product":"a10","usagePercent":1},{"product":"a2","usagePercent":1},{"product":"A1","usagePercent":1}]','[{"product":"x","usagePercent":-5},{"product":"y","usagePercent":50}]','[]','null','"x"','[{"product":"x","usagePercent":3,"extra":1}]','[{"product":"dup","usagePercent":1},{"product":"dup","usagePercent":2}]']:
+    c.append('{"config":{"creditUsagePercent":10,"productUsage":%s}}' % p)
+# other combos
+for cp in ['{"type":"USAGE_PERIOD_TYPE_WEEKLY","start":"2026-08-13T00:00:00Z","end":"2026-08-06T00:00:00Z"}','{"type":"USAGE_PERIOD_TYPE_WEEKLY","start":"2026-08-06T00:00:00Z","end":"2026-08-06T00:00:00Z"}','{"type":"USAGE_PERIOD_TYPE_WEEKLY"}','{"type":"USAGE_PERIOD_TYPE_MONTHLY","start":"2026-08-06T00:00:00Z"}','{"type":"USAGE_PERIOD_TYPE_MONTHLY","end":"2026-08-06T00:00:00Z"}','{"start":"2026-08-06T00:00:00Z","end":"2026-08-13T00:00:00Z"}','{"type":"usage_period_type_weekly"}','{"type":"USAGE_PERIOD_TYPE_WEEKLY","start":5,"end":"2026-08-13T00:00:00Z"}','{"type":"USAGE_PERIOD_TYPE_WEEKLY","start":null,"end":null}','"x"','5','[]','{"type":"USAGE_PERIOD_TYPE_WEEKLY","start":"2026-08-06T00:00:00.5Z","end":"2026-08-06T00:00:00.9Z"}','{"type":"USAGE_PERIOD_TYPE_WEEKLY","start":"2026-08-06T00:00:00.1Z","end":"2026-08-06T00:00:00.1004Z"}']:
+    c.append('{"config":{"creditUsagePercent":3,"currentPeriod":%s}}' % cp)
+    c.append('{"config":{"currentPeriod":%s}}' % cp)
+    c.append('{"config":{"monthlyLimit":{"val":10},"used":{"val":2},"billingPeriodStart":"2026-08-13T00:00:00Z","billingPeriodEnd":"2026-08-06T00:00:00Z"},"x":%s}' % cp)
+for pair in [('"2026-08-01T00:00:00Z"','"2026-09-01T00:00:00Z"'),('"x"','"2026-09-01T00:00:00Z"'),('null','"2026-09-01T00:00:00Z"'),('"2026-08-01T00:00:00Z"','null'),('5','5'),('"2026-09-01T00:00:00Z"','"2026-08-01T00:00:00Z"'),('null','null')]:
+    c.append('{"config":{"monthlyLimit":{"val":100},"used":{"val":20},"billingPeriodStart":%s,"billingPeriodEnd":%s}}' % pair)
+    c.append('{"monthlyLimit":{"val":100},"usage":{"totalUsed":{"val":20}},"billingCycle":{"billingPeriodStart":%s,"billingPeriodEnd":%s}}' % pair)
+# top-level flags/tier
+for t in ['"supergrok"','"SuperGrok Heavy"','"  "','""','5','null','"unknown thing"','"free"','"API Key"','"x_premium_plus"','"X Premium+"']:
+    c.append('{"config":{"creditUsagePercent":1},"subscriptionTier":%s,"subscription_tier":"Free"}' % t)
+    c.append('{"config":{"creditUsagePercent":1},"subscription_tier":%s}' % t)
+for f in ['true','false','null','"true"','1']:
+    c.append('{"config":{"creditUsagePercent":1},"onDemandEnabled":%s,"on_demand_enabled":true}' % f)
+    c.append('{"config":{"creditUsagePercent":1},"on_demand_enabled":%s}' % f)
+    c.append('{"config":{"creditUsagePercent":1,"isUnifiedBillingUser":%s}}' % f)
+# limits
+for lim,used in [(0,5),(-5,5),(100,-5),(100,0),(3,1),(7,2),(1,1),(9007199254740993,3)]:
+    c.append('{"config":{"monthlyLimit":{"val":%d},"used":{"val":%d}}}' % (lim,used))
+    c.append('{"monthlyLimit":{"val":%d},"usage":{"includedUsed":{"val":%d}}}' % (lim,used))
+c.append('{"config":{"monthlyLimit":{"val":100}}}')
+c.append('{"config":{"used":{"val":100}}}')
+c.append('{"monthlyLimit":{"val":100}}')
+c.append('{"usage":{"totalUsed":{"val":1}}}')
+c.append('{"monthlyLimit":{"val":100},"usage":{"includedUsed":{"val":5},"totalUsed":{"val":50}}}')
+c.append('{"monthlyLimit":{"val":100},"usage":{"includedUsed":{"val":5},"totalUsed":null}}')
+c.append('{"monthlyLimit":{"val":100},"usage":{"includedUsed":{"val":5},"totalUsed":"bad"}}')
+c.append('{"monthlyLimit":{"val":100},"usage":"bad"}')
+c.append('{"config":{"creditUsagePercent":5},"usage":"bad","billingCycle":5,"monthlyLimit":"x"}')
+# unicode / escapes
+c.append('{"config":{"creditUsagePercent":5,"productUsage":[{"product":"\\u00e9","usagePercent":1},{"product":"\\ud83d\\ude00","usagePercent":1},{"product":"\\ud83d","usagePercent":1}]}}')
+c.append('{"config":{"creditUsagePercent":5,"productUsage":[{"pro\\u0064uct":"esc","usagePercent":1}]}}')
+c.append('{"config":{"creditUsagePercent":5,"productUsage":[{"product":"a\\/b","usagePercent":1}]}}')
+c.append('{"config":{"creditUsagePercent":5,"productUsage":[{"product":"a\tb","usagePercent":1}]}}')
+c.append('{"config":{"creditUsagePercent":5,"productUsage":[{"product":"bad\\x","usagePercent":1}]}}')
+c.append('{"config":{"creditUsagePercent":5,"productUsage":[{"product":"a b","usagePercent":1}]}}')
+json.dump(c, open('billing_inputs.json','w'), ensure_ascii=False)
+print(len(c))

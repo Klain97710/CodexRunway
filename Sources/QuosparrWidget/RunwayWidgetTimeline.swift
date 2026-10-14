@@ -1,0 +1,148 @@
+import Foundation
+import WidgetKit
+
+enum RunwayWidgetLoadState: Equatable {
+    case ready(RunwayWidgetSnapshot)
+    case missing
+    case corrupt
+    case unsupportedVersion
+}
+
+struct RunwayWidgetEntry: TimelineEntry {
+    var date: Date
+    var state: RunwayWidgetLoadState
+    var provider: RunwayWidgetProviderScope
+    var metric: RunwayWidgetMetricKind
+    var isPlaceholder = false
+}
+
+private enum RunwayWidgetLoader {
+    static func load(now: Date = Date()) -> RunwayWidgetLoadState {
+        let mode = RunwayWidgetStorageMode.mode(
+            fromInfoValue: Bundle.main.object(forInfoDictionaryKey: RunwayWidgetStorageMode.infoKey) as? String)
+        let appGroupID = Bundle.main.object(
+            forInfoDictionaryKey: RunwayWidgetStorageMode.appGroupInfoKey) as? String
+        do {
+            return .ready(try RunwayWidgetSnapshotStore.make(
+                mode: mode,
+                appGroupID: appGroupID).load())
+        } catch RunwayWidgetSnapshotStoreError.missing {
+            return .missing
+        } catch RunwayWidgetSnapshotStoreError.unsupportedSchemaVersion {
+            return .unsupportedVersion
+        } catch {
+            return .corrupt
+        }
+    }
+
+    static func timeline(
+        provider: RunwayWidgetProviderScope,
+        metric: RunwayWidgetMetricKind,
+        includesResetTransitions: Bool = false) -> Timeline<RunwayWidgetEntry>
+    {
+        let now = Date()
+        let state = load(now: now)
+        var dates = [now]
+        if includesResetTransitions, case .ready(let snapshot) = state {
+            dates += snapshot.resetToday?.transitionDates(after: now) ?? []
+        }
+        let entries = Array(Set(dates)).sorted().map {
+            RunwayWidgetEntry(date: $0, state: state, provider: provider, metric: metric)
+        }
+        return Timeline(
+            entries: entries,
+            policy: .after(now.addingTimeInterval(RunwayWidgetLayoutPolicy.refreshInterval)))
+    }
+}
+
+@available(macOS 14.0, *)
+struct RunwayProviderTimelineProvider: AppIntentTimelineProvider {
+    func placeholder(in context: Context) -> RunwayWidgetEntry {
+        RunwayWidgetEntry(
+            date: Date(),
+            state: RunwayWidgetLoader.load(),
+            provider: .codex,
+            metric: .remainingQuota,
+            isPlaceholder: true)
+    }
+
+    func snapshot(for configuration: RunwayProviderSelectionIntent, in context: Context) async -> RunwayWidgetEntry {
+        entry(for: configuration)
+    }
+
+    func timeline(for configuration: RunwayProviderSelectionIntent, in context: Context) async -> Timeline<RunwayWidgetEntry> {
+        RunwayWidgetLoader.timeline(provider: configuration.provider.providerScope, metric: .remainingQuota)
+    }
+
+    private func entry(for configuration: RunwayProviderSelectionIntent) -> RunwayWidgetEntry {
+        RunwayWidgetEntry(
+            date: Date(),
+            state: RunwayWidgetLoader.load(),
+            provider: configuration.provider.providerScope,
+            metric: .remainingQuota)
+    }
+}
+
+@available(macOS 14.0, *)
+struct RunwayMetricTimelineProvider: AppIntentTimelineProvider {
+    func placeholder(in context: Context) -> RunwayWidgetEntry {
+        RunwayWidgetEntry(
+            date: Date(),
+            state: RunwayWidgetLoader.load(),
+            provider: .codex,
+            metric: .remainingQuota,
+            isPlaceholder: true)
+    }
+
+    func snapshot(for configuration: RunwayMetricSelectionIntent, in context: Context) async -> RunwayWidgetEntry {
+        RunwayWidgetEntry(
+            date: Date(),
+            state: RunwayWidgetLoader.load(),
+            provider: configuration.provider.providerScope,
+            metric: configuration.metric.metricKind)
+    }
+
+    func timeline(for configuration: RunwayMetricSelectionIntent, in context: Context) async -> Timeline<RunwayWidgetEntry> {
+        RunwayWidgetLoader.timeline(
+            provider: configuration.provider.providerScope,
+            metric: configuration.metric.metricKind)
+    }
+}
+
+@available(macOS 14.0, *)
+struct RunwayResetTimelineProvider: TimelineProvider {
+    func placeholder(in context: Context) -> RunwayWidgetEntry {
+        RunwayWidgetEntry(
+            date: Date(),
+            state: RunwayWidgetLoader.load(),
+            provider: .codex,
+            metric: .remainingQuota,
+            isPlaceholder: true)
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (RunwayWidgetEntry) -> Void) {
+        completion(RunwayWidgetEntry(
+            date: Date(),
+            state: RunwayWidgetLoader.load(),
+            provider: .codex,
+            metric: .remainingQuota))
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<RunwayWidgetEntry>) -> Void) {
+        completion(RunwayWidgetLoader.timeline(
+            provider: .codex,
+            metric: .remainingQuota,
+            includesResetTransitions: true))
+    }
+}
+
+@available(macOS 14.0, *)
+private extension String {
+    var providerScope: RunwayWidgetProviderScope {
+        RunwayFeatures.production.widgetScope(RunwayWidgetProviderScope(rawValue: self) ?? .codex)
+    }
+
+    var metricKind: RunwayWidgetMetricKind {
+        RunwayWidgetMetricKind(rawValue: self) ?? .remainingQuota
+    }
+}

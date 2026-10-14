@@ -1,0 +1,23 @@
+import AppKit
+import Foundation
+
+let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 140, pixelsHigh: 44,
+    bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+    colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+let context = NSGraphicsContext(bitmapImageRep: bitmap)!
+NSGraphicsContext.saveGraphicsState()
+NSGraphicsContext.current = context
+context.cgContext.scaleBy(x: 2, y: 2)
+let paragraph = NSMutableParagraphStyle()
+paragraph.alignment = .center
+paragraph.lineBreakMode = .byTruncatingTail
+let attributes: [NSAttributedString.Key: Any] = [
+    .font: NSFont.systemFont(ofSize: 8.5, weight: .semibold),
+    .foregroundColor: NSColor.black,
+    .paragraphStyle: paragraph,
+]
+let text = "--"
+let size = text.size(withAttributes: attributes)
+text.draw(in: NSRect(x: 0, y: 11 - size.height / 2, width: 70, height: size.height), withAttributes: attributes)
+NSGraphicsContext.restoreGraphicsState()
+try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: CommandLine.arguments[1]))

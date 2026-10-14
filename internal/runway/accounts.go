@@ -1,0 +1,251 @@
+package runway
+
+import (
+	"context"
+	"errors"
+
+	"github.com/licoy/quosparr/internal/codex"
+	"github.com/licoy/quosparr/internal/codexapi"
+	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/usage"
+)
+
+// ErrSwitchBusy means another account switch is still running.
+var ErrSwitchBusy = errors.New("runway: account switch in progress")
+
+// reloadIndexLocked re-reads the account list. A failure is shown to the user
+// instead of leaving a stale list unnoticed.
+func (s *Service) reloadIndexLocked() {
+	if s.src.LoadIndex == nil {
+		return
+	}
+	idx, err := s.src.LoadIndex()
+	if err != nil {
+		s.lastErr = s.lc.Text(l10n.KeyAccountsImportFailed) + ": " + err.Error()
+		return
+	}
+	s.index, s.indexLoaded = idx, true
+}
+
+// ReloadAccounts re-reads the account list (after the UI changed it through
+// codex.Store: import, delete, reorder, alias, OAuth login).
+func (s *Service) ReloadAccounts() {
+	s.mu.Lock()
+	s.reloadIndexLocked()
+	s.publishLocked()
+	s.mu.Unlock()
+}
+
+func toQuotaWindow(w codexapi.RateWindow) codex.QuotaWindow {
+	out := codex.QuotaWindow{UsedPercent: w.UsedPercent}
+	if w.WindowMinutes > 0 {
+		m := w.WindowMinutes
+		out.WindowMinutes = &m
+	}
+	if !w.ResetsAt.IsZero() {
+		t := w.ResetsAt
+		out.ResetsAt = &t
+	}
+	return out
+}
+
+// quotaSummary reduces a quota reading to what the account row caches.
+func quotaSummary(q codexapi.QuotaSnapshot) codex.QuotaSummary {
+	out := codex.QuotaSummary{Plan: q.Plan, Primary: toQuotaWindow(q.Primary), UpdatedAt: q.UpdatedAt}
+	if q.Secondary != nil {
+		w := toQuotaWindow(*q.Secondary)
+		out.Secondary = &w
+	}
+	for _, a := range q.AdditionalWindows {
+		out.Additional = append(out.Additional, codex.NamedQuotaWindow{Name: a.Name, Window: toQuotaWindow(a.Window)})
+	}
+	return out
+}
+
+// RefreshAllAccountQuotas polls the quota of every managed account.
+func (s *Service) RefreshAllAccountQuotas() <-chan struct{} {
+	if s.src.RefreshAccounts == nil {
+		return closedChan()
+	}
+	return s.run(func() { s.refreshAccountsInline(s.root) })
+}
+
+// RefreshAccountQuota polls one managed account.
+func (s *Service) RefreshAccountQuota(id string) <-chan struct{} {
+	if s.src.RefreshAccount == nil {
+		return closedChan()
+	}
+	s.mu.Lock()
+	if s.refreshingIDs[id] {
+		s.mu.Unlock()
+		return closedChan()
+	}
+	s.refreshingIDs[id] = true
+	epoch := s.epoch
+	s.publishLocked()
+	s.mu.Unlock()
+	return s.run(func() {
+		res := s.src.RefreshAccount(s.root, id)
+		s.applyAccountResults([]codexapi.QuotaRefreshResult{res}, epoch)
+		s.mu.Lock()
+		delete(s.refreshingIDs, id)
+		s.publishLocked()
+		s.mu.Unlock()
+	})
+}
+
+func (s *Service) refreshAccountsInline(ctx context.Context) {
+	if s.src.RefreshAccounts == nil {
+		return
+	}
+	s.mu.Lock()
+	if s.accountsBusy {
+		s.mu.Unlock()
+		return
+	}
+	s.accountsBusy = true
+	epoch := s.epoch
+	var ids []string
+	for _, a := range s.index.Accounts {
+		ids = append(ids, a.ID)
+		s.refreshingIDs[a.ID] = true
+	}
+	s.publishLocked()
+	s.mu.Unlock()
+
+	results := s.src.RefreshAccounts(ctx)
+	s.applyAccountResults(results, epoch)
+
+	s.mu.Lock()
+	s.accountsBusy = false
+	for _, id := range ids {
+		delete(s.refreshingIDs, id)
+	}
+	s.publishLocked()
+	s.mu.Unlock()
+}
+
+// applyAccountResults stores polled account quotas on their account rows.
+// Results of a superseded refresh are dropped. Only a re-authorization demand
+// of the active account touches the shown state; other accounts' failures
+// stay on their own rows.
+func (s *Service) applyAccountResults(results []codexapi.QuotaRefreshResult, epoch uint64) {
+	idx := s.indexForUpdate()
+	reauth := map[string]bool{}
+	for _, r := range results {
+		if s.src.Generations != nil && !s.src.Generations.Valid(r.AccountID, r.Generation) {
+			continue
+		}
+		acc, ok := idx.Account(r.AccountID)
+		if !ok {
+			continue
+		}
+		switch {
+		case r.Err != nil:
+			acc = acc.ApplyError(r.ErrorMessage(), r.NeedsReauth)
+			if r.NeedsReauth {
+				reauth[r.AccountID] = true
+			}
+		case r.Quota != nil:
+			acc = acc.ApplyQuota(quotaSummary(*r.Quota))
+		default:
+			continue
+		}
+		if r.WorkspaceName != "" {
+			acc.WorkspaceName = r.WorkspaceName
+		}
+		idx.Upsert(acc)
+		if s.src.SaveAccount != nil {
+			_ = s.src.SaveAccount(acc)
+		}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.src.LoadIndex != nil {
+		s.reloadIndexLocked()
+	} else {
+		s.index = idx
+	}
+	if epoch == s.epoch && reauth[s.index.ActiveAccountID] {
+		s.handleAuthFailureLocked(codexapi.ErrAuthenticationRequired)
+	}
+	s.publishLocked()
+}
+
+func (s *Service) indexForUpdate() codex.AccountIndex {
+	if s.src.LoadIndex != nil {
+		if idx, err := s.src.LoadIndex(); err == nil {
+			return idx
+		}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.index
+}
+
+// SwitchAccount installs a managed account as the Codex login, drops the
+// previous account's data and reloads everything for the new one. It blocks
+// until the switch is done; the refresh that follows runs in the background.
+// Restarting the Codex app is left to the caller.
+func (s *Service) SwitchAccount(ctx context.Context, id string) error {
+	if s.src.SwitchAccount == nil {
+		return errors.New("runway: account switching is not available")
+	}
+	s.mu.Lock()
+	if s.switching {
+		s.mu.Unlock()
+		return ErrSwitchBusy
+	}
+	s.switching = true
+	s.accountMessage = s.lc.Text(l10n.KeyAccountsSwitching)
+	s.publishLocked()
+	s.mu.Unlock()
+	defer func() {
+		s.mu.Lock()
+		s.switching = false
+		s.publishLocked()
+		s.mu.Unlock()
+	}()
+
+	res, err := s.src.SwitchAccount(ctx, id)
+	if err != nil {
+		s.mu.Lock()
+		s.accountMessage = ""
+		s.reloadIndexLocked()
+		s.lastErr = s.switchFailureTextLocked(err)
+		s.publishLocked()
+		s.mu.Unlock()
+		return err
+	}
+	s.mu.Lock()
+	auth := res.Auth
+	s.clearAccountScopedLocked(&auth)
+	s.mu.Unlock()
+	s.cancelAccountScoped()
+	s.mu.Lock()
+	s.planHint = res.Account.PlanType
+	s.reloadIndexLocked()
+	s.accountMessage, s.lastErr = "", ""
+	s.publishLocked()
+	s.mu.Unlock()
+
+	s.beginFullRefresh(usage.RefreshForce)
+	s.RefreshTokenHeatmap(usage.RefreshForce)
+	return nil
+}
+
+func (s *Service) switchFailureTextLocked(err error) string {
+	lc := s.lc
+	if key := CredentialModeErrorKey(err); key != "" {
+		return lc.Text(key)
+	}
+	switch {
+	case IsAuthFailure(err), errors.Is(err, codex.ErrReauthRequired):
+		return lc.Text(l10n.KeyAccountsNeedsReauth)
+	case errors.Is(err, codex.ErrExpiredAccessWithoutRefresh), errors.Is(err, codex.ErrRefreshUnavailable):
+		return lc.Text(l10n.KeyAccountsSwitchSessionExpired)
+	case errors.Is(err, codex.ErrNotUsableAsCodexLogin), errors.Is(err, codex.ErrInvalidCredential):
+		return lc.Text(l10n.KeyAccountsSwitchInvalidCredential)
+	}
+	return lc.Text(l10n.KeyAccountsSwitchFailed) + ": " + err.Error()
+}

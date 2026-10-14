@@ -1,0 +1,15 @@
+quosparr://widget?provider=codex&section=overview
+quosparr://widget?provider=codex&section=quota
+quosparr://widget?provider=codex&section=tokens
+quosparr://widget?provider=codex&section=cost
+quosparr://widget?provider=codex&section=resetToday
+quosparr://widget?provider=grok&section=overview
+quosparr://widget?provider=grok&section=quota
+quosparr://widget?provider=grok&section=tokens
+quosparr://widget?provider=grok&section=cost
+quosparr://widget?provider=grok&section=resetToday
+quosparr://widget?provider=both&section=overview
+quosparr://widget?provider=both&section=quota
+quosparr://widget?provider=both&section=tokens
+quosparr://widget?provider=both&section=cost
+quosparr://widget?provider=both&section=resetToday

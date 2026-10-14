@@ -1,0 +1,63 @@
+0	OK cwd=nil model=nil ts=41da9070e4000000 usage=nil turn=false
+1	OK cwd=nil model=nil ts=41da9070e4000000 usage=nil turn=false
+2	OK cwd=nil model=nil ts=41da9070e4000000 usage=nil turn=false
+3	ERR
+4	OK cwd=nil model=nil ts=41da9070e4000000 usage=nil turn=false
+5	OK cwd=nil model=nil ts=41da9070e4000000 usage=nil turn=false
+6	ERR
+7	ERR
+8	ERR
+9	ERR
+10	ERR
+11	ERR
+12	OK cwd=nil model=nil ts=41da9070e4000000 usage=0/0/0 turn=false
+13	ERR
+14	OK cwd=nil model=nil ts=41da9070e4000000 usage=1/0/0 turn=false
+15	OK cwd=nil model=nil ts=41da9070e4000000 usage=100/0/0 turn=false
+16	ERR
+17	ERR
+18	ERR
+19	ERR
+20	ERR
+21	OK cwd=nil model=nil ts=41da9070e4000000 usage=0/0/0 turn=false
+22	ERR
+23	OK cwd=nil model=nil ts=41da9070e4000000 usage=0/0/0 turn=false
+24	OK cwd=nil model=nil ts=41da9070e4000000 usage=100/0/0 turn=false
+25	OK cwd=nil model=nil ts=41da9070e4000000 usage=100/0/0 turn=false
+26	ERR
+27	ERR
+28	ERR
+29	OK cwd=nil model=nil ts=41da9070e4000000 usage=nil turn=false
+30	OK cwd=nil model=nil ts=41da9070e4000000 usage=nil turn=false
+31	OK cwd=nil model=nil ts=41da9070e4000000 usage=nil turn=false
+32	OK cwd=nil model=nil ts=41da9070e4000000 usage=nil turn=false
+33	ERR
+34	ERR
+35	OK cwd=nil model=nil ts=41da9070e4000000 usage=nil turn=false
+36	OK cwd=nil model=nil ts=41da9070e4000000 usage=nil turn=false
+37	OK cwd=nil model=nil ts=41da9070e4000000 usage=nil turn=false
+38	OK cwd=nil model=nil ts=41da9070e4000000 usage=nil turn=false
+39	ERR
+40	ERR
+41	OK cwd=61,0,62 model=nil ts=41da9070e4000000 usage=nil turn=false
+42	OK cwd=1f600 model=nil ts=41da9070e4000000 usage=nil turn=false
+43	ERR
+44	ERR
+45	OK cwd=1f600 model=nil ts=41da9070e4000000 usage=nil turn=false
+46	OK cwd=e9 model=nil ts=41da9070e4000000 usage=nil turn=false
+47	ERR
+48	OK cwd=78,7f,79 model=nil ts=41da9070e4000000 usage=nil turn=false
+49	OK cwd=78,80,79 model=nil ts=41da9070e4000000 usage=nil turn=false
+50	OK cwd= model=nil ts=41da9070e4000000 usage=nil turn=false
+51	OK cwd=nil model=nil ts=41da9070e4000000 usage=nil turn=false
+52	OK cwd=61 model=nil ts=41da9070e4000000 usage=nil turn=false
+53	OK cwd=nil model=nil ts=41da9070e4000000 usage=nil turn=false
+54	ERR
+55	ERR
+56	OK cwd=nil model=nil ts=c22cef2934000000 usage=nil turn=false
+57	OK cwd=nil model=nil ts=c22cef2934000000 usage=nil turn=false
+58	OK cwd=nil model=nil ts=c22cef2934000000 usage=nil turn=false
+59	OK cwd=nil model=nil ts=c22cef2934000000 usage=nil turn=false
+60	OK cwd=nil model=nil ts=c22cef2934000000 usage=nil turn=false
+61	ERR
+62	ERR

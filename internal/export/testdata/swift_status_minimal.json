@@ -1,0 +1,18 @@
+{
+  "generatedAt" : "2026-06-30T10:00:00Z",
+  "quota" : {
+    "additionalWindows" : [
+
+    ],
+    "primary" : {
+      "name" : "5-hour",
+      "usedPercent" : 100
+    },
+    "updatedAt" : "2026-06-30T10:00:00Z"
+  },
+  "sessions" : {
+    "items" : [
+
+    ]
+  }
+}
