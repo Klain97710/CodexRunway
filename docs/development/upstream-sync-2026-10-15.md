@@ -34,7 +34,9 @@
 | 两窗口共同刷新、重复关闭事件、沙箱外 Claude 路径拒绝 | PASS |
 | 本地 arm64、x86_64 隔离开发包 | PASS，宿主/Widget 2003、架构、Mach-O 最低系统、SQLite/桥接及最终签名 |
 
-本地检查针对合并工作区；日志位于忽略的 `build/regressions`。CI 将以提交 SHA 重新执行检查和双架构构建。Go 套件各跳过 19 项环境/预览/历史边界探针；其中 SQLite 跨实现探针另行执行并通过，其他跳过项不计为通过。开发包不是已验收的正式发布包。
+本地检查针对合并工作区；日志位于忽略的 `build/regressions`。Go 套件各跳过 19 项环境/预览/历史边界探针；其中 SQLite 跨实现探针另行执行并通过，其他跳过项不计为通过。开发包不是已验收的正式发布包。
+
+GitHub CI [38676753749](https://github.com/Klain97710/CodexRunway/actions/runs/38676753749) 全部通过：go-checks、arm64 开发包、x86_64 开发包。绑定合并提交 [`e6daffd0df4da901f6097577663806fc61f8662a`](https://github.com/Klain97710/CodexRunway/commit/e6daffd0df4da901f6097577663806fc61f8662a)。已下载 CI 回归报告并核对源码 SHA、`dirty=false`、零失败与本地计数一致；产物保留在该 CI 运行中，未发布到 Releases。
 
 ## 安装与分支状态
 
