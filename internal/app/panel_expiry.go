@@ -121,10 +121,11 @@ func expiryBadge(c *ui.Context, l l10n.Localizer, expiresAt, now time.Time) {
 }
 
 // codexCreditsBalance returns the ChatGPT credits balance from the Codex
-// quota snapshot when the usage payload exposed one.
+// quota snapshot when the usage payload exposed one. A zero balance is
+// hidden so plans without credits do not show an empty chip.
 func codexCreditsBalance(snap runway.Snapshot) (float64, bool) {
 	q := snap.Codex.Quota
-	if q == nil || q.CreditsBalance == nil {
+	if q == nil || q.CreditsBalance == nil || *q.CreditsBalance == 0 {
 		return 0, false
 	}
 	return *q.CreditsBalance, true

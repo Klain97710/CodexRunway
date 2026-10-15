@@ -344,3 +344,16 @@ func TestPanelParityTrendUsesMonthlyLabel(t *testing.T) {
 		})
 	}
 }
+
+func TestPanelParityCreditsBalanceHiddenWhenZero(t *testing.T) {
+	snap := panelFixture()
+	balance := 0.0
+	snap.Accounts.Display = codex.AccountDisplay{Authenticated: true, DisplayName: "ada@example.com", Tier: codex.TierPlus}
+	snap.Codex.Quota = &codexapi.QuotaSnapshot{CreditsBalance: &balance}
+	a, tt := newPanel(t, func(p *store.Preferences) {
+		p.Language = store.LanguageSimplifiedChinese
+	}, snap, PanelActions{})
+	if hasExact(tt, a.L().Text(l10n.KeyCreditsBalance)) || hasExact(tt, "0.00") {
+		t.Fatalf("zero credits balance should be hidden; texts %q", tt.Texts())
+	}
+}

@@ -4,8 +4,6 @@ import (
 	"context"
 	"os/exec"
 	"runtime"
-
-	"github.com/licoy/quosparr/internal/platform"
 )
 
 func openAccountBrowser(ctx context.Context, rawURL string) error {
@@ -18,7 +16,6 @@ func openAccountBrowser(ctx context.Context, rawURL string) error {
 	default:
 		cmd = exec.CommandContext(ctx, "xdg-open", rawURL)
 	}
-	platform.HideConsoleWindow(cmd)
 	// Wait for the URL handler's exit status; none of its output is logged.
 	return cmd.Run()
 }

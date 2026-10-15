@@ -3,8 +3,6 @@ package grok
 import (
 	"os/exec"
 	"runtime"
-
-	"github.com/licoy/quosparr/internal/platform"
 )
 
 // OpenInDefaultBrowser opens rawURL with the system's URL handler, without
@@ -19,7 +17,6 @@ func OpenInDefaultBrowser(rawURL string) error {
 	default:
 		cmd = exec.Command("xdg-open", rawURL)
 	}
-	platform.HideConsoleWindow(cmd)
 	if err := cmd.Start(); err != nil {
 		return &OAuthError{Kind: OAuthBrowserOpenFailed, Message: shortError(err)}
 	}

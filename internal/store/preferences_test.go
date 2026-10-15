@@ -940,4 +940,3 @@ func TestShowsCreditsBalanceGoOnlyAndDefaults(t *testing.T) {
 		t.Errorf("decoded ShowsCreditsBalance is %v, want false", got.ShowsCreditsBalance)
 	}
 }
-
