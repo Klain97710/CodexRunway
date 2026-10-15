@@ -1,12 +1,12 @@
 package runway
 
 import (
-	"github.com/licoy/quosparr/internal/personal"
 	"strconv"
 	"time"
 
 	"github.com/licoy/quosparr/internal/export"
 	"github.com/licoy/quosparr/internal/export/swiftjson"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/store"
 )
 
@@ -99,11 +99,34 @@ func grokWidgetProvider(g GrokState, p store.Preferences) export.ProviderSnapsho
 	})
 }
 
+// claudeWidgetProvider is the Claude block from the live Claude state.
+func claudeWidgetProvider(g ClaudeState, p store.Preferences) export.ProviderSnapshot {
+	if g.Widget != nil {
+		w := *g.Widget
+		if !p.ShowsModelSpecificQuotaUsage {
+			var std []export.WidgetQuota
+			for _, q := range w.Quota {
+				if q.Source == export.QuotaStandard {
+					std = append(std, q)
+				}
+			}
+			w.Quota = std
+		}
+		return export.NewProviderSnapshot(w)
+	}
+	return export.NewProviderSnapshot(export.ProviderSnapshot{
+		Provider: export.ProviderClaude, Availability: export.Unavailable, TokenSource: export.TokensThisMac,
+	})
+}
+
 // makeWidgetSnapshot builds the widget file content from a snapshot.
 func makeWidgetSnapshot(snap Snapshot, p store.Preferences, now time.Time, features personal.Features) export.Snapshot {
 	providers := []export.ProviderSnapshot{codexWidgetProvider(snap.Codex)}
 	if features.Grok {
 		providers = append(providers, grokWidgetProvider(snap.Grok, p))
+	}
+	if features.Claude {
+		providers = append(providers, claudeWidgetProvider(snap.Claude, p))
 	}
 	return export.NewSnapshot(now, snap.Language, providers, snap.ResetToday.Widget)
 }

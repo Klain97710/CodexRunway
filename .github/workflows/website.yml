@@ -1,0 +1,58 @@
+name: Website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - website/**
+      - docs/images/**
+      - internal/app/assets/providers/**
+      - .github/workflows/website.yml
+  # Releases are published with GITHUB_TOKEN, which fires no release event;
+  # rebuild after the release workflow so download links follow the new tag.
+  workflow_run:
+    workflows: [Release Draft]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # Retain upstream site sources without publishing their site from this fork.
+    if: github.repository == 'Licoy/Quosparr' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Read the latest stable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release view --repo "$GITHUB_REPOSITORY" --json tagName,publishedAt,assets > "$RUNNER_TEMP/release.json"
+      - name: Test and build the site
+        run: |
+          go test -count=1 ./website/...
+          go run ./website/gen -release "$RUNNER_TEMP/release.json" -out website/dist
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: website/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

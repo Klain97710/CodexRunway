@@ -1,11 +1,11 @@
 package runway
 
 import (
-	"github.com/licoy/quosparr/internal/codex"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/l10n"
 	"github.com/licoy/quosparr/internal/store"
 )
@@ -76,8 +76,9 @@ func batteryMeters(scope store.BatteryScope, meters []Meter) []Meter {
 
 // Preferred window lengths when one meter per provider is chosen.
 var (
-	codexPreferredWindows = []int{FiveHourMinutes, WeeklyMinutes}
-	grokPreferredWindows  = []int{WeeklyMinutes, MonthlyMinutes}
+	codexPreferredWindows  = []int{FiveHourMinutes, WeeklyMinutes}
+	grokPreferredWindows   = []int{WeeklyMinutes, MonthlyMinutes}
+	claudePreferredWindows = []int{FiveHourMinutes, WeeklyMinutes}
 )
 
 // PrimaryStandardMeter picks the first standard meter matching a preferred
@@ -103,6 +104,28 @@ func PrimaryStandardMeter(meters []Meter, preferred []int) (Meter, bool) {
 		}
 	}
 	return standard[0], true
+}
+
+// ShortestWindowMeter picks the standard meter with the shortest known
+// window, else the first standard meter, else the first meter.
+func ShortestWindowMeter(meters []Meter) (Meter, bool) {
+	var picked *Meter
+	for i := range meters {
+		m := &meters[i]
+		if m.Source != SourceStandard {
+			continue
+		}
+		if picked == nil || m.WindowMinutes > 0 && (picked.WindowMinutes <= 0 || m.WindowMinutes < picked.WindowMinutes) {
+			picked = m
+		}
+	}
+	if picked != nil {
+		return *picked, true
+	}
+	if len(meters) == 0 {
+		return Meter{}, false
+	}
+	return meters[0], true
 }
 
 // WithShortTitle retitles a meter with the short window name.
@@ -144,7 +167,9 @@ type StatusInputs struct {
 	CodexMeters []Meter
 	// Grok side; the zero state reads as loading.
 	Grok GrokState
-	Now  time.Time
+	// Claude side. The preferred status window is 5 hours, then 7 days.
+	Claude ClaudeState
+	Now    time.Time
 }
 
 // GrokStatusText is the status text of Grok: the countdown of the first
@@ -168,33 +193,168 @@ func GrokStatusText(lc l10n.Localizer, g GrokState, now time.Time) string {
 	return strconv.Itoa(m.RemainingPercent) + "%"
 }
 
+// statusProviders is the ordered status-bar selection. An empty custom list
+// and the selected scope follow the main panel.
+func statusProviders(in StatusInputs) []store.Provider {
+	if sel := in.Prefs.StatusBarSelection(); len(sel) > 0 {
+		return sel
+	}
+	if in.Provider.Valid() {
+		return []store.Provider{in.Provider}
+	}
+	return []store.Provider{store.ProviderCodex}
+}
+
+func statusTextFor(lc l10n.Localizer, in StatusInputs, p store.Provider) string {
+	switch p {
+	case store.ProviderGrok:
+		return GrokStatusText(lc, in.Grok, in.Now)
+	case store.ProviderClaude:
+		return ClaudeStatusText(lc, in.Claude, in.Now)
+	default:
+		return in.CodexText
+	}
+}
+
+// ClaudeStatusText is the status text of Claude. The first meter is the
+// 5-hour window when one exists.
+func ClaudeStatusText(lc l10n.Localizer, g ClaudeState, now time.Time) string {
+	if len(g.Meters) == 0 {
+		switch g.Availability {
+		case ClaudeNotLoggedIn, ClaudeReauthRequired, ClaudeAPIKeyMode:
+			return lc.Text(l10n.KeyStatusLogin)
+		case ClaudeLoading:
+			return lc.Text(l10n.KeyStatusWait)
+		case ClaudeReady:
+			return lc.Text(l10n.KeyStatusUnknown)
+		}
+		return lc.Text(l10n.KeyStatusError)
+	}
+	m := g.Meters[0]
+	for _, item := range g.Meters {
+		if item.WindowMinutes == FiveHourMinutes {
+			m = item
+			break
+		}
+	}
+	if m.HasReset() {
+		return DurationLocalized(m.ResetsAt.Sub(now).Seconds(), lc.Language(), false)
+	}
+	return strconv.Itoa(m.RemainingPercent) + "%"
+}
+
 // SelectedStatusText is the status item text for the chosen provider scope.
 func SelectedStatusText(lc l10n.Localizer, in StatusInputs) string {
-	if in.Prefs.StatusBarProviderScope == store.ProviderScopeBoth {
-		if len(in.CodexMeters) > 0 && in.CodexText != "" {
-			return in.CodexText
-		}
-		return GrokStatusText(lc, in.Grok, in.Now)
+	picked := statusProviders(in)
+	if len(picked) == 2 && !statusHasMeters(in, picked[0]) {
+		return statusTextFor(lc, in, picked[1])
 	}
-	if in.Provider == store.ProviderGrok {
-		return GrokStatusText(lc, in.Grok, in.Now)
+	return statusTextFor(lc, in, picked[0])
+}
+
+// statusHasMeters reports whether a provider has a reading to show; a pair
+// falls back to the second provider's text otherwise.
+func statusHasMeters(in StatusInputs, p store.Provider) bool {
+	if p == store.ProviderCodex {
+		return len(in.CodexMeters) > 0 && in.CodexText != ""
 	}
-	return in.CodexText
+	return len(metersOf(in, p)) > 0
 }
 
 // SelectedMeters are the meters the status item draws.
 func SelectedMeters(lc l10n.Localizer, in StatusInputs) []Meter {
-	if in.Prefs.StatusBarProviderScope == store.ProviderScopeBoth {
+	picked := statusProviders(in)
+	if len(picked) == 2 && picked[0] == store.ProviderCodex && picked[1] == store.ProviderGrok {
 		return DualProviderMeters(lc, in.CodexMeters, in.Grok.Meters,
 			lc.Text(l10n.KeyProviderCodex), lc.Text(l10n.KeyProviderGrok))
 	}
-	if in.Provider == store.ProviderCodex {
-		return in.CodexMeters
+	if len(picked) == 2 {
+		return combinedMeters(lc, in, picked[0], picked[1])
 	}
-	if len(in.Grok.Meters) == 0 {
+	switch picked[0] {
+	case store.ProviderCodex:
+		return in.CodexMeters
+	case store.ProviderGrok:
+		if len(in.Grok.Meters) == 0 {
+			return nil
+		}
+		return []Meter{WithShortTitle(lc, in.Grok.Meters[0])}
+	case store.ProviderClaude:
+		return claudeStatusMeters(lc, in.Claude.Meters)
+	default:
 		return nil
 	}
-	return []Meter{WithShortTitle(lc, in.Grok.Meters[0])}
+}
+
+// claudeStatusMeters are the 5-hour and weekly meters with short titles;
+// per-model windows stay in the panel.
+func claudeStatusMeters(lc l10n.Localizer, meters []Meter) []Meter {
+	var out []Meter
+	for _, m := range meters {
+		if m.Source == SourceStandard {
+			out = append(out, WithShortTitle(lc, m))
+		}
+	}
+	if len(out) == 0 && len(meters) > 0 {
+		out = append(out, WithShortTitle(lc, meters[0]))
+	}
+	return out
+}
+
+func combinedMeters(lc l10n.Localizer, in StatusInputs, a, b store.Provider) []Meter {
+	var out []Meter
+	if m, ok := labeledMeter(lc, metersOf(in, a), preferredOf(a), lc.Text(providerStatusKey(a))); ok {
+		out = append(out, m)
+	}
+	if m, ok := labeledMeter(lc, metersOf(in, b), preferredOf(b), lc.Text(providerStatusKey(b))); ok {
+		out = append(out, m)
+	}
+	return out
+}
+
+func metersOf(in StatusInputs, p store.Provider) []Meter {
+	switch p {
+	case store.ProviderGrok:
+		return in.Grok.Meters
+	case store.ProviderClaude:
+		return in.Claude.Meters
+	default:
+		return in.CodexMeters
+	}
+}
+
+func preferredOf(p store.Provider) []int {
+	switch p {
+	case store.ProviderGrok:
+		return grokPreferredWindows
+	case store.ProviderClaude:
+		return claudePreferredWindows
+	default:
+		return codexPreferredWindows
+	}
+}
+
+func providerStatusKey(p store.Provider) l10n.Key {
+	switch p {
+	case store.ProviderGrok:
+		return l10n.KeyProviderGrok
+	case store.ProviderClaude:
+		return l10n.KeyProviderClaude
+	default:
+		return l10n.KeyProviderCodex
+	}
+}
+
+func labeledMeter(lc l10n.Localizer, meters []Meter, preferred []int, label string) (Meter, bool) {
+	m, ok := PrimaryStandardMeter(meters, preferred)
+	if !ok && len(meters) > 0 {
+		m, ok = meters[0], true
+	}
+	if !ok {
+		return Meter{}, false
+	}
+	m.Title = label + " · " + ShortWindowTitle(lc, m.WindowMinutes)
+	return m, true
 }
 
 // StatusBarItem is the text data of one meter in the status item.

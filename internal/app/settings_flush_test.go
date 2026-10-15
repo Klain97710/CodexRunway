@@ -1,10 +1,11 @@
 package app
 
 import (
-	"github.com/licoy/quosparr/internal/personal"
-	"github.com/licoy/quosparr/internal/store"
 	"testing"
 	"time"
+
+	"github.com/licoy/quosparr/internal/personal"
+	"github.com/licoy/quosparr/internal/store"
 )
 
 func TestSettingsFlushDoesNotWaitForSynchronousUIDispatcher(t *testing.T) {
@@ -20,7 +21,7 @@ func TestSettingsFlushDoesNotWaitForSynchronousUIDispatcher(t *testing.T) {
 			restore := setRunOnMain(func(fn func()) { queued <- fn; <-release; dispatchDone <- struct{}{} })
 			defer restore()
 			mem := &failDomain{MemoryDomain: store.NewMemoryDomain()}
-			s := NewSettings(store.New(mem, nil), System{Features: personal.Features{Grok: true}}, nil)
+			s := NewSettings(store.New(mem, nil), System{Features: personal.Features{Grok: true, Claude: true}}, nil)
 			if err := s.Load(); err != nil {
 				t.Fatal(err)
 			}

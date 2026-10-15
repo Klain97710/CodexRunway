@@ -86,7 +86,7 @@ func TestExportUIReview(t *testing.T) {
 			u.shell(c, func(c *ui.Context) {
 				ui.Scroll(c).Grow(1).Padding(16).Gap(12).Children(func() {
 					l := u.L()
-					accountToolbar(c, u, f, l.Text(l10n.KeyAccounts), func(*ui.Menu) {}, func() string { return "" }, func() string { return "" })
+					accountToolbar(c, u, f, l.Text(l10n.KeyAccounts), accountFolder{l.Text(l10n.KeyCodexFolder), "/codex"}, func(*ui.Menu) {}, func() string { return "" }, func() string { return "" })
 					for _, row := range snap.Accounts.Sidebar {
 						renderCodexRow(c, u, f, nil, row, false)
 					}

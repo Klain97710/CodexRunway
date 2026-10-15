@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/licoy/quosparr/internal/claude"
 	"github.com/licoy/quosparr/internal/grok"
-
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
 )
@@ -25,8 +25,11 @@ var (
 
 func (rt *liveApp) queryDetailCost(ctx context.Context, provider store.Provider, q CostQuery) (usage.Summary, error) {
 	now := time.Now()
-	if provider == store.ProviderGrok {
+	switch provider {
+	case store.ProviderGrok:
 		return rt.queryGrokDetailCost(ctx, q, now)
+	case store.ProviderClaude:
+		return rt.queryClaudeDetailCost(ctx, q, now)
 	}
 	if rt.svc == nil {
 		return usage.Summary{}, errDetailUnavailable
@@ -79,6 +82,32 @@ func (rt *liveApp) queryGrokDetailCost(ctx context.Context, q CostQuery, now tim
 		return usage.Summary{}, errInvalidCostRange
 	}
 	return (grok.SessionScanner{GrokHome: rt.grokMod.Store.OfficialHome(), Location: time.Local}).ScanCost(ctx, window, now)
+}
+
+// queryClaudeDetailCost scans the Claude Code logs for one range. The
+// current and previous cycles follow the cached 7-day window.
+func (rt *liveApp) queryClaudeDetailCost(ctx context.Context, q CostQuery, now time.Time) (usage.Summary, error) {
+	g := rt.claudeB
+	if rt.claudeMod == nil || rt.claudeMod.Store == nil || g == nil {
+		return usage.Summary{}, errDetailUnavailable
+	}
+	var window usage.Window
+	switch {
+	case q.Custom != nil:
+		window = q.Custom.Window
+	case q.Range == store.CostRangeToday, q.Range == store.CostRangeThisMonth, q.Range == store.CostRangeCurrent, q.Range == store.CostRangePrevious:
+		g.mu.Lock()
+		detail := g.state.Detail
+		g.mu.Unlock()
+		window = claudeCostWindow(q.Range, detail, now)
+	default:
+		return usage.Summary{}, errInvalidCostRange
+	}
+	if !window.End.After(window.Start) {
+		return usage.Summary{}, errInvalidCostRange
+	}
+	scanner := claude.SessionScanner{ConfigDir: rt.claudeMod.Store.ConfigDir(), Home: rt.claudeMod.Store.HomeDir(), Location: time.Local, Cache: &g.sessions}
+	return scanner.ScanCost(ctx, window, now)
 }
 
 func installDetailActions(rt *liveApp, a *PanelActions) {

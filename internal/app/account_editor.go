@@ -16,7 +16,7 @@ func (f *accountForm) closeEditor() {
 func accountEditorTitle(l l10n.Localizer, f *accountForm) string {
 	key := l10n.KeyAccountsAddPaste
 	switch f.mode {
-	case "switch":
+	case "switch", "claude-switch":
 		key = l10n.KeyAccountsSwitchConfirmTitle
 	case "apikey":
 		key = l10n.KeyAccountsAddAPIKey
@@ -25,7 +25,7 @@ func accountEditorTitle(l l10n.Localizer, f *accountForm) string {
 	case "note":
 		key = l10n.KeyAccountsNote
 	case "paste":
-		if f.kind == 1 {
+		if f.kind == accountKindGrok {
 			key = l10n.KeyGrokAccountsAddPaste
 		}
 	}
@@ -53,7 +53,7 @@ func accountEditor(c *ui.Context, u *settingsUI, f *accountForm) {
 			}
 			empty := f.mode == "paste" && strings.TrimSpace(f.paste) == "" || f.mode == "apikey" && strings.TrimSpace(f.apiKey) == ""
 			confirm := l.Text(l10n.KeyOk)
-			if f.mode == "switch" {
+			if f.mode == "switch" || f.mode == "claude-switch" {
 				confirm = l.Text(l10n.KeyAccountsMakeCurrent)
 			}
 			if PillButton(c, nil, confirm, f.busy || empty || f.mode == "").Clicked() {
@@ -75,10 +75,16 @@ func accountEditorFields(c *ui.Context, u *settingsUI, f *accountForm) {
 		if !codexRestartSupported {
 			ui.Text(c, tx(l, xCodexRestartMac)).FontSize(11).TextColor(c.Theme().TextMuted)
 		}
+	case "claude-switch":
+		ui.Text(c, l.Textf(l10n.KeyClaudeSwitchConfirmMessage, f.switchName)).FontSize(12)
+		ui.Text(c, l.Text(l10n.KeyClaudeSwitchRisk)).FontSize(12).TextColor(c.Theme().TextMuted)
 	case "paste":
 		hint := l.Text(l10n.KeyAccountsPasteHint)
-		if f.kind == 1 {
+		if f.kind == accountKindGrok {
 			hint = l.Text(l10n.KeyGrokAccountsPasteHint)
+		}
+		if f.kind == accountKindClaude {
+			hint = l.Text(l10n.KeyClaudePasteHint)
 		}
 		ui.Text(c, hint).FontSize(12).TextColor(c.Theme().TextMuted)
 		ui.TextArea(c.Key("acct-paste"), &f.paste).Lines(6, 8).Label(hint).Disabled(f.busy)
@@ -104,6 +110,13 @@ func (u *settingsUI) submitAccountEditor(f *accountForm) {
 			return addAPIKey(l, key)
 		case "switch":
 			return rtSwitchCodexResult(l, id, restart)
+		case "claude-switch":
+			rt := currentRuntime()
+			if rt == nil {
+				return tx(l, xDetailUnavailable), false
+			}
+			msg := rt.switchClaude(l, id)
+			return msg, msg == ""
 		default:
 			msg := saveAccountMeta(l, kind, mode, id, alias, note)
 			return msg, msg == ""
@@ -123,7 +136,7 @@ func (u *settingsUI) accountEditAct(f *accountForm, action func() (string, bool)
 			f.busy = false
 			if ok {
 				f.closeEditor()
-				f.status = message
+				u.accountNotice(f, message)
 			} else {
 				f.editorError = message
 			}

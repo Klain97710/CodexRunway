@@ -5,8 +5,9 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
-	"path/filepath"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
@@ -24,6 +25,10 @@ const (
 	settingsMinHeight    = 560
 	settingsSidebarWidth = 240
 )
+
+// proxyMsgTime is how long a successful connection test stays shown; tests
+// shorten it.
+var proxyMsgTime = 3 * time.Second
 
 // Actions are the operations of other packages that the settings buttons
 // start. A nil one disables its button.
@@ -52,22 +57,29 @@ const (
 	tabGeneral settingsTab = iota
 	tabAccounts
 	tabDisplay
+	tabFloating
+	tabModules
+	tabNotifications
 	tabAdvanced
 	tabAbout
 )
 
-var settingsTabs = []settingsTab{tabGeneral, tabAccounts, tabDisplay, tabAdvanced, tabAbout}
+var settingsTabs = []settingsTab{tabGeneral, tabAccounts, tabDisplay, tabFloating, tabModules, tabNotifications, tabAdvanced, tabAbout}
 
-func (t settingsTab) key() l10n.Key {
-	return [...]l10n.Key{l10n.KeyGeneral, l10n.KeyAccounts, l10n.KeyDisplay, l10n.KeyAdvanced, l10n.KeyAbout}[t]
+// title is the tab's name in the sidebar and above its page.
+func (t settingsTab) title(l l10n.Localizer) string {
+	if t == tabFloating {
+		return tx(l, xFloatingSection)
+	}
+	return l.Text([...]l10n.Key{l10n.KeyGeneral, l10n.KeyAccounts, l10n.KeyDisplay, "", l10n.KeyPanelModules, l10n.KeyNotificationSettings, l10n.KeyAdvanced, l10n.KeyAbout}[t])
 }
 
 func (t settingsTab) icon() *ui.SVG {
-	return [...]*ui.SVG{icGear, icUsers, icEye, icSliders, icInfo}[t]
+	return [...]*ui.SVG{icGear, icUsers, icEye, icFloating, icLayout, icBell, icSliders, icInfo}[t]
 }
 
 func (t settingsTab) tint() Tint {
-	return [...]Tint{TintGray, TintGreen, TintBlue, TintOrange, TintIndigo}[t]
+	return [...]Tint{TintGray, TintGreen, TintBlue, TintTeal, TintPurple, TintRed, TintOrange, TintIndigo}[t]
 }
 
 //go:embed assets/app-icon.png
@@ -104,12 +116,23 @@ type settingsUI struct {
 
 	draft         ProxyDraft
 	draftReady    bool
+	testURL       string
+	loadedCreds   ProxyCredentials
 	proxyTask     Task
 	proxyResult   ProxySaveResult
 	testTask      Task
 	selfCheckTask Task
 	proxyMsg      string
 	proxyMsgErr   bool
+	proxyMsgGen   int
+	toast         string
+
+	pickingColor bool
+	customColor  ui.Color
+	// fonts are the installed families, listed once a settings window
+	// shows them, so fonts installed meanwhile show in the next window.
+	fonts       []string
+	fontsListed bool
 
 	confirmRepair bool
 	noticeTitle   string
@@ -136,16 +159,21 @@ func (u *settingsUI) text(k l10n.Key) string { return u.L().Text(k) }
 
 // view builds one frame of the settings window.
 func (u *settingsUI) view(c *ui.Context) {
-	applyTheme(c)
+	applyThemeColor(c, u.s.prefs.ThemeColor, u.s.prefs.FontFamily)
 	if !u.draftReady {
 		u.draft, u.draftReady = NewProxyDraft(u.s.Proxy()), true
+		u.testURL = u.s.Prefs().ProxyTestTarget()
 	}
 	u.shell(c, u.pageContent)
 	u.dialogs(c)
+	if u.toast != "" {
+		c.Toast(u.toast)
+		u.toast = ""
+	}
 }
 
 func (u *settingsUI) pageContent(c *ui.Context) {
-	ui.Scroll(c.Key("page-" + fmt.Sprint(int(u.tab)))).Grow(1).Basis(0).Padding(16).Gap(14).Children(func() {
+	ui.Scroll(c.Key("page-"+fmt.Sprint(int(u.tab)))).Grow(1).Basis(0).Padding(4, 24, 24, 24).Gap(22).Children(func() {
 		if u.s.ReadOnly() {
 			u.readOnlyBanner(c)
 		}
@@ -156,9 +184,16 @@ func (u *settingsUI) pageContent(c *ui.Context) {
 		case tabGeneral:
 			u.generalPage(c)
 		case tabAccounts:
-			u.accountsPage(c)
+			// The toolbar titles the box of accounts under it.
+			ui.Column(c).Gap(10).Children(func() { u.accountsPage(c) })
 		case tabDisplay:
 			u.displayPage(c)
+		case tabFloating:
+			u.floatingPage(c)
+		case tabModules:
+			u.modulesGroup(c)
+		case tabNotifications:
+			u.notificationsGroup(c)
 		case tabAdvanced:
 			u.advancedPage(c)
 		case tabAbout:
@@ -223,7 +258,7 @@ func (u *settingsUI) generalPage(c *ui.Context) {
 	p := s.Prefs()
 	ro := s.ReadOnly()
 	sys := s.System()
-	settingsGroup(c, icGear, TintBlue, u.text(l10n.KeyGeneral), "", nil, func(row rowFunc) {
+	settingsGroup(c, "", "", nil, func(row rowFunc) {
 		row(l.Text(l10n.KeyLanguage), "", func() {
 			langs := store.Languages()
 			if v, ok := choose(c, "language", l.Text(l10n.KeyLanguage), p.Language, langs, func(v store.Language) string {
@@ -245,7 +280,7 @@ func (u *settingsUI) generalPage(c *ui.Context) {
 			if s.LoginPending() {
 				ui.Spinner(c).Size(14, 14)
 			}
-			if s.LoginStatus() == LoginRequiresApproval && PillButton(c, icGear, l.Text(l10n.KeyOpenLoginItemsSettings), false).Clicked() {
+			if s.LoginStatus() == LoginRequiresApproval && PillButton(c, nil, l.Text(l10n.KeyOpenLoginItemsSettings), false).Clicked() {
 				c.OpenURL(loginItemsSettingsURL)
 			}
 			if v, ok := toggle(c, "login", l.Text(l10n.KeyLaunchAtLogin), s.LoginSwitch(), ro || !s.LoginAvailable() || s.LoginPending()); ok {
@@ -268,22 +303,8 @@ func (u *settingsUI) generalPage(c *ui.Context) {
 				s.SetWidgetRefreshInterval(v)
 			}
 		})
-		row(l.Text(l10n.KeyCodexFolder), "~/.codex", func() {
-			if PillButton(c, icFolder, l.Text(l10n.KeyCodexFolder), u.opts.Actions.OpenFolder == nil).Clicked() {
-				u.opts.Actions.OpenFolder(codexDir())
-			}
-		})
 	})
 	u.proxyGroup(c)
-}
-
-// codexDir is ~/.codex, for opening in the file manager.
-func codexDir() string {
-	home, err := platform.Home()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(home, ".codex")
 }
 
 // openFolder opens a folder in the file manager.
@@ -303,7 +324,7 @@ func (u *settingsUI) proxyGroup(c *ui.Context) {
 	s, l := u.s, u.L()
 	t := c.Theme()
 	busy := u.proxyTask.Running || u.testTask.Running
-	settingsGroup(c, icNetwork, TintTeal, l.Text(l10n.KeyNetworkProxy), "", nil, func(row rowFunc) {
+	settingsGroup(c, l.Text(l10n.KeyNetworkProxy), "", nil, func(row rowFunc) {
 		if err := s.ProxyError(); err != nil {
 			row("", "", func() {
 				ui.Column(c).Grow(1).Basis(0).Gap(3).Children(func() {
@@ -324,10 +345,17 @@ func (u *settingsUI) proxyGroup(c *ui.Context) {
 				return l.Text(l10n.KeyNetworkProxySystem)
 			}, busy); ok {
 				u.draft.Mode = v
+				u.setProxyMsg("", false)
 			}
 		})
 		if u.draft.Mode != store.ProxyModeSystem {
 			u.proxyFields(c, row, busy)
+		}
+		if s.proxyHooks.Test != nil {
+			row(tx(l, xProxyTestURL), "", func() {
+				ui.TextInput(c.Key("px-test-url"), &u.testURL).Width(230).Placeholder(store.DefaultProxyTestURL).
+					Label(tx(l, xProxyTestURL)).Disabled(busy).OnSubmit(u.testProxy)
+			})
 		}
 		u.proxyActions(c, busy)
 	})
@@ -372,11 +400,12 @@ func (u *settingsUI) proxyFields(c *ui.Context, row rowFunc, busy bool) {
 	}
 }
 
-// proxyActions is the final row inside the network card.
+// proxyActions is the final row inside the network card. The save button
+// shows unsaved changes in the warning color and is disabled without them.
 func (u *settingsUI) proxyActions(c *ui.Context, busy bool) {
 	l := u.L()
 	t := c.Theme()
-	ui.Row(c).Gap(8).AlignItems(ui.Center).Padding(8, 0, 0, 0).Children(func() {
+	ui.Row(c).Gap(8).AlignItems(ui.Center).Padding(2, 0, 8, 0).Children(func() {
 		col := t.Success
 		if u.proxyMsgErr {
 			col = t.Danger
@@ -391,13 +420,59 @@ func (u *settingsUI) proxyActions(c *ui.Context, busy bool) {
 				u.testProxy()
 			}
 		}
-		if PillButton(c, icCheck, l.Text(l10n.KeyNetworkProxySave), busy).Clicked() {
-			u.saveProxy()
+		save := l.Text(l10n.KeyNetworkProxySave)
+		if !busy && u.proxyUnsaved() {
+			if WarningPillButton(c, save).Clicked() {
+				u.saveProxy()
+			}
+		} else {
+			PillButton(c, nil, save, true)
 		}
 	})
 }
 
-func (u *settingsUI) setProxyMsg(msg string, isErr bool) { u.proxyMsg, u.proxyMsgErr = msg, isErr }
+// proxyUnsaved reports whether saving the draft would change anything: it
+// differs from the saved configuration and the credentials loaded into it,
+// or the saved configuration is unusable.
+func (u *settingsUI) proxyUnsaved() bool {
+	if u.s.ProxyError() != nil {
+		return true
+	}
+	base := NewProxyDraft(u.s.Proxy())
+	base.Username, base.Password = u.loadedCreds.Username, u.loadedCreds.Password
+	return proxyDraftKey(u.draft) != proxyDraftKey(base)
+}
+
+// proxyDraftKey drops the fields of a draft its mode ignores.
+func proxyDraftKey(d ProxyDraft) ProxyDraft {
+	if d.Mode == store.ProxyModeSystem {
+		return ProxyDraft{Mode: d.Mode}
+	}
+	d.Host, d.Port = strings.TrimSpace(d.Host), strings.TrimSpace(d.Port)
+	if !d.UsesAuth {
+		d.Username, d.Password, d.CredentialID = "", "", ""
+	}
+	return d
+}
+
+// setProxyMsg replaces the message beside the network buttons.
+func (u *settingsUI) setProxyMsg(msg string, isErr bool) {
+	u.proxyMsg, u.proxyMsgErr = msg, isErr
+	u.proxyMsgGen++
+}
+
+// flashProxyMsg shows a success message that clears itself after a while.
+func (u *settingsUI) flashProxyMsg(msg string) {
+	u.setProxyMsg(msg, false)
+	gen := u.proxyMsgGen
+	time.AfterFunc(proxyMsgTime, func() {
+		u.post(func() {
+			if u.proxyMsgGen == gen {
+				u.setProxyMsg("", false)
+			}
+		})
+	})
+}
 
 func (u *settingsUI) saveProxy() {
 	d, prev := u.draft, u.s.Proxy()
@@ -414,12 +489,12 @@ func (u *settingsUI) saveProxy() {
 		}
 		r := u.proxyResult
 		u.s.ProxySaved(r)
-		u.draft = NewProxyDraft(r.Config)
+		u.draft, u.loadedCreds = NewProxyDraft(r.Config), ProxyCredentials{}
 		if r.CleanupFailed {
 			u.setProxyMsg(l.Text(l10n.KeyNetworkProxyCleanupFailed), true)
 			return
 		}
-		u.setProxyMsg(l.Text(l10n.KeyNetworkProxySaved), false)
+		u.toast = l.Text(l10n.KeyNetworkProxySaved)
 	})
 }
 
@@ -436,11 +511,22 @@ func (u *settingsUI) loadCredentials() {
 			return
 		}
 		u.draft.Username, u.draft.Password = got.Username, got.Password
+		u.loadedCreds = got
 		u.setProxyMsg("", false)
 	})
 }
 
 func (u *settingsUI) testProxy() {
+	if u.proxyTask.Running || u.testTask.Running {
+		return
+	}
+	site, err := store.ParseProxyTestURL(u.testURL)
+	if err != nil {
+		u.setProxyMsg(tx(u.L(), xProxyTestURLInvalid), true)
+		return
+	}
+	u.testURL = site
+	u.s.SetProxyTestURL(site)
 	d := u.draft
 	u.setProxyMsg("", false)
 	runTask(&u.testTask, u.post, func() error {
@@ -452,13 +538,13 @@ func (u *settingsUI) testProxy() {
 		if err != nil {
 			return err
 		}
-		return u.s.proxyHooks.Test(context.Background(), cfg, creds)
+		return u.s.proxyHooks.Test(context.Background(), cfg, creds, site)
 	}, func(err error) {
 		if err != nil {
 			u.setProxyMsg(u.L().Text(proxyErrorKey(err)), true)
 			return
 		}
-		u.setProxyMsg(u.L().Text(l10n.KeyNetworkProxyTestSucceeded), false)
+		u.flashProxyMsg(u.L().Text(l10n.KeyNetworkProxyTestSucceeded))
 	})
 }
 
@@ -474,9 +560,9 @@ func (u *settingsUI) advancedPage(c *ui.Context) {
 	s, l := u.s, u.L()
 	p := s.Prefs()
 	a := u.opts.Actions
-	settingsGroup(c, icSliders, TintOrange, l.Text(l10n.KeyAdvanced), "", nil, func(row rowFunc) {
+	settingsGroup(c, "", "", nil, func(row rowFunc) {
 		row(l.Text(l10n.KeyRefresh), l.Text(l10n.KeyQuota), func() {
-			if PillButton(c, icRefresh, l.Text(l10n.KeyRefresh), a.Refresh == nil).Clicked() {
+			if PillButton(c, nil, l.Text(l10n.KeyRefresh), a.Refresh == nil).Clicked() {
 				a.Refresh()
 			}
 		})
@@ -484,7 +570,7 @@ func (u *settingsUI) advancedPage(c *ui.Context) {
 			if u.selfCheckTask.Running {
 				ui.Spinner(c).Size(14, 14)
 			}
-			if PillButton(c, icSelfCheck, l.Text(l10n.KeySelfCheck), a.SelfCheck == nil || u.selfCheckTask.Running).Clicked() {
+			if PillButton(c, nil, l.Text(l10n.KeySelfCheck), a.SelfCheck == nil || u.selfCheckTask.Running).Clicked() {
 				var report string
 				runTask(&u.selfCheckTask, u.post, func() error {
 					report = a.SelfCheck()
@@ -498,7 +584,7 @@ func (u *settingsUI) advancedPage(c *ui.Context) {
 			}
 		})
 		row(l.Text(l10n.KeyRepairIndex), l.Text(l10n.KeyBackup), func() {
-			if PillButton(c, icRepair, l.Text(l10n.KeyRepair), a.RepairIndex == nil).Clicked() {
+			if PillButton(c, nil, l.Text(l10n.KeyRepair), a.RepairIndex == nil).Clicked() {
 				u.confirmRepair = true
 			}
 		})
@@ -512,22 +598,24 @@ func (u *settingsUI) aboutPage(c *ui.Context) {
 	p := s.Prefs()
 	t := c.Theme()
 	a := u.opts.Actions
-	ui.Row(c).Justify(ui.Center).Padding(4, 0).Children(func() {
+	Panel(c).Padding(20, 12).Gap(4).AlignItems(ui.Center).Children(func() {
 		if bm := appIconBitmap(); bm != nil {
-			ui.Image(c, bm).Size(96, 96).Label("CodexRunway")
+			ui.Image(c, bm).Size(72, 72).Label("CodexRunway")
 		}
+		ui.Text(c, "Quosparr").FontSize(20).FontWeight(700).SingleLine()
+		ui.Text(c, l.Text(l10n.KeyVersion)+" "+valueOr(u.opts.Version, "dev")).FontSize(12).TextColor(t.TextMuted).SingleLine()
 	})
-	settingsGroup(c, icInfo, TintIndigo, l.Text(l10n.KeyAbout), "", nil, func(row rowFunc) {
+	settingsGroup(c, "", "", nil, func(row rowFunc) {
 		row(l.Text(l10n.KeyVersion), valueOr(u.opts.Version, "dev"), func() {
 			ui.Text(c, tx(l, xPersonalEdition)).FontSize(13).TextColor(t.TextMuted)
 		})
-		row(l.Text(l10n.KeyAutomaticallyCheckForUpdates), l.Text(l10n.KeyCheckForUpdates), func() {
+		row(l.Text(l10n.KeyAutomaticallyCheckForUpdates), "", func() {
 			if v, ok := toggle(c, "auto-update", l.Text(l10n.KeyAutomaticallyCheckForUpdates), p.AutomaticallyChecksForUpdates, s.ReadOnly()); ok {
 				s.SetAutomaticUpdateChecks(v)
 			}
 		})
-		row(l.Text(l10n.KeyCheckForUpdates), l.Text(l10n.KeyVersion), func() {
-			if PillButton(c, icDownload, l.Text(l10n.KeyCheckForUpdates), a.CheckForUpdates == nil).Clicked() {
+		row(l.Text(l10n.KeyCheckForUpdates), "", func() {
+			if PillButton(c, nil, l.Text(l10n.KeyCheckForUpdates), a.CheckForUpdates == nil).Clicked() {
 				a.CheckForUpdates()
 			}
 		})
@@ -542,9 +630,17 @@ func (u *settingsUI) aboutPage(c *ui.Context) {
 			}
 		})
 		row(l.Text(l10n.KeyFeedbackIssue), "GitHub Issues", func() {
-			if PillButton(c, icBug, l.Text(l10n.KeyFeedbackIssue), false).Clicked() {
+			if PillButton(c, nil, l.Text(l10n.KeyFeedbackIssue), false).Clicked() {
 				c.OpenURL(feedbackURL)
 			}
 		})
 	})
+}
+
+func codexDir() string {
+	home, err := platform.Home()
+	if err != nil {
+		return ""
+	}
+	return platform.CodexDir(home)
 }

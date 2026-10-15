@@ -70,7 +70,8 @@ PY
 )"
 
 git add "$CONFIG"
-git commit -m "chore(release): 升级版本至 $VERSION"
+# cliff.toml skips this exact subject, keeping it out of the release notes
+git commit -m "chore(release): bump version to $VERSION"
 git tag -a "$TAG" -m "Release $TAG"
 
 if [[ "$PUSH" -eq 1 ]]; then

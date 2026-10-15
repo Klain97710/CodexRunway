@@ -29,6 +29,7 @@ func TestPersonalProviderMigrationPreservesEveryOtherPreference(t *testing.T) {
 	}
 	a["selectedProvider"] = "codex"
 	a["statusBarProviderScope"] = "selected"
+	a["panelProviders"] = []any{"codex"}
 	if !reflect.DeepEqual(a, b) {
 		t.Fatal("provider migration changed unrelated preferences")
 	}

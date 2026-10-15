@@ -121,6 +121,21 @@ func TestProbeProxyDoesNotInstallTheDraft(t *testing.T) {
 	}
 }
 
+func TestProbeProxyAcceptsAnyAnswerFromTheSite(t *testing.T) {
+	direct := netx.WithSystemProxy(func(*url.URL) (*url.URL, error) { return nil, nil })
+	for status, ok := range map[int]bool{
+		http.StatusOK: true, http.StatusNotFound: true, http.StatusForbidden: true,
+		http.StatusProxyAuthRequired: false, http.StatusBadGateway: false,
+	} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(status) }))
+		err := probeProxy(context.Background(), store.DefaultNetworkProxy(), nil, srv.URL, direct)
+		srv.Close()
+		if (err == nil) != ok {
+			t.Errorf("status %d: err = %v", status, err)
+		}
+	}
+}
+
 func TestAccountsPageMasksAndDropsThePlaceholder(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("GROK_HOME", filepath.Join(home, "grok"))

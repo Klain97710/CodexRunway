@@ -152,6 +152,9 @@ func (rt *liveApp) applyPreferences(p store.Preferences) {
 	if rt.grok != nil {
 		rt.grok.setPreferences(p, rt.langs)
 	}
+	if rt.claudeB != nil {
+		rt.claudeB.setPreferences(p, rt.langs)
+	}
 	rt.reset.setPreferences(p, rt.langs)
 	rt.svc.SetPreferences(p)
 }

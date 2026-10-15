@@ -43,7 +43,7 @@ func TestSettingsGeneralRenderAndProxyClickDoNotQueryLogin(t *testing.T) {
 	if u.draft.Mode != store.ProxyModeHTTP {
 		t.Fatal("proxy pill did not change the actual draft")
 	}
-	if frameCalls != 0 || statusCalls.Load()+switchCalls.Load() != 0 || frame > 50*time.Millisecond || click > 100*time.Millisecond {
+	if frameCalls != 0 || statusCalls.Load()+switchCalls.Load() != 0 || frame > latencyBudget(50*time.Millisecond) || click > latencyBudget(100*time.Millisecond) {
 		t.Fatal("general-page rendering blocks local interaction on login-item I/O")
 	}
 }
@@ -102,7 +102,7 @@ func TestSettingsLoginClickRespondsBeforeSystemCompletes(t *testing.T) {
 		t.Error("input was acknowledged after completion or pending was recorded as success")
 	}
 	e.settle()
-	if elapsed > 100*time.Millisecond {
+	if elapsed > latencyBudget(100*time.Millisecond) {
 		t.Fatal("login toggle waits for backend completion")
 	}
 }

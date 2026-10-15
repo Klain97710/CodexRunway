@@ -16,13 +16,14 @@ import (
 func (a *App) panelView(c *ui.Context) {
 	prefs := a.settings.Prefs()
 	a.syncPanelContext(prefs)
-	t := applyPanelTheme(c, prefs.MainPanelBackgroundStyle)
+	t := applyPanelTheme(c, prefs.MainPanelBackgroundStyle, prefs.ThemeColor, prefs.FontFamily)
 	l := a.L()
 	snap := a.Snapshot()
 	acts := a.PanelActions()
 	snap.Provider = prefs.SelectedProvider
 	a.syncPanelAccount(snap, prefs)
 	a.panelState.setChartStyle = func(s store.ChartStyle) { a.settings.SetTokenUsageChartStyle(s) }
+	a.panelState.setResetTimeFormat = func(f store.ResetTimeFormat) { a.settings.SetQuotaResetTimeFormat(f) }
 	ui.Column(c).Fill().Background(t.Background).Children(func() {
 		if a.panelState.detail != "" {
 			a.panelDetailPage(c, l, prefs, snap, acts)
@@ -78,8 +79,11 @@ func (a *App) panelMainPage(c *ui.Context, l l10n.Localizer, prefs store.Prefere
 // selected provider above the footer.
 func panelStatusLines(c *ui.Context, l l10n.Localizer, prefs store.Preferences, snap runway.Snapshot) {
 	message, failure := snap.Accounts.Message, snap.Codex.LastError
-	if prefs.SelectedProvider == store.ProviderGrok {
+	switch prefs.SelectedProvider {
+	case store.ProviderGrok:
 		message, failure = snap.Grok.Accounts.Message, snap.Grok.LastError
+	case store.ProviderClaude:
+		message, failure = snap.Claude.Accounts.Message, snap.Claude.LastError
 	}
 	if message == "" && failure == "" {
 		return

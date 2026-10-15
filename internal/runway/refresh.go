@@ -3,6 +3,7 @@ package runway
 import (
 	"context"
 	"errors"
+	"slices"
 	"sync"
 	"time"
 
@@ -43,15 +44,6 @@ func (s *Service) leave(secs ...Section) {
 	}
 	s.publishLocked()
 	s.mu.Unlock()
-}
-
-func (s *Service) anyBusyLocked() bool {
-	for _, on := range s.busy {
-		if on {
-			return true
-		}
-	}
-	return false
 }
 
 // IsRefreshing reports whether a section (or a full refresh) is running.
@@ -260,9 +252,10 @@ func CredentialModeErrorKey(err error) l10n.Key {
 
 // ---- full refresh -------------------------------------------------------
 
-// Refresh starts a full refresh of the Codex data and returns a channel
-// closed when it is done. A refresh already running is joined; when single
-// sections are refreshing the request is dropped (closed channel).
+// Refresh starts a full refresh and returns a channel closed when it is done:
+// every provider's quota, plus the local data of the provider the open panel
+// shows. A refresh already running is joined; single sections refreshing on
+// their own never hold it back. RefreshForce is a manual refresh.
 func (s *Service) Refresh(policy usage.RefreshPolicy) <-chan struct{} {
 	return s.beginFullRefreshWidgets(policy, false)
 }
@@ -277,14 +270,27 @@ func closedChan() <-chan struct{} {
 	return c
 }
 
-func (s *Service) needsGrokDataLocked() bool {
-	return s.prefs.StatusBarProviderScope == store.ProviderScopeBoth ||
-		s.prefs.SelectedProvider == store.ProviderGrok || s.widgetNeedsLocked()
+func (s *Service) providerWantedLocked(p store.Provider) bool {
+	if s.prefs.SelectedProvider == p {
+		return true
+	}
+	if slices.Contains(s.prefs.StatusBarSelection(), p) {
+		return true
+	}
+	return s.prefs.FloatingWindow.Enabled && slices.Contains(s.prefs.FloatingSelection(), p)
 }
 
-func (s *Service) needsCodexDataLocked() bool {
-	return s.prefs.StatusBarProviderScope == store.ProviderScopeBoth ||
-		s.prefs.SelectedProvider == store.ProviderCodex || s.widgetNeedsLocked()
+// showsProviderLocked reports whether the panel, the status item or a widget
+// shows the provider in full. Only a shown provider reports its errors.
+func (s *Service) showsProviderLocked(p store.Provider) bool {
+	return s.providerWantedLocked(p) || s.widgetNeedsLocked()
+}
+
+// quotaWantedLocked reports whether the provider's quota refreshes: it is
+// shown, or it has a tab in the panel's provider strip. A provider the panel
+// hides and nothing else shows is not fetched.
+func (s *Service) quotaWantedLocked(p store.Provider) bool {
+	return s.showsProviderLocked(p) || slices.Contains(s.prefs.PanelSelection(), p)
 }
 
 func (s *Service) widgetNeedsLocked() bool {
@@ -302,6 +308,123 @@ func (s *Service) refreshGrok() {
 		_ = g.Refresh(s.root)
 		s.publish()
 	})
+}
+
+func (s *Service) refreshClaude(force bool) {
+	if s.opts.Claude == nil {
+		return
+	}
+	c := s.opts.Claude
+	s.spawn(func() {
+		_ = c.Refresh(s.root, force)
+		s.publish()
+	})
+}
+
+func (s *Service) refreshGrokLocal() {
+	if s.opts.Grok == nil {
+		return
+	}
+	g := s.opts.Grok
+	s.spawn(func() {
+		_ = g.RefreshLocal(s.root)
+		s.publish()
+	})
+}
+
+func (s *Service) refreshClaudeLocal() {
+	if s.opts.Claude == nil {
+		return
+	}
+	c := s.opts.Claude
+	s.spawn(func() {
+		_ = c.RefreshLocal(s.root)
+		s.publish()
+	})
+}
+
+// ---- local data ----------------------------------------------------------------
+
+// SetPanelOpen tells the service whether the main panel shows. Opening it
+// loads the local data of the panel's provider; quotas keep their schedule.
+func (s *Service) SetPanelOpen(open bool) {
+	s.mu.Lock()
+	opened := open && !s.panelOpen
+	s.panelOpen = open
+	if !open {
+		s.localPending = false
+	}
+	s.mu.Unlock()
+	if opened {
+		s.refreshPanelLocal()
+	}
+}
+
+// refreshPanelLocal refreshes the local data of the panel's provider: cost,
+// token chart, sessions, speed and, for Codex, the quota estimate. It never
+// fetches a quota, and data still fresh within the refresh interval is kept.
+// While a full refresh runs it waits for that one to end.
+func (s *Service) refreshPanelLocal() {
+	s.mu.Lock()
+	if !s.panelOpen {
+		s.mu.Unlock()
+		return
+	}
+	if s.allBusy {
+		s.localPending = true
+		s.mu.Unlock()
+		return
+	}
+	p := s.prefs
+	estimateDue := p.ShowsQuotaEstimateSummary && (s.est == nil || !s.now().Before(s.estAt.Add(s.refreshInterval())))
+	s.mu.Unlock()
+	switch p.SelectedProvider {
+	case store.ProviderGrok:
+		s.refreshGrokLocal()
+	case store.ProviderClaude:
+		s.refreshClaudeLocal()
+	default:
+		if p.ShowsSessionRepairSummary {
+			s.RefreshSessionReport(false)
+		}
+		if p.ShowsRecentSessions {
+			s.RefreshRecentSessions(false)
+		}
+		if p.ShowsSpeedAnalysis {
+			s.RefreshSpeed(false)
+		}
+		if estimateDue {
+			s.RefreshQuotaEstimate()
+		}
+		if p.ShowsCostSummary {
+			s.RefreshCost(usage.RefreshIfChanged)
+		}
+		if p.ShowsTokenUsageHeatmap {
+			s.RefreshTokenHeatmap(usage.RefreshIfChanged)
+		}
+	}
+}
+
+// RefreshProviderLocal is the manual refresh of a Grok or Claude section
+// built from the local sessions; it leaves the quota to its schedule.
+func (s *Service) RefreshProviderLocal(p store.Provider) {
+	switch p {
+	case store.ProviderGrok:
+		s.refreshGrokLocal()
+	case store.ProviderClaude:
+		s.refreshClaudeLocal()
+	}
+}
+
+// panelLocalLocked reports whether the open panel shows p's local data.
+func (s *Service) panelLocalLocked(p store.Provider) bool {
+	return s.panelOpen && s.prefs.SelectedProvider == p
+}
+
+// widgetLocalLocked reports whether a widget write needs the local cost or
+// token chart of the providers it shows.
+func (s *Service) widgetLocalLocked() bool {
+	return s.widgetReqs.Has(export.RequireCost) || s.widgetReqs.Has(export.RequireTokenTrend)
 }
 
 func (s *Service) beginFullRefreshWidgets(policy usage.RefreshPolicy, widgets bool) <-chan struct{} {
@@ -325,10 +448,6 @@ func (s *Service) startFull(policy usage.RefreshPolicy, widgets bool) <-chan str
 		}
 		return d
 	}
-	if s.anyBusyLocked() {
-		s.mu.Unlock()
-		return closedChan()
-	}
 	ctx, cancel := context.WithTimeout(s.root, s.opts.FullRefreshTimeout)
 	s.fullID++
 	id := s.fullID
@@ -345,24 +464,46 @@ func (s *Service) startFull(policy usage.RefreshPolicy, widgets bool) <-chan str
 	ok := s.spawn(func() {
 		defer close(done)
 		s.mu.Lock()
-		grokPanel := s.prefs.SelectedProvider == store.ProviderGrok
-		needsGrok := s.needsGrokDataLocked()
-		needsCodex := s.needsCodexDataLocked()
-		fullWidgets := s.widgetReqs.Has(export.RequireTokenTrend) || s.widgetReqs.Has(export.RequireCost)
+		showsGrok := s.showsProviderLocked(store.ProviderGrok)
+		showsClaude := s.showsProviderLocked(store.ProviderClaude)
+		wantsGrok := s.quotaWantedLocked(store.ProviderGrok)
+		wantsClaude := s.quotaWantedLocked(store.ProviderClaude)
+		// Local data is the open panel's provider only, or every provider
+		// when this refresh carries a widget write that needs it.
+		widgetLocal := widgets && s.widgetLocalLocked()
+		local := localScope{
+			panel:      s.panelLocalLocked(store.ProviderCodex),
+			widgetCost: widgets && s.widgetReqs.Has(export.RequireCost),
+			widgetHeat: widgets && s.widgetReqs.Has(export.RequireTokenTrend),
+		}
+		grokLocal := widgetLocal || s.panelLocalLocked(store.ProviderGrok)
+		claudeLocal := widgetLocal || s.panelLocalLocked(store.ProviderClaude)
 		s.mu.Unlock()
-		if needsGrok && s.opts.Grok != nil {
-			if err := s.opts.Grok.Refresh(ctx); err != nil && ctx.Err() == nil {
+		report := func(err error, shown bool) {
+			if err != nil && ctx.Err() == nil && shown {
 				s.mu.Lock()
 				s.lastErr = s.errTextLocked(err)
 				s.publishLocked()
 				s.mu.Unlock()
 			}
 		}
-		if !grokPanel || fullWidgets {
-			s.refreshNow(ctx, policy)
-		} else if needsCodex {
-			s.refreshQuotaNow(ctx)
+		if g := s.opts.Grok; g != nil {
+			if wantsGrok {
+				report(g.Refresh(ctx), showsGrok)
+			}
+			if grokLocal {
+				report(g.RefreshLocal(ctx), showsGrok)
+			}
 		}
+		if c := s.opts.Claude; c != nil {
+			if wantsClaude {
+				report(c.Refresh(ctx, policy == usage.RefreshForce), showsClaude)
+			}
+			if claudeLocal {
+				report(c.RefreshLocal(ctx), showsClaude)
+			}
+		}
+		s.refreshNow(ctx, policy, local)
 		cancel()
 		s.finishFull(id)
 	})
@@ -383,6 +524,8 @@ func (s *Service) finishFull(id uint64) {
 		return
 	}
 	s.allBusy, s.fullCancel, s.fullDone = false, nil, nil
+	localPending := s.localPending
+	s.localPending = false
 	now := s.now()
 	s.schedule.RefreshCompleted(now, s.refreshInterval())
 	hasWidgets := s.widgetReqs != 0 && s.opts.WidgetSink != nil
@@ -396,6 +539,9 @@ func (s *Service) finishFull(id uint64) {
 	s.mu.Unlock()
 	if writeWidgets {
 		s.writeWidget(snap, now)
+	}
+	if localPending {
+		s.refreshPanelLocal()
 	}
 	s.emit(Event{Kind: EventFullRefreshDone})
 }
@@ -428,20 +574,34 @@ func (s *Service) cancelAccountScoped() {
 	}
 }
 
-// refreshNow is the body of a full refresh (Swift refreshNow).
-func (s *Service) refreshNow(ctx context.Context, policy usage.RefreshPolicy) {
+// localScope is the Codex local data a full refresh owes: everything the
+// panel shows while it is open on Codex, and the cost or token chart a widget
+// write needs.
+type localScope struct {
+	panel      bool
+	widgetCost bool
+	widgetHeat bool
+}
+
+// refreshNow is the Codex part of a full refresh (Swift refreshNow): the
+// accounts, quota and reset credits, then the local data in scope.
+func (s *Service) refreshNow(ctx context.Context, policy usage.RefreshPolicy, local localScope) {
 	s.syncOfficial()
 	prefs := s.Preferences()
 
 	var sessions sync.WaitGroup
 	defer sessions.Wait()
-	if prefs.ShowsSessionRepairSummary {
+	if local.panel && prefs.ShowsSessionRepairSummary {
 		sessions.Add(1)
 		go func() { defer sessions.Done(); s.loadSessionReport(ctx) }()
 	}
-	if prefs.ShowsRecentSessions {
+	if local.panel && prefs.ShowsRecentSessions {
 		sessions.Add(1)
 		go func() { defer sessions.Done(); s.loadRecentSessions(ctx) }()
+	}
+	if local.panel && prefs.ShowsSpeedAnalysis {
+		sessions.Add(1)
+		go func() { defer sessions.Done(); s.loadSpeed(ctx) }()
 	}
 
 	start := s.Epoch()
@@ -464,7 +624,7 @@ func (s *Service) refreshNow(ctx context.Context, policy usage.RefreshPolicy) {
 		remote = err
 		gen = start
 	} else {
-		remote = s.refreshLegs(ctx, auth, gen, policy, prefs)
+		remote = s.refreshLegs(ctx, auth, gen, policy, prefs, local)
 	}
 	sessions.Wait()
 	if ctx.Err() != nil {
@@ -491,7 +651,7 @@ func (s *Service) refreshNow(ctx context.Context, policy usage.RefreshPolicy) {
 
 // refreshLegs runs quota and reset credits in parallel, then the estimate and
 // the cost scans, and returns the error to report (nil when all fine).
-func (s *Service) refreshLegs(ctx context.Context, auth codex.Auth, gen uint64, policy usage.RefreshPolicy, prefs store.Preferences) error {
+func (s *Service) refreshLegs(ctx context.Context, auth codex.Auth, gen uint64, policy usage.RefreshPolicy, prefs store.Preferences, local localScope) error {
 	var (
 		wg      sync.WaitGroup
 		quota   codexapi.QuotaSnapshot
@@ -505,10 +665,10 @@ func (s *Service) refreshLegs(ctx context.Context, auth codex.Auth, gen uint64, 
 
 	var remote error
 	if qErr == nil {
-		if prefs.ShowsQuotaEstimateSummary {
+		if local.panel && prefs.ShowsQuotaEstimateSummary {
 			s.loadEstimate(ctx, auth, gen, quota)
 		}
-		s.scanAfterQuota(ctx, auth, gen, quota, policy)
+		s.scanAfterQuota(ctx, auth, gen, quota, policy, local)
 	} else if !stopped(ctx, qErr) {
 		remote = qErr
 	}
@@ -519,16 +679,16 @@ func (s *Service) refreshLegs(ctx context.Context, auth codex.Auth, gen uint64, 
 }
 
 // scanAfterQuota runs the cost / heatmap scans a full refresh owes.
-func (s *Service) scanAfterQuota(ctx context.Context, auth codex.Auth, gen uint64, quota codexapi.QuotaSnapshot, policy usage.RefreshPolicy) {
+func (s *Service) scanAfterQuota(ctx context.Context, auth codex.Auth, gen uint64, quota codexapi.QuotaSnapshot, policy usage.RefreshPolicy, local localScope) {
 	if !s.current(auth, gen) {
 		return
 	}
 	now := s.now()
 	s.mu.Lock()
 	p := s.prefs
-	needsCost := (p.ShowsCostSummary || s.widgetReqs.Has(export.RequireCost)) &&
+	needsCost := (local.panel && p.ShowsCostSummary || local.widgetCost) &&
 		shouldRefreshCost(policy, s.lastCostDone, s.lastCostCycle, &quota, s.refreshInterval(), now)
-	needsHeat := (p.ShowsTokenUsageHeatmap || s.widgetReqs.Has(export.RequireTokenTrend)) &&
+	needsHeat := (local.panel && p.ShowsTokenUsageHeatmap || local.widgetHeat) &&
 		shouldRefreshHeatmap(policy, s.lastHeatDone, s.refreshInterval(), now)
 	s.mu.Unlock()
 	if !needsCost && !needsHeat {
@@ -700,7 +860,7 @@ func (s *Service) loadEstimate(ctx context.Context, auth codex.Auth, gen uint64,
 	s.apply(auth, gen, func() {
 		s.estDaily = &daily
 		s.applyEstimateLocked(quota, daily, true)
-		s.estErr = ""
+		s.estErr, s.estAt = "", s.now()
 	})
 }
 
@@ -773,19 +933,26 @@ func (s *Service) applyEstimateLocked(q codexapi.QuotaSnapshot, daily usage.Summ
 
 // ---- single-section refreshes ----------------------------------------------
 
-// RefreshQuota refreshes the quota alone.
+// RefreshQuota is the manual refresh of every provider's quota. It restarts
+// the automatic interval, so the next scheduled refresh is a full interval
+// away; a full refresh already running stands in for it.
 func (s *Service) RefreshQuota() <-chan struct{} {
 	s.mu.Lock()
-	grokPanel := s.prefs.SelectedProvider == store.ProviderGrok
-	needsGrok := s.needsGrokDataLocked()
-	needsCodex := s.needsCodexDataLocked()
 	busy := s.allBusy
+	if !busy {
+		s.schedule.RefreshCompleted(s.now(), s.refreshInterval())
+	}
+	wantsGrok := s.quotaWantedLocked(store.ProviderGrok)
+	wantsClaude := s.quotaWantedLocked(store.ProviderClaude)
 	s.mu.Unlock()
-	if needsGrok {
+	if busy {
+		return closedChan()
+	}
+	if wantsGrok {
 		s.refreshGrok()
 	}
-	if busy || (grokPanel && !needsCodex) {
-		return closedChan()
+	if wantsClaude {
+		s.refreshClaude(true)
 	}
 	return s.runAccountScoped(s.refreshQuotaNow)
 }
@@ -823,7 +990,7 @@ func (s *Service) refreshQuotaNow(ctx context.Context) {
 	}
 	s.deliver(alerts.QuotaAlerts(quotaAlertInput(q)), enabled)
 	s.mu.Lock()
-	want := s.prefs.ShowsQuotaEstimateSummary && s.quota != nil && s.auth != nil
+	want := s.prefs.ShowsQuotaEstimateSummary && s.panelLocalLocked(store.ProviderCodex) && s.quota != nil && s.auth != nil
 	s.mu.Unlock()
 	if want {
 		s.loadEstimate(ctx, auth, gen, q)
@@ -911,13 +1078,20 @@ func (s *Service) refreshEstimateNow(ctx context.Context) {
 	s.loadEstimate(ctx, auth, gen, *q)
 }
 
+// resetTodayWantedLocked reports whether the reset-today feed polls in the
+// background: its module shows, its alerts are on or a widget shows it,
+// whichever provider the panel shows.
+func (s *Service) resetTodayWantedLocked() bool {
+	return s.prefs.ShowsRateLimitResetToday || s.prefs.RateLimitResetTodayAlertsEnabled ||
+		s.widgetReqs.Has(export.RequireResetToday)
+}
+
 // RefreshResetToday refreshes the reset-today provider (a no-op without one
-// or when neither the panel nor a widget shows it).
+// or when nothing shows or alerts it).
 func (s *Service) RefreshResetToday(force bool) <-chan struct{} {
 	rt := s.opts.ResetToday
 	s.mu.Lock()
-	need := s.prefs.ShowsRateLimitResetToday || s.widgetReqs.Has(export.RequireResetToday)
-	skip := rt == nil || !need || s.busy[SectionResetToday]
+	skip := rt == nil || !s.resetTodayWantedLocked() || s.busy[SectionResetToday]
 	s.mu.Unlock()
 	if skip {
 		return closedChan()
@@ -1034,6 +1208,37 @@ func (s *Service) loadRecentSessions(ctx context.Context) {
 		s.recent, s.recentErr = nil, err.Error()
 	} else {
 		s.recent, s.recentErr, s.recentAt = sum.Items, "", s.now()
+	}
+	s.publishLocked()
+}
+
+// RefreshSpeed re-measures the model speed from the newest local sessions;
+// without force it is skipped while the last result is fresh.
+func (s *Service) RefreshSpeed(force bool) <-chan struct{} {
+	s.mu.Lock()
+	skip := s.allBusy || (!force && !s.stale(s.speedAt))
+	s.mu.Unlock()
+	if skip {
+		return closedChan()
+	}
+	return s.run(func() { s.loadSpeed(s.root) })
+}
+
+func (s *Service) loadSpeed(ctx context.Context) {
+	if s.src.ScanSpeed == nil || !s.enter(SectionSpeed) {
+		return
+	}
+	defer s.leave(SectionSpeed)
+	r, err := s.src.ScanSpeed(ctx, s.now())
+	if stopped(ctx, err) && err != nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err != nil {
+		s.speed, s.speedErr = nil, err.Error()
+	} else {
+		s.speed, s.speedErr, s.speedAt = &r, "", s.now()
 	}
 	s.publishLocked()
 }

@@ -8,12 +8,12 @@ import (
 	"log"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 	"github.com/licoy/quosparr/internal/l10n"
 	"github.com/licoy/quosparr/internal/personal"
-
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
@@ -29,7 +29,9 @@ type PanelActions struct {
 	RefreshSection func(runway.Section)
 	SwitchAccount  func(id string)
 	SelectProvider func(store.Provider)
-	QueryCost      func(context.Context, store.Provider, CostQuery) (usage.Summary, error)
+	// Keep local-data refresh scoped to visible app windows.
+	PanelShown func(open bool)
+	QueryCost  func(context.Context, store.Provider, CostQuery) (usage.Summary, error)
 	// RepairSessions rebuilds the session index after a backup; the panel
 	// asks for confirmation first.
 	RepairSessions func()
@@ -60,11 +62,17 @@ type App struct {
 	panel    *mygo.Window
 	settings *Settings
 	setWin   *mygo.Window
+	tierWin  *mygo.Window
 	setUI    *settingsUI
 
 	popover     panelPopoverState
 	panelState  panelState
 	panelResize panelResizeState
+	panelShown  bool
+	// panelClosedAt tells the floating window's click apart from the press
+	// that took the panel's focus away.
+	panelClosedAt time.Time
+	floating      floatingState
 
 	snapMu    sync.Mutex
 	snap      runway.Snapshot
@@ -124,6 +132,9 @@ func (a *App) PublishSnapshot(s runway.Snapshot) {
 		}
 		if a.setWin != nil && !a.setWin.IsDestroyed() {
 			a.setWin.Invalidate()
+		}
+		if a.floating.win != nil {
+			a.syncFloating()
 		}
 	})
 }
@@ -192,6 +203,7 @@ func (a *App) settingsChanged() {
 	if a.tray != nil && runtime.GOOS == "linux" {
 		a.tray.SetMenu(a.trayMenu())
 	}
+	a.syncFloating()
 }
 
 // Ready creates the tray and starts the background tasks. It runs on the
@@ -222,6 +234,7 @@ func (a *App) readyWithTray(create func() error) error {
 	}
 	a.backgroundReady = true
 	a.startBackground()
+	a.syncFloating()
 	return nil
 }
 
@@ -244,6 +257,9 @@ func (a *App) createTray() error {
 	mygo.Theme.OnUpdated(func() {
 		a.matchPanelAppearance()
 		ApplyTray(a.tray, TrayFromStatus(a.Snapshot().StatusBar))
+		if a.floating.win != nil {
+			a.floating.win.Invalidate()
+		}
 	})
 	return nil
 }
@@ -270,6 +286,10 @@ func (a *App) trayMenu() *mygo.Menu {
 		{Label: l.Text(l10n.KeyOpenControlPanel), Click: func(*mygo.MenuItem, *mygo.Window) { a.OpenPanel() }},
 		{Label: l.Text(l10n.KeyOpenDetailsWindow), Click: func(*mygo.MenuItem, *mygo.Window) { a.OpenDetailsWindow() }},
 		{Label: l.Text(l10n.KeySettings), Click: func(*mygo.MenuItem, *mygo.Window) { a.OpenSettings() }},
+		{Label: tx(l, xFloatingEnabled), Type: mygo.MenuItemCheckbox, Checked: a.settings.Prefs().FloatingWindow.Enabled,
+			Disabled: a.settings.ReadOnly(), Click: func(item *mygo.MenuItem, _ *mygo.Window) {
+				a.settings.SetFloatingWindow(func(f *store.FloatingWindow) { f.Enabled = item.Checked })
+			}},
 		mygo.Separator(),
 		{Label: l.Text(l10n.KeyRefresh), Disabled: a.opts.Actions.Refresh == nil, Click: func(*mygo.MenuItem, *mygo.Window) {
 			if a.opts.Actions.Refresh != nil {
@@ -329,6 +349,7 @@ func (a *App) OpenPanel() {
 		a.panel = mygo.NewFlyout(opts)
 	}()
 	panel := a.panel
+	a.syncPanelResizeEdge()
 	panel.OnShow(a.matchPanelAppearance)
 	panel.OnFocus(a.matchPanelAppearance)
 	a.panelOpened()
@@ -346,6 +367,7 @@ func (a *App) panelOpened() {
 		a.panel.Invalidate()
 	}
 	prefs, actions := a.settings.Prefs(), a.PanelActions()
+	a.setPanelShown(true)
 	if prefs.SelectedProvider == store.ProviderCodex && prefs.ShowsRateLimitResetToday && actions.RefreshSection != nil {
 		// The queued section refresh bypasses the timer interval and coalesces
 		// in-flight requests, keeping the last snapshot visible while fetching.
@@ -354,6 +376,7 @@ func (a *App) panelOpened() {
 }
 
 func (a *App) panelClosed() {
+	a.setPanelShown(false)
 	a.cancelPanelDetails()
 	a.panelState.detail = ""
 	a.panelState.chartMode = ""
@@ -363,6 +386,7 @@ func (a *App) panelClosed() {
 	a.panelResize = panelResizeState{}
 	releasePanelPopover(a)
 	a.panel = nil
+	a.panelClosedAt = time.Now()
 }
 
 // ClosePanel closes the panel.
@@ -417,13 +441,26 @@ func (a *App) startBackground() {
 	a.stopBackground = a.opts.Seams.StartBackground(ctx)
 }
 
-// OpenSettingsTab opens the settings window on tab 0..4 (general,
-// accounts, display, advanced, about); for dev runs and screenshots.
+// OpenSettingsTab opens the settings window on tab 0..7 (general,
+// accounts, appearance & menu, floating window, panel modules,
+// notifications, advanced, about); for dev runs and screenshots.
 func (a *App) OpenSettingsTab(tab int) {
 	a.OpenSettings()
 	if a.setUI != nil && tab >= 0 && tab < len(settingsTabs) {
 		a.setUI.tab = settingsTabs[tab]
 		a.setWin.Invalidate()
+	}
+}
+
+// openAccountsSettings opens the accounts tab on one provider kind
+// (accountKindCodex and so on). A busy form keeps its provider.
+func (a *App) openAccountsSettings(kind int) {
+	a.OpenSettingsTab(1)
+	if a.setUI == nil {
+		return
+	}
+	if f := accountFormOf(a.setUI); !f.busy && f.kind != kind {
+		f.kind, f.mode, f.paste, f.apiKey, f.selection = kind, "", "", "", nil
 	}
 }
 
@@ -465,6 +502,7 @@ func (a *App) OpenSettings() {
 		MinHeight:            settingsMinHeight,
 		TitleBarStyle:        mygo.TitleBarHidden,
 		TrafficLightPosition: &mygo.Point{X: 18, Y: 20},
+		Vibrancy:             settingsVibrancy(),
 		Content:              ui.View(a.setUI.view),
 	})
 	// Restore keeps the saved dimensions, so enlarge older small settings windows.

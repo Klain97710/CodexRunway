@@ -168,17 +168,20 @@ type Tier string
 // The subscription tiers. Official wire values stay prolite / pro / promax;
 // the display names are Pro 100 / 200 / 500.
 const (
-	TierFree       Tier = "free"
-	TierPlus       Tier = "plus"
-	TierPro100     Tier = "pro100"
-	TierPro200     Tier = "pro200"
-	TierPro500     Tier = "pro500"
-	TierBusiness   Tier = "business"
-	TierTeam       Tier = "team"
-	TierEnterprise Tier = "enterprise"
-	TierEdu        Tier = "edu"
-	TierAPI        Tier = "api"
-	TierUnknown    Tier = "unknown"
+	TierFree     Tier = "free"
+	TierPlus     Tier = "plus"
+	TierPro100   Tier = "pro100"
+	TierPro200   Tier = "pro200"
+	TierPro500   Tier = "pro500"
+	TierBusiness Tier = "business"
+	// TierBusinessPremium is the self-serve Business plan with Pro 100
+	// limits (self_serve_business_prolite).
+	TierBusinessPremium Tier = "business_premium"
+	TierTeam            Tier = "team"
+	TierEnterprise      Tier = "enterprise"
+	TierEdu             Tier = "edu"
+	TierAPI             Tier = "api"
+	TierUnknown         Tier = "unknown"
 )
 
 var (
@@ -211,6 +214,8 @@ func ResolveTier(planType, fallback string) Tier {
 		return TierPro100
 	case containsString(pro200Types, raw):
 		return TierPro200
+	case isBusinessPremium(raw):
+		return TierBusinessPremium
 	}
 	for _, c := range []struct {
 		word string
@@ -226,11 +231,16 @@ func ResolveTier(planType, fallback string) Tier {
 	return TierUnknown
 }
 
+// isBusinessPremium matches a normalized Business plan with Pro limits.
+func isBusinessPremium(raw string) bool {
+	return strings.Contains(raw, "business") && (strings.Contains(raw, "prolite") || strings.Contains(raw, "pro-lite") || strings.Contains(raw, "premium"))
+}
+
 // projectsBillingCycle: paid ChatGPT plans renew monthly; free, API and
 // unknown plans must not get an invented future date.
 func (t Tier) projectsBillingCycle() bool {
 	switch t {
-	case TierPlus, TierPro100, TierPro200, TierPro500, TierBusiness, TierTeam, TierEnterprise, TierEdu:
+	case TierPlus, TierPro100, TierPro200, TierPro500, TierBusiness, TierBusinessPremium, TierTeam, TierEnterprise, TierEdu:
 		return true
 	}
 	return false

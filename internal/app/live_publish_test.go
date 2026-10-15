@@ -3,11 +3,11 @@ package app
 import (
 	"context"
 	"errors"
-	"github.com/licoy/quosparr/internal/codex"
-	"github.com/licoy/quosparr/internal/personal"
 	"testing"
 	"time"
 
+	"github.com/licoy/quosparr/internal/codex"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/store"
 )
@@ -16,7 +16,7 @@ func TestServiceCloseDoesNotWaitOnBlockedUIDispatch(t *testing.T) {
 	entered, release := make(chan struct{}), make(chan struct{})
 	delivered := make(chan uint64, 1)
 	d := &snapshotDispatch{post: func(fn func()) { close(entered); <-release; fn() }, apply: func(s runway.Snapshot) { delivered <- s.Seq }}
-	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: store.DefaultPreferences(), OnSnapshot: d.publish, Sources: runway.Sources{LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) {
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}, Preferences: store.DefaultPreferences(), OnSnapshot: d.publish, Sources: runway.Sources{LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) {
 		return codex.Auth{}, errors.New("synthetic auth unavailable")
 	}}})
 	svc.Start(context.Background())

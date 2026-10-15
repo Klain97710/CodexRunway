@@ -21,7 +21,7 @@ def validate(root):
     real_home = Path(pwd.getpwuid(os.getuid()).pw_dir).resolve()
     if root.resolve() != root or root == real_home or root in real_home.parents:
         raise ValueError('sandbox may not alias the user home or contain it')
-    for name in ('.codex', '.codex-runway', '.quosparr', '.grok', 'Library'):
+    for name in ('.codex', '.codex-runway', '.quosparr', '.grok', '.claude', 'Library'):
         protected = real_home / name
         if root == protected or protected in root.parents or root in protected.parents:
             raise ValueError('sandbox overlaps production data')
@@ -61,9 +61,9 @@ def main():
     subprocess.run(['codesign', '--verify', '--deep', '--strict', str(app)], check=True)
     env = os.environ.copy()
     for key in list(env):
-        if key.startswith(('QUOSPARR_', 'RUNWAY_', 'SPARKLE_', 'MYGO_')) or key in ('CODEX_HOME', 'GROK_HOME'):
+        if key.startswith(('QUOSPARR_', 'RUNWAY_', 'SPARKLE_', 'MYGO_')) or key in ('CODEX_HOME', 'GROK_HOME', 'CLAUDE_CONFIG_DIR'):
             env.pop(key)
-    env.update(RUNWAY_MIGRATION_SANDBOX=str(root), CODEX_HOME=str(root / '.codex'), GROK_HOME=str(root / '.grok'))
+    env.update(RUNWAY_MIGRATION_SANDBOX=str(root), CODEX_HOME=str(root / '.codex'), GROK_HOME=str(root / '.grok'), CLAUDE_CONFIG_DIR=str(root / '.claude'))
     child = subprocess.Popen([str(app / 'Contents/MacOS' / info['CFBundleExecutable']), *app_args], env=env)
     try:
         raise SystemExit(child.wait())

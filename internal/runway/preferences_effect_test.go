@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/licoy/quosparr/internal/codexapi"
 	"github.com/licoy/quosparr/internal/export"
 	"github.com/licoy/quosparr/internal/sessions"
 	"github.com/licoy/quosparr/internal/store"
@@ -35,16 +34,25 @@ func TestEnablingSessionModulesLoadsTheirData(t *testing.T) {
 	}
 }
 
-func TestPreferencesProviderChangeRefreshesSelectedProvider(t *testing.T) {
+func TestProviderChangeKeepsTheRefreshRhythm(t *testing.T) {
 	f := newFake(t)
 	g := &fakeGrok{}
 	s, _ := newService(t, f, func(o *Options) { o.Grok = g })
-	p := s.Preferences()
-	p.SelectedProvider = store.ProviderGrok
-	s.SetPreferences(p)
+	refreshAll(t, s)
+	quota, grok := f.count("quota"), g.count()
+	for _, provider := range []store.Provider{store.ProviderGrok, store.ProviderClaude, store.ProviderCodex} {
+		p := s.Preferences()
+		p.SelectedProvider = provider
+		s.SetPreferences(p)
+		settle(t, s)
+	}
+	if f.count("quota") != quota || g.count() != grok {
+		t.Fatalf("switching fetched quota: codex %d→%d, grok %d→%d", quota, f.count("quota"), grok, g.count())
+	}
+	s.Tick(f.clk.Advance(time.Duration(s.Preferences().RefreshIntervalSeconds) * time.Second))
 	settle(t, s)
-	if g.count() != 1 {
-		t.Fatalf("selected provider refreshes = %d", g.count())
+	if f.count("quota") != quota+1 || g.count() != grok+1 {
+		t.Fatal("the schedule did not refresh every provider")
 	}
 }
 
@@ -112,26 +120,40 @@ func TestWidgetSinkFailureIsVisible(t *testing.T) {
 	}
 }
 
-func TestProviderChangeCancelsOldRefreshThenLoadsNewProvider(t *testing.T) {
+// A provider the panel hides and nothing else shows is not fetched; showing
+// it again fetches its quota at once.
+func TestHiddenPanelProvidersSkipQuotaRefresh(t *testing.T) {
 	f := newFake(t)
-	gate := newGate()
-	g := &fakeGrok{}
-	f.quotaFn = func(ctx context.Context, _ codexapi.Auth) (codexapi.QuotaSnapshot, error) {
-		gate.waitCtx(ctx)
-		return f.quota("late", 99), nil
-	}
-	s, _ := newService(t, f, func(o *Options) { o.Grok = g })
-	done := s.Refresh(usage.RefreshForce)
-	gate.waitStarted(t)
-	p := s.Preferences()
-	p.SelectedProvider = store.ProviderGrok
-	s.SetPreferences(p)
-	wait(t, done)
+	g, c := &fakeGrok{}, &fakeClaude{}
+	s, _ := newService(t, f, func(o *Options) {
+		o.Grok, o.Claude = g, c
+		o.Preferences.PanelProviders = []store.Provider{store.ProviderCodex}
+	})
+	wait(t, s.Refresh(usage.RefreshForce))
 	settle(t, s)
-	if g.count() != 1 {
-		t.Fatalf("new provider not loaded: %d", g.count())
+	wait(t, s.RefreshQuota())
+	settle(t, s)
+	if g.count() != 0 || len(c.calls()) != 0 {
+		t.Fatalf("hidden providers refreshed: grok %d, claude %d", g.count(), len(c.calls()))
 	}
-	if q := s.Snapshot().Codex.Quota; q != nil && q.Plan == "late" {
-		t.Fatal("cancelled provider result applied")
+	if f.count("quota") != 2 {
+		t.Fatalf("Codex quota refreshed %d times, want 2", f.count("quota"))
+	}
+
+	p := s.Preferences()
+	p.StatusBarProviderScope = store.ProviderScopeCustom
+	p.StatusBarProviders = []store.Provider{store.ProviderCodex, store.ProviderClaude}
+	s.SetPreferences(p)
+	settle(t, s)
+	if g.count() != 0 || len(c.calls()) != 1 {
+		t.Fatalf("status bar pick: grok %d, claude %d, want 0 and 1", g.count(), len(c.calls()))
+	}
+
+	p = s.Preferences()
+	p.PanelProviders = nil
+	s.SetPreferences(p)
+	settle(t, s)
+	if g.count() != 1 || len(c.calls()) != 1 {
+		t.Fatalf("showing every provider: grok %d, claude %d, want 1 and 1", g.count(), len(c.calls()))
 	}
 }

@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"github.com/licoy/quosparr/internal/personal"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/licoy/quosparr/internal/grok"
 	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
@@ -45,17 +45,19 @@ func TestPanelRuntimeGrokRangeChangeDoesNotRelabelOldCost(t *testing.T) {
 	if before.Cost == nil || before.Cost.Totals.TotalTokens != 110 {
 		t.Fatal("temporary Grok fixture did not scan")
 	}
-	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Grok: g})
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}, Preferences: p, Grok: g})
 	defer svc.Close()
 	svc.ReloadAccounts()
 	rt := &liveApp{svc: svc, grok: g, reset: newResetBridge(nil, p, nil)}
 	a, tt := newPanel(t, func(prefs *store.Preferences) { *prefs = p }, svc.Snapshot(), PanelActions{})
 	a.settings.OnChange(func() { rt.pushPreferences(a.settings) })
-	g.refreshMu.Lock()
+	// A range change only rescans local sessions; hold that scan so the pending
+	// snapshot is observed before the new window lands.
+	g.scanMu.Lock()
 	var released bool
 	defer func() {
 		if !released {
-			g.refreshMu.Unlock()
+			g.scanMu.Unlock()
 		}
 		rt.closePreferences()
 	}()
@@ -75,7 +77,7 @@ func TestPanelRuntimeGrokRangeChangeDoesNotRelabelOldCost(t *testing.T) {
 	if !tt.HasText(a.L().Text(l10n.KeyNotLoaded)) {
 		t.Fatal("cost did not show the waiting state for the new range")
 	}
-	g.refreshMu.Unlock()
+	g.scanMu.Unlock()
 	released = true
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

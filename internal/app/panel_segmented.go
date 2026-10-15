@@ -10,7 +10,7 @@ func blueSegmented(c *ui.Context, selected *int, disabled bool, labels ...string
 	seg := ui.SegmentedBase(c, selected, len(labels))
 	seg.Track.Padding(1).Radius(radiusRow).Background(mono(t, 0.07, 0.12)).Gap(0).AlignItems(ui.Center).Children(func() {
 		for i, label := range labels {
-			s := seg.Segment(i).Padding(3, 13).Radius(radiusRow - 1).Disabled(disabled).Cursor(ui.CursorPointer)
+			s := seg.Segment(i).Padding(3, 13).Radius(radiusRow - 1).Disabled(disabled).Label(label).Cursor(ui.CursorPointer)
 			ink := t.Text
 			if i == *selected {
 				fill := t.Accent

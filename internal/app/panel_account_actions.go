@@ -1,6 +1,12 @@
 package app
 
-import "context"
+import (
+	"context"
+
+	"github.com/egoist/mygo/ui"
+	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/store"
+)
 
 // AccountActions are the controls of the multi-account pages. Each one runs
 // to completion and returns the message to show, "" for none; the panel
@@ -23,6 +29,13 @@ type AccountActions struct {
 	GrokLogin          func(ctx context.Context) string
 	GrokPaste          func(text string) (message string, ok bool)
 	GrokImportOfficial func() string
+
+	// Claude accounts. ClaudeSwitch always proceeds; the confirmation
+	// carries the running-process warning.
+	ClaudeRefreshAll func() string
+	ClaudeRefresh    func(id string) string
+	ClaudeSwitch     func(id string) string
+	ClaudeDelete     func(id string) string
 }
 
 // allRefreshing marks "every account" as the refresh in flight.
@@ -34,7 +47,14 @@ type accountsState struct {
 	// allRefreshing) whose quota it polls.
 	busy       bool
 	refreshing string
-	notice     string
+
+	// notice is the result of the last action, shown in a dialog titled
+	// with the provider whose page started it. page is the provider of the
+	// page drawn last.
+	notice         string
+	noticeOpen     bool
+	noticeProvider store.Provider
+	page           store.Provider
 
 	// Pending confirmations, by account id.
 	switchID  string
@@ -54,7 +74,7 @@ type accountsState struct {
 // closePage drops the pending confirmations and editors of the page.
 func (s *accountsState) closePage() {
 	s.switchID, s.deleteID, s.runningID, s.aliasID = "", "", "", ""
-	s.pasteOpen, s.paste, s.pasteErr, s.notice = false, "", "", ""
+	s.pasteOpen, s.paste, s.pasteErr, s.notice, s.noticeOpen = false, "", "", "", false
 }
 
 // loggingIn reports a Grok browser login that can still be cancelled.
@@ -67,11 +87,13 @@ func (a *App) accountsRun(refreshing string, fn func() string) {
 	if s.busy {
 		return
 	}
-	s.busy, s.refreshing, s.notice = true, refreshing, ""
+	s.busy, s.refreshing, s.notice, s.noticeOpen = true, refreshing, "", false
+	provider := s.page
 	go func() {
 		msg := fn()
 		runOnMain(func() {
-			s.busy, s.refreshing, s.notice = false, "", msg
+			s.busy, s.refreshing = false, ""
+			s.notice, s.noticeOpen, s.noticeProvider = msg, msg != "", provider
 			a.redrawPanel()
 		})
 	}()
@@ -97,5 +119,18 @@ func (a *App) accountsLogin(acts AccountActions) {
 func (a *App) accountsCancelLogin() {
 	if cancel := a.panelState.accounts.login; cancel != nil {
 		cancel()
+	}
+}
+
+// accountsNoticeDialog shows the result of an account action. It replaces
+// the line under the list, which stayed when another provider was chosen.
+func (a *App) accountsNoticeDialog(c *ui.Context, l l10n.Localizer) {
+	s := &a.panelState.accounts
+	if !s.noticeOpen {
+		return
+	}
+	ui.AlertDialog(c.Key("accounts-notice"), &s.noticeOpen, l.Text(providerKey(s.noticeProvider)), s.notice, l.Text(l10n.KeyOk))
+	if !s.noticeOpen {
+		s.notice = ""
 	}
 }

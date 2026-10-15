@@ -234,6 +234,7 @@ type sessionSummaryFile struct {
 	projectName  string
 	cwd          *string
 	model        *string
+	effort       string // session-level reasoning_effort, "" when absent
 	updatedAt    time.Time
 	messageCount int64
 	directory    string
@@ -350,9 +351,13 @@ func parseSessionSummary(c sessionCandidate) (sessionSummaryFile, bool, error) {
 	if cwd != nil {
 		project = *cwd
 	}
+	effort := ""
+	if e := sessionNonEmpty(root.get("reasoning_effort")); e != nil {
+		effort = *e
+	}
 	return sessionSummaryFile{
 		id: *id, title: title, projectName: usage.ProjectDisplayName(project), cwd: cwd,
-		model: sessionNonEmpty(root.get("current_model_id")), updatedAt: updated,
+		model: sessionNonEmpty(root.get("current_model_id")), effort: effort, updatedAt: updated,
 		messageCount: messages, directory: dir,
 	}, true, nil
 }

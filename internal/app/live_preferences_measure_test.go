@@ -3,11 +3,11 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/licoy/quosparr/internal/personal"
 	"strings"
 	"testing"
 
 	"github.com/licoy/quosparr/internal/grok"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/store"
 )
@@ -29,10 +29,10 @@ func BenchmarkLivePreferencesCallback(b *testing.B) {
 			}
 			g := newGrokBridge(grok.NewModule(st), p, nil)
 			g.reload(false)
-			svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Grok: g})
+			svc := runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}, Preferences: p, Grok: g})
 			defer svc.Close()
 			rt := &liveApp{svc: svc, grok: g, reset: newResetBridge(nil, p, nil)}
-			settings := NewSettings(nil, System{Features: personal.Features{Grok: true}}, nil)
+			settings := NewSettings(nil, System{Features: personal.Features{Grok: true, Claude: true}}, nil)
 			settings.prefs = p
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {

@@ -18,6 +18,8 @@ func detailTitle(l l10n.Localizer, m store.Module) string {
 		return l.Text(l10n.KeyApiCost)
 	case store.ModuleQuotaEstimate:
 		return l.Text(l10n.KeyQuotaEstimate)
+	case store.ModuleSpeedAnalysis:
+		return tx(l, xSpeedTitle)
 	}
 	return ""
 }
@@ -33,7 +35,7 @@ func (a *App) closeDetail() {
 // hairline and the page body. Unknown pages fall back to the main page.
 func (a *App) panelDetailPage(c *ui.Context, l l10n.Localizer, prefs store.Preferences, snap runway.Snapshot, acts PanelActions) {
 	switch a.panelState.detail {
-	case detailAccounts, store.ModuleResetCredits, store.ModuleAPICost, store.ModuleQuotaEstimate:
+	case detailAccounts, store.ModuleResetCredits, store.ModuleAPICost, store.ModuleQuotaEstimate, store.ModuleSpeedAnalysis:
 	default:
 		a.panelState.detail = ""
 		a.panelMainPage(c, l, prefs, snap, acts)

@@ -96,6 +96,12 @@ enum L10nKey: String, CaseIterable, Sendable {
     case widgetDataOld
     case widgetNoData
     case widgetOverviewTitle
+    case widgetProviderBoth
+    case widgetProviderClaude
+    case widgetProviderCodex
+    case widgetProviderCodexClaude
+    case widgetProviderGrok
+    case widgetProviderGrokClaude
     case widgetRemaining
     case widgetResetCredits
     case widgetResetScheduleAwaitingConfirmation
@@ -136,6 +142,12 @@ extension L10n {
         .tokens: "Tokens",
         .widgetAllDevices: "All devices",
         .widgetBalance: "Balance",
+        .widgetProviderBoth: "Codex + Grok",
+        .widgetProviderClaude: "Claude",
+        .widgetProviderCodex: "Codex",
+        .widgetProviderCodexClaude: "Codex + Claude",
+        .widgetProviderGrok: "Grok",
+        .widgetProviderGrokClaude: "Grok + Claude",
         .widgetCost: "API equivalent",
         .widgetDataCorrupt: "Widget data is damaged. Refresh Quosparr.",
         .widgetDataOld: "Data is old",
@@ -180,6 +192,12 @@ extension L10n {
         .tokens: "Tokens",
         .widgetAllDevices: "所有设备",
         .widgetBalance: "余额",
+        .widgetProviderBoth: "Codex + Grok",
+        .widgetProviderClaude: "Claude",
+        .widgetProviderCodex: "Codex",
+        .widgetProviderCodexClaude: "Codex + Claude",
+        .widgetProviderGrok: "Grok",
+        .widgetProviderGrokClaude: "Grok + Claude",
         .widgetCost: "API 等价成本",
         .widgetDataCorrupt: "组件数据已损坏，请刷新 Quosparr。",
         .widgetDataOld: "数据已过期",
@@ -224,6 +242,12 @@ extension L10n {
         .tokens: "Tokens",
         .widgetAllDevices: "所有裝置",
         .widgetBalance: "餘額",
+        .widgetProviderBoth: "Codex + Grok",
+        .widgetProviderClaude: "Claude",
+        .widgetProviderCodex: "Codex",
+        .widgetProviderCodexClaude: "Codex + Claude",
+        .widgetProviderGrok: "Grok",
+        .widgetProviderGrokClaude: "Grok + Claude",
         .widgetCost: "API 等价成本",
         .widgetDataCorrupt: "小工具資料已損壞，請重新整理 Quosparr。",
         .widgetDataOld: "資料已過期",
@@ -268,6 +292,12 @@ extension L10n {
         .tokens: "Tokens",
         .widgetAllDevices: "모든 기기",
         .widgetBalance: "잔액",
+        .widgetProviderBoth: "Codex + Grok",
+        .widgetProviderClaude: "Claude",
+        .widgetProviderCodex: "Codex",
+        .widgetProviderCodexClaude: "Codex + Claude",
+        .widgetProviderGrok: "Grok",
+        .widgetProviderGrokClaude: "Grok + Claude",
         .widgetCost: "API 환산",
         .widgetDataCorrupt: "위젯 데이터가 손상되었습니다. Quosparr를 새로고침하세요.",
         .widgetDataOld: "데이터가 오래됨",
@@ -312,6 +342,12 @@ extension L10n {
         .tokens: "Tokens",
         .widgetAllDevices: "すべてのデバイス",
         .widgetBalance: "残高",
+        .widgetProviderBoth: "Codex + Grok",
+        .widgetProviderClaude: "Claude",
+        .widgetProviderCodex: "Codex",
+        .widgetProviderCodexClaude: "Codex + Claude",
+        .widgetProviderGrok: "Grok",
+        .widgetProviderGrokClaude: "Grok + Claude",
         .widgetCost: "API 換算",
         .widgetDataCorrupt: "ウィジェットデータが壊れています。Quosparr を更新してください。",
         .widgetDataOld: "データが古いです",
@@ -356,6 +392,12 @@ extension L10n {
         .tokens: "Tokens",
         .widgetAllDevices: "Все устройства",
         .widgetBalance: "Баланс",
+        .widgetProviderBoth: "Codex + Grok",
+        .widgetProviderClaude: "Claude",
+        .widgetProviderCodex: "Codex",
+        .widgetProviderCodexClaude: "Codex + Claude",
+        .widgetProviderGrok: "Grok",
+        .widgetProviderGrokClaude: "Grok + Claude",
         .widgetCost: "Эквивалент API",
         .widgetDataCorrupt: "Данные виджета повреждены. Обновите Quosparr.",
         .widgetDataOld: "Данные устарели",
@@ -400,6 +442,12 @@ extension L10n {
         .tokens: "Tokens",
         .widgetAllDevices: "Tous les appareils",
         .widgetBalance: "Solde",
+        .widgetProviderBoth: "Codex + Grok",
+        .widgetProviderClaude: "Claude",
+        .widgetProviderCodex: "Codex",
+        .widgetProviderCodexClaude: "Codex + Claude",
+        .widgetProviderGrok: "Grok",
+        .widgetProviderGrokClaude: "Grok + Claude",
         .widgetCost: "Équivalent API",
         .widgetDataCorrupt: "Les données du widget sont endommagées. Actualisez Quosparr.",
         .widgetDataOld: "Données anciennes",

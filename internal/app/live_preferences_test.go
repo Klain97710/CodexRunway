@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"github.com/licoy/quosparr/internal/personal"
 	"reflect"
 	"sync/atomic"
 	"testing"
@@ -12,6 +11,7 @@ import (
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/codexapi"
 	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/resettoday"
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/sessions"
@@ -29,7 +29,7 @@ func quietLivePreferences() store.Preferences {
 func TestLivePreferenceBurstClosesWithLatestValue(t *testing.T) {
 	p := quietLivePreferences()
 	g := newGrokBridge(nil, p, nil)
-	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Grok: g})
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}, Preferences: p, Grok: g})
 	defer svc.Close()
 	rt := &liveApp{svc: svc, grok: g, reset: newResetBridge(nil, p, nil)}
 	g.mu.Lock()
@@ -89,12 +89,19 @@ func TestLiveRefreshUsesLatestUIProvider(t *testing.T) {
 	e := newEnv(t, nil)
 	p := quietLivePreferences()
 	e.s.prefs = p
+	// The Grok dispatch is a full refresh, which covers Codex too and loads
+	// the credential afresh; only the Codex section refresh may reuse the
+	// cached one, so a cached load tells the two dispatches apart.
 	var codexLoads atomic.Int32
 	g := newGrokBridge(nil, p, nil)
-	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Grok: g, Sources: runway.Sources{LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) {
-		codexLoads.Add(1)
-		return codex.Auth{}, errors.New("unexpected Codex refresh")
-	}}})
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}, Preferences: p, Grok: g, Sources: runway.Sources{
+		LoadValidAuth: func(_ context.Context, preferCached bool, _ *codex.Auth) (codex.Auth, error) {
+			if preferCached {
+				codexLoads.Add(1)
+			}
+			return codex.Auth{}, errors.New("signed out")
+		},
+	}})
 	defer svc.Close()
 	rt := &liveApp{svc: svc, grok: g, reset: newResetBridge(e.s, p, nil)}
 	e.s.OnChange(func() { rt.pushPreferences(e.s) })
@@ -102,7 +109,7 @@ func TestLiveRefreshUsesLatestUIProvider(t *testing.T) {
 	// follow the UI's Grok selection rather than the service's old Codex value.
 	g.mu.Lock()
 	e.s.SetSelectedProvider(store.ProviderGrok)
-	rt.panelActions(e.s).RefreshSection(runway.SectionQuota)
+	rt.panelActions(e.s).RefreshSection(runway.SectionResetCredits)
 	g.mu.Unlock()
 	rt.preferenceWork.idle.Wait()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -128,7 +135,7 @@ func TestLiveRefreshUsesLatestUICostRange(t *testing.T) {
 	e.s.prefs = p
 	requested := make(chan usage.Window, 2)
 	g := newGrokBridge(nil, p, nil)
-	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Grok: g, Sources: runway.Sources{
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}, Preferences: p, Grok: g, Sources: runway.Sources{
 		LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) {
 			return codex.APIKeyAuth("synthetic-test"), nil
 		},
@@ -182,7 +189,7 @@ func TestPendingCodexSectionsAfterProviderSwitch(t *testing.T) {
 				resetReads.Add(1)
 				return nil, errors.New("synthetic feed error")
 			}
-			svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Grok: g, ResetToday: reset, Sources: runway.Sources{
+			svc := runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}, Preferences: p, Grok: g, ResetToday: reset, Sources: runway.Sources{
 				LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) {
 					codexReads.Add(1)
 					return codex.Auth{}, errors.New("Codex refresh is not supported by selected provider")

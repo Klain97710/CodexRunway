@@ -79,10 +79,11 @@ struct RunwayQuotaRow: View {
 struct RunwayProviderLabel: View {
     var provider: RunwayProvider
     var plan: String?
+    var l10n: L10n = .system
 
     var body: some View {
         HStack(spacing: 5) {
-            Text(provider == .codex ? "Codex" : "Grok")
+            Text(providerName(provider, l10n: l10n))
                 .font(.caption.weight(.bold))
             if let plan, !plan.isEmpty {
                 Text(plan)
@@ -211,12 +212,23 @@ extension RunwayWidgetProviderSnapshot {
     }
 }
 
+func providerName(_ provider: RunwayProvider, l10n: L10n) -> String {
+    switch provider {
+    case .codex: l10n.text(.widgetProviderCodex)
+    case .grok: l10n.text(.widgetProviderGrok)
+    case .claude: l10n.text(.widgetProviderClaude)
+    }
+}
+
 extension RunwayWidgetProviderScope {
-    var label: String {
+    func label(l10n: L10n) -> String {
         switch self {
-        case .codex: "Codex"
-        case .grok: "Grok"
-        case .both: "Codex + Grok"
+        case .codex: l10n.text(.widgetProviderCodex)
+        case .grok: l10n.text(.widgetProviderGrok)
+        case .claude: l10n.text(.widgetProviderClaude)
+        case .both: l10n.text(.widgetProviderBoth)
+        case .codexClaude: l10n.text(.widgetProviderCodexClaude)
+        case .grokClaude: l10n.text(.widgetProviderGrokClaude)
         }
     }
 }

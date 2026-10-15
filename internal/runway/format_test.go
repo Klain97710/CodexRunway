@@ -121,6 +121,31 @@ func TestResetShortLabel(t *testing.T) {
 	}
 }
 
+func TestResetExactTime(t *testing.T) {
+	loc := time.FixedZone("x", 8*3600)
+	now := time.Date(2026, 10, 14, 10, 0, 0, 0, loc)
+	at := time.Date(2026, 10, 20, 14, 30, 0, 0, loc)
+	for lang, want := range map[l10n.Language]string{
+		l10n.English:            "Oct 20 14:30",
+		l10n.SimplifiedChinese:  "10月20日 14:30",
+		l10n.TraditionalChinese: "10月20日 14:30",
+		l10n.Japanese:           "10月20日 14:30",
+		l10n.Korean:             "10월 20일 14:30",
+		l10n.Russian:            "20 окт. 14:30",
+		l10n.French:             "20 oct. 14:30",
+	} {
+		if got := ResetExactTime(at, now, lang, loc); got != want {
+			t.Errorf("%v: %q, want %q", lang, got, want)
+		}
+	}
+	if got := ResetExactTime(time.Date(2026, 10, 14, 21, 5, 0, 0, loc), now, l10n.English, loc); got != "21:05" {
+		t.Errorf("same day: %q", got)
+	}
+	if got := ResetExactTime(time.Date(2027, 1, 2, 3, 4, 0, 0, loc), now, l10n.SimplifiedChinese, loc); got != "2027年1月2日 03:04" {
+		t.Errorf("next year: %q", got)
+	}
+}
+
 func TestScheduledLabelAndCountdown(t *testing.T) {
 	loc := time.UTC
 	start := time.Date(2026, 9, 7, 1, 5, 0, 0, loc)

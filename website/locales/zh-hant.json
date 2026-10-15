@@ -1,0 +1,144 @@
+{
+  "meta": {
+    "title": "Quosparr：在選單列查看 Codex、Claude Code 與 Grok 額度",
+    "description": "Quosparr 是免費的原生選單列 / 系統匣應用程式，支援 macOS、Windows 與 Linux，顯示 Codex、Claude Code 與 Grok 訂閱額度、reset credits、API 等價成本和本機工作階段。"
+  },
+  "nav": {
+    "features": "功能",
+    "screenshots": "截圖",
+    "privacy": "隱私",
+    "download": "下載"
+  },
+  "ui": {
+    "skip": "跳至主要內容",
+    "language": "語言",
+    "themeSystem": "主題：跟隨系統",
+    "themeLight": "主題：淺色",
+    "themeDark": "主題：深色"
+  },
+  "hero": {
+    "etymology": "名稱取自 <b>Quo</b>ta（額度）+ <b>Sparr</b>ow（麻雀）",
+    "tagline": "一隻停在選單列裡的小麻雀，替你守著 Codex、Claude 與 Grok 的額度。",
+    "description": "適用於 macOS、Windows、Linux 的原生選單列 / 系統匣應用程式。訂閱額度、reset credits、API 等價成本與本機工作階段一目了然，三個供應商各自獨立管理帳號。",
+    "download": "下載",
+    "downloadFor": "下載 {os} 版",
+    "source": "在 GitHub 查看",
+    "license": "免費開源"
+  },
+  "features": {
+    "title": "功能",
+    "lead": "Codex、Claude Code 與 Grok 各有獨立分頁，額度、成本和帳號依供應商分開管理。",
+    "codex": [
+      "5 小時、每週與附加視窗的剩餘額度，以及帳號、訂閱方案和到期時間",
+      "reset credits 數量、狀態與到期時間",
+      "推算本週額度並與往週比較，方便察覺額度縮水",
+      "切換帳號、查看最近工作階段，並修復本機工作階段索引"
+    ],
+    "claude": [
+      "Claude Code 訂閱用量：5 小時視窗、7 天視窗、按模型的每週額度和額外用量",
+      "從本機工作階段記錄統計 Token 用量、API 等價成本、最近工作階段和輸出速率",
+      "匯入並切換訂閱帳號，切換時保留 MCP 權杖"
+    ],
+    "grok": [
+      "包含額度及 Build / Imagine / Chat 拆分、預付餘額和隨需用量",
+      "多個 OAuth / SuperGrok 帳號，隔離登入，明確切換",
+      "本機 Grok CLI 記錄中的最近工作階段"
+    ],
+    "commonTitle": "三個供應商通用",
+    "common": [
+      { "title": "選單列一目了然", "text": "跟隨目前分頁，或在選單列同時顯示最多兩個供應商。" },
+      { "title": "桌面浮動視窗", "text": "三平台皆可使用的置頂浮動視窗，最多顯示三個供應商，提供膠囊、卡片、圓環、電池四種樣式，可調整不透明度並鎖定位置。" },
+      { "title": "精簡主面板", "text": "在主面板隱藏不用的供應商，只剩一家時不再顯示供應商分頁。" },
+      { "title": "API 等價成本", "text": "今天、本週期、上週期、本月或自訂範圍，依本機記錄計算。" },
+      { "title": "Token 圖表", "text": "年度用量熱度圖、折線圖或長條圖，可依日、依週或累計檢視。" },
+      { "title": "外觀與語言", "text": "淺色、深色或跟隨系統，支援七種語言。" },
+      { "title": "顯示字體", "text": "主面板與設定視窗可使用系統字體，或本機已安裝的任何字體。" },
+      { "title": "更新與桌面小工具", "text": "三個平台皆內建經簽章驗證的線上更新，macOS 14+ 提供桌面小工具。" },
+      { "title": "網路代理", "text": "跟隨系統，或使用 HTTP、SOCKS5，代理密碼儲存在系統憑證庫中。" }
+    ]
+  },
+  "shots": {
+    "title": "截圖",
+    "note": "截圖展示的是 v1 在 macOS 與 Windows 上的介面。",
+    "main": "主面板",
+    "cost": "API 等價成本",
+    "estimate": "訂閱額度推算",
+    "accounts": "服務商帳號",
+    "display": "顯示設定",
+    "windows": "Windows 設定與 Grok 面板"
+  },
+  "privacy": {
+    "title": "隱私",
+    "lead": "Quosparr 讀取本機 CLI 檔案，只存取各供應商自己的介面、公開的狀態與價格來源，以及用於更新的 GitHub。Quosparr 沒有自己的伺服器。",
+    "items": [
+      { "title": "獨立的資料目錄", "text": "非密鑰的衍生資料儲存在 ~/.quosparr，不會在 ~/.codex 寫入應用程式快取。" },
+      { "title": "憑證留在本機", "text": "託管帳號副本僅限目前使用者存取，帳號索引不包含 token。" },
+      { "title": "記錄中沒有 token", "text": "token 與 API Key 不會出現在記錄、自我檢查輸出或 issue 範本中。" },
+      { "title": "成本在本機計算", "text": "API 等價成本來自本機工作階段記錄，不會上傳工作階段內容。" },
+      { "title": "謹慎寫入", "text": "官方登入檔案只在重新整理 token 或你確認切換時修改；修復工作階段前會先備份索引。" }
+    ]
+  },
+  "download": {
+    "title": "下載",
+    "lead": "依系統與 CPU 架構選擇安裝包。各安裝包都隨附 SQLite 執行庫，首次啟動不會額外下載。",
+    "latest": "最新版本",
+    "released": "發布於",
+    "recommended": "建議用於目前裝置",
+    "macReq": "需要 macOS 12 或更新版本，桌面小工具需要 macOS 14+。",
+    "macNote": "應用程式為 ad-hoc signed，尚未經過公證。若提示無法驗證開發者，請在 Quosparr.app 上按右鍵並選擇「打開」，或前往「系統設定 → 隱私權與安全性」點選「仍要打開」。",
+    "macFix": "若提示應用程式已損毀，將其移到「應用程式」後執行：",
+    "winReq": "Windows 10 或 11",
+    "winPortable": "免安裝版",
+    "winSetup": "安裝版",
+    "winNote": "安裝版為目前使用者安裝到 %LOCALAPPDATA%\\Programs\\Quosparr，不需要系統管理員權限。",
+    "portNote": "免安裝版不需安裝：解壓縮後在任何可寫入的資料夾直接執行 <code>Quosparr.exe</code>。Windows 11 可在檔案總管中直接解壓縮 .tar.gz，Windows 10 可在命令提示字元執行 <code>tar -xf</code> 加檔名。設定與資料仍保存在使用者資料夾的 <code>.quosparr</code> 中。",
+    "linuxReq": "需要 GTK3、AppIndicator、支援系統匣的桌面，以及可用的 Secret Service 工作階段（如 GNOME Keyring 或 KWallet）。",
+    "linuxNote": "以套件管理員安裝 .deb；或將 <code>install.sh</code> 放在 .tar.gz 同一目錄，執行 <code>sh install.sh</code> 安裝到 <code>~/.local</code>。",
+    "allReleases": "所有版本",
+    "checksums": "SHA256 校驗碼",
+    "upgrade": "之前使用過 CodexRunway？",
+    "copy": "複製",
+    "copied": "已複製"
+  },
+  "panel": {
+    "caption": "示例資料 · 點按分頁切換供應商",
+    "providers": "供應商",
+    "privacy": "隱私模式",
+    "updates": "檢查更新",
+    "refresh": "重新整理",
+    "quota": "配額",
+    "fiveHour": "5小時",
+    "weekly": "每週",
+    "left": "{n}% 剩餘",
+    "used": "{n}% 已用",
+    "burnRate": "消耗速度",
+    "exhaustsIn": "預計耗盡於",
+    "projected": "重置時預計",
+    "nextReset": "下次重置於：",
+    "resetSwitch": "相對時間 / 精準時間",
+    "validUntil": "訂閱有效期至",
+    "tokenUsage": "Token 用量",
+    "daily": "每日",
+    "weeklyChart": "每週",
+    "total": "累計",
+    "official": "官方截至 {date}",
+    "speed": "速率分析",
+    "ttft": "首字",
+    "basis": "基於最近 {n} 個工作階段",
+    "details": "顯示詳細資料",
+    "apiCost": "API 等價成本",
+    "apiEquivalent": "API 等價",
+    "extraUsage": "額外用量",
+    "grokIncluded": "包含額度",
+    "grokWeekly": "週度包含額度",
+    "settings": "設定",
+    "quit": "退出"
+  },
+  "footer": {
+    "source": "原始碼",
+    "releases": "版本發布",
+    "issues": "問題回報",
+    "license": "授權條款",
+    "disclaimer": "Quosparr 是獨立專案，與 OpenAI、Anthropic、xAI 無關聯。"
+  }
+}

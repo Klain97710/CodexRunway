@@ -44,9 +44,9 @@ func TestExportSettingsSidebarReview(t *testing.T) {
 						u.view(c)
 						return
 					}
-					applyTheme(c)
+					applyThemeColor(c, u.s.prefs.ThemeColor, u.s.prefs.FontFamily)
 					u.shell(c, func(c *ui.Context) {
-						ui.Scroll(c).Grow(1).Padding(16).Gap(14).Children(func() { sidebarAccountFixture(c, u, snap.Accounts.Sidebar) })
+						ui.Scroll(c).Grow(1).Padding(4, 24, 24, 24).Gap(10).Children(func() { sidebarAccountFixture(c, u, snap.Accounts.Sidebar) })
 					})
 				}, settingsWidth, settingsHeight)
 				view.SetTitleBar(ui.TitleBar{Height: 40, Left: 80})
@@ -69,8 +69,8 @@ func sidebarAccountFixture(c *ui.Context, u *settingsUI, rows []codex.ManagedAcc
 	l := u.L()
 	f := accountFormOf(u)
 	accountProviderHeader(c, u, f)
-	accountToolbar(c, u, f, accountCountTitle(l, len(rows)), func(*ui.Menu) {}, func() string { return "" }, func() string { return "" })
-	for _, account := range rows {
-		renderCodexSettingsRow(c, u, f, nil, account, "ada", u.s.Prefs().AccountPrivacyModeEnabled)
-	}
+	accountToolbar(c, u, f, accountCountTitle(l, len(rows)), accountFolder{"Codex", "/codex"}, func(*ui.Menu) {}, func() string { return "" }, func() string { return "" })
+	accountRows(c, len(rows), func(i int) {
+		renderCodexSettingsRow(c, u, f, nil, rows[i], "ada", u.s.Prefs().AccountPrivacyModeEnabled)
+	})
 }

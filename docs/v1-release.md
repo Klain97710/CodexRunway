@@ -64,6 +64,8 @@ Windows 将对应架构的 SQLite DLL 嵌入 EXE，安装器和更新归档不�
 
 普通 CI 在 Windows 与 Linux 的 amd64、arm64 原生运行器上执行完整 Go 测试、构建开发安装包、核对载荷，并加载 SQLite 执行参数化查询；Windows 在一次性 Actions VM 内验证静默安装、临时 HOME 下的 `--self-check` 和卸载，并将 EXE 单独复制到空目录，通过 `QUOSPARR_DEV_VERIFY_SQLITE=1` 检查内嵌库解包和真实 SQLite 查询，删除缓存后再检查离线重建；Linux 用 `dpkg-deb` 解包后运行相同基础诊断；两者均不启动桌面界面、不登录真实账号；macOS 继续运行全量 race 和六目标交叉构建
 
+版本标签的 Release 不重跑测试，`ci-gate` 等待同一提交的 push CI 完成，通过后才签名打包；推送 main 的 CI 按提交分组、不被后续推送取消。标签须指向已推送到 main 的提交；CI 失败时先重跑 CI 的失败 job，再重跑 Release
+
 `V1_DEVELOPMENT_PACKAGE=1` 明确关闭更新器，不需要发布密钥且不生成更新清单；开发包也必须通过可执行文件 / SQLite 架构、资源完整性和安装器结构校验，Linux 额外逐文件比对 deb 与归档载荷；`verify-payload` 仅验证包内容，不能代替正式发布的 `verify` 签名门禁；默认正式构建缺少 `MYGO_UPDATE_PRIVATE_KEY` 时仍直接失败
 
 本地生成安装包和交叉编译不能证明目标系统原生步骤已通过，修改后的 Actions 必须在上传同一版本代码后实际执行；这些自动检查也不能替代真实桌面的 OAuth、托盘、系统钥匙串、权限提示及升级验收

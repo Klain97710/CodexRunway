@@ -228,6 +228,47 @@ public struct RunwayWidgetSnapshot: Codable, Equatable, Sendable {
     public func provider(_ provider: RunwayProvider) -> RunwayWidgetProviderSnapshot? {
         providers.first { $0.provider == provider }
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, generatedAt, language, providers, resetToday
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try container.decode(Int.self, forKey: .schemaVersion)
+        generatedAt = try container.decode(Date.self, forKey: .generatedAt)
+        language = try container.decode(ResolvedLanguage.self, forKey: .language)
+        let loose = try container.decode([LooseProviderSnapshot].self, forKey: .providers)
+        providers = loose.compactMap(\.value).sorted { $0.provider.rawValue < $1.provider.rawValue }
+        resetToday = try container.decodeIfPresent(RunwayWidgetResetTodaySnapshot.self, forKey: .resetToday)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(schemaVersion, forKey: .schemaVersion)
+        try container.encode(generatedAt, forKey: .generatedAt)
+        try container.encode(language, forKey: .language)
+        try container.encode(providers, forKey: .providers)
+        try container.encodeIfPresent(resetToday, forKey: .resetToday)
+    }
+}
+
+/// One provider block. An unknown provider name is skipped so a newer
+/// snapshot does not make the whole widget fail to decode.
+private struct LooseProviderSnapshot: Decodable {
+    var value: RunwayWidgetProviderSnapshot?
+
+    private enum Key: String, CodingKey { case provider }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: Key.self)
+        let name = try container.decode(String.self, forKey: .provider)
+        guard RunwayProvider(rawValue: name) != nil else {
+            value = nil
+            return
+        }
+        value = try RunwayWidgetProviderSnapshot(from: decoder)
+    }
 }
 
 public enum RunwayWidgetSnapshotStoreError: Error, Equatable {

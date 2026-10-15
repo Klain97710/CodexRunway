@@ -31,10 +31,11 @@ const (
 // line, the info/style/refresh controls, the mode picker and the chart.
 func panelToken(c *ui.Context, l l10n.Localizer, style store.ChartStyle, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState) {
 	grokView := snap.Provider == store.ProviderGrok
+	claudeView := snap.Provider == store.ProviderClaude
 	heat := snap.Codex.Heatmap
-	refreshing := snap.Refresh.Has(runway.SectionTokenHeatmap) || (grokView && snap.Grok.Refreshing)
+	refreshing := snap.Refresh.Has(runway.SectionTokenHeatmap) || (grokView && snap.Grok.Refreshing) || (claudeView && snap.Claude.Refreshing)
 	sectionBlock(c, first, func() {
-		tokenHeader(c, l, style, heat, !grokView, refreshing, sectionRefresh(acts, runway.SectionTokenHeatmap), st)
+		tokenHeader(c, l, style, heat, !grokView && !claudeView, refreshing, sectionRefresh(acts, runway.SectionTokenHeatmap), st)
 		panelChart(c, l, style, snap.Provider, heat, refreshing, st)
 	})
 }

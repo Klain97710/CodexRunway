@@ -249,7 +249,10 @@ func panelRecent(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, grok boo
 	busy := snap.Refresh.Has(runway.SectionRecentSessions)
 	items := snap.Codex.RecentSessions
 	refresh := sectionRefresh(acts, runway.SectionRecentSessions)
-	if grok {
+	if grok && snap.Provider == store.ProviderClaude {
+		busy, items = snap.Claude.Refreshing, snap.Claude.RecentSessions
+		refresh = sectionRefresh(acts, runway.SectionAPICost)
+	} else if grok {
 		busy, items = snap.Grok.Refreshing, snap.Grok.RecentSessions
 		refresh = sectionRefresh(acts, runway.SectionAPICost)
 	}
@@ -274,7 +277,11 @@ func recentRow(c *ui.Context, l l10n.Localizer, it sessions.Item, grok, first bo
 		ui.Row(c).Gap(8).Padding(7, 10).AlignItems(ui.Center).Children(func() {
 			ui.Box(c).Size(6, 6).Radius(3).Background(sessionDot(t, it.State, grok))
 			ui.Column(c).Gap(2).Grow(1).Basis(0).Children(func() {
-				ui.Text(c, it.Title).FontSize(fsCallout).FontWeight(500).SingleLine().Ellipsis("…")
+				title := it.Title
+				if title == "" {
+					title = l.Text(l10n.KeyUnknown)
+				}
+				ui.Text(c, title).FontSize(fsCallout).FontWeight(500).SingleLine().Ellipsis("…")
 				ui.Text(c, recentSubtitle(l, it, grok)).FontSize(fsCaption).TextColor(inkSecondary(t)).SingleLine().Ellipsis("…")
 			})
 			ui.Text(c, recentCost(it)).FontSize(fsCaption).FontFeatures("tnum").TextColor(inkSecondary(t)).SingleLine()

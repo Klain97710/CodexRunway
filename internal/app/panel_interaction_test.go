@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"github.com/licoy/quosparr/internal/personal"
 	"image/png"
 	"testing"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/resettoday"
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/store"
@@ -37,10 +37,7 @@ func TestPanelDetailNavigationAndProviderIsolation(t *testing.T) {
 	if a.panelState.detail != "" || !tt.HasText("Ada Lovelace") {
 		t.Fatal("back did not restore panel")
 	}
-	if err := tt.Click(l.Text(l10n.KeyProviderCodex)); err != nil {
-		t.Fatal(err)
-	}
-	if err := tt.ChooseMenuItem(l.Text(l10n.KeyProviderGrok)); err != nil {
+	if err := tt.Click(l.Text(l10n.KeyProviderGrok)); err != nil {
 		t.Fatal(err)
 	}
 	tt.Frame()
@@ -126,13 +123,13 @@ func TestPanelPrivacyChangeUpdatesIdentity(t *testing.T) {
 }
 
 func TestAccountMenuOpensEditorAndCancelClearsSensitiveDraft(t *testing.T) {
-	s := NewSettings(store.New(store.NewMemoryDomain(), nil), System{Features: personal.Features{Grok: true}}, nil)
+	s := NewSettings(store.New(store.NewMemoryDomain(), nil), System{Features: personal.Features{Grok: true, Claude: true}}, nil)
 	s.prefs = store.DefaultPreferences()
 	s.prefs.Language = store.LanguageEnglish
 	s.applyLocale()
 	u := newSettingsUI(s, SettingsOptions{})
 	f := accountFormOf(u)
-	rt := &liveApp{svc: runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: s.Prefs()})}
+	rt := &liveApp{svc: runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}, Preferences: s.Prefs()})}
 	t.Cleanup(rt.svc.Close)
 	account := codex.ManagedAccount{ID: "fixture", DisplayName: "Private account", Email: "private@example.com", Alias: "Personal"}
 	tt := ui.NewTester(func(c *ui.Context) {
@@ -165,7 +162,10 @@ func TestAccountMenuOpensEditorAndCancelClearsSensitiveDraft(t *testing.T) {
 func TestPanelBackgroundOnlyUsesAvailableMaterial(t *testing.T) {
 	var got ui.Color
 	style := store.PanelBackgroundTranslucent
-	tt := ui.NewTester(func(c *ui.Context) { got = applyPanelTheme(c, style).Background; ui.Box(c).Fill().Background(got) }, 100, 100)
+	tt := ui.NewTester(func(c *ui.Context) {
+		got = applyPanelTheme(c, style, "", "").Background
+		ui.Box(c).Fill().Background(got)
+	}, 100, 100)
 	tt.SetVibrancy(true)
 	if got != ui.Transparent {
 		t.Fatal("translucent material was painted opaque")
@@ -223,9 +223,9 @@ func TestViewsKeepTranslatedControlsWithinWindow(t *testing.T) {
 			u := newSettingsUI(a.settings, SettingsOptions{})
 			settings := ui.NewTester(u.view, settingsWidth, settingsHeight)
 			for _, tab := range settingsTabs {
-				r, ok := settings.Find(u.L().Text(tab.key()))
+				r, ok := settings.Find(tab.title(u.L()))
 				if !ok || r.X < 0 || r.X+r.W > settingsWidth {
-					t.Fatalf("settings tab %s overflow: %+v", tab.key(), r)
+					t.Fatalf("settings tab %s overflow: %+v", tab.title(u.L()), r)
 				}
 			}
 		})
@@ -288,7 +288,7 @@ func TestChartHoverTipInkStaysOpaqueOverMaterial(t *testing.T) {
 	const detail = "Oct 12 · 1.2M tokens"
 	var fill ui.Color
 	tt := ui.NewTester(func(c *ui.Context) {
-		th := applyPanelTheme(c, store.PanelBackgroundTranslucent)
+		th := applyPanelTheme(c, store.PanelBackgroundTranslucent, "", "")
 		fill, _ = inverseColors(th)
 		ui.Column(c).Fill().AlignItems(ui.Center).Justify(ui.Center).Children(func() {
 			chartHoverTip(c, ui.Box(c).Size(12, 12).Background(th.Accent), detail)

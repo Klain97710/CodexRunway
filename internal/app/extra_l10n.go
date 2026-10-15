@@ -35,12 +35,299 @@ const (
 	xPanelPlaceholder          textKey = "panelPlaceholder"
 	xNotAvailableYet           textKey = "notAvailableYet"
 	xProxyLocalSaveWarning     textKey = "proxyPasswordNotStored"
+	xThemeColor                textKey = "themeColor"
+	xColorBrown                textKey = "themeColorBrown"
+	xColorBlue                 textKey = "themeColorBlue"
+	xColorPurple               textKey = "themeColorPurple"
+	xColorPink                 textKey = "themeColorPink"
+	xColorRed                  textKey = "themeColorRed"
+	xColorOrange               textKey = "themeColorOrange"
+	xColorYellow               textKey = "themeColorYellow"
+	xColorGreen                textKey = "themeColorGreen"
+	xColorGraphite             textKey = "themeColorGraphite"
+	xColorCustom               textKey = "themeColorCustom"
+	xFloatingSection           textKey = "floatingWindowSection"
+	xFloatingEnabled           textKey = "floatingWindow"
+	xFloatingEnabledHint       textKey = "floatingWindowDescription"
+	xFloatingStyle             textKey = "floatingWindowStyle"
+	xFloatingStyleCapsule      textKey = "floatingWindowStyleCapsule"
+	xFloatingStyleCard         textKey = "floatingWindowStyleCard"
+	xFloatingStyleRings        textKey = "floatingWindowStyleRings"
+	xFloatingStyleBattery      textKey = "floatingWindowStyleBattery"
+	xFloatingProviders         textKey = "floatingWindowProviders"
+	xFloatingOpacity           textKey = "floatingWindowOpacity"
+	xFloatingLocked            textKey = "floatingWindowLocked"
+	xFloatingLockedHint        textKey = "floatingWindowLockedDescription"
+	xFloatingFullScreen        textKey = "floatingWindowOverFullScreen"
+	xFloatingFullScreenHint    textKey = "floatingWindowOverFullScreenDescription"
+	xFloatingHide              textKey = "floatingWindowHide"
+	xFloatingWayland           textKey = "floatingWindowWayland"
+	xDisplayFont               textKey = "displayFont"
+	xDisplayFontHint           textKey = "displayFontDescription"
+	xDisplayFontDefault        textKey = "displayFontDefault"
+	xPanelProviders            textKey = "mainPanelProviders"
+	xPanelProvidersHint        textKey = "mainPanelProvidersDescription"
+	xPanelProvidersAll         textKey = "mainPanelProvidersAll"
+	xResetTimeFormat           textKey = "quotaResetTimeFormat"
+	xResetTimeFormatHint       textKey = "quotaResetTimeFormatDescription"
+	xResetTimeRelative         textKey = "quotaResetTimeRelative"
+	xResetTimeExact            textKey = "quotaResetTimeExact"
+	xProxyTestURL              textKey = "networkProxyTestURL"
+	xProxyTestURLInvalid       textKey = "networkProxyTestURLInvalid"
+	xSpeedTitle                textKey = "speedAnalysis"
+	xSpeedModuleDescription    textKey = "speedAnalysisDescription"
+	xSpeedInfoTTFT             textKey = "speedAnalysisInfoTTFT"
+	xSpeedInfoNoTTFT           textKey = "speedAnalysisInfoNoTTFT"
+	xSpeedInfoOutput           textKey = "speedAnalysisInfoOutput"
+	xSpeedInfoSource           textKey = "speedAnalysisInfoSource"
+	xSpeedTTFT                 textKey = "speedAnalysisTTFT"
+	xSpeedOutput               textKey = "speedAnalysisOutput"
+	xSpeedModel                textKey = "speedAnalysisModel"
+	xSpeedCalls                textKey = "speedAnalysisCalls"
+	xSpeedByModel              textKey = "speedAnalysisByModel"
+	xSpeedBasis                textKey = "speedAnalysisBasis"
+	xSpeedBasisOne             textKey = "speedAnalysisBasisOne"
+	xSpeedLatest               textKey = "speedAnalysisLatest"
+	xSpeedEmpty                textKey = "speedAnalysisEmpty"
+	xSpeedRange                textKey = "speedAnalysisRange"
+	xSpeedTierFast             textKey = "speedAnalysisTierFast"
+	xSpeedTierStandard         textKey = "speedAnalysisTierStandard"
+	xSpeedInfoTier             textKey = "speedAnalysisInfoTier"
+	xLegacyRunningTitle        textKey = "legacyRunningTitle"
+	xLegacyRunningDetail       textKey = "legacyRunningDetail"
+	xLegacyRunningManual       textKey = "legacyRunningManual"
+	xLegacyQuitAndContinue     textKey = "legacyQuitAndContinue"
+	xLegacyQuitFailed          textKey = "legacyQuitFailed"
 )
 
 // extraTexts is indexed by textKey, then by position in l10n.Languages():
 // English, Simplified Chinese, Traditional Chinese, Korean, Japanese,
 // Russian, French.
 var extraTexts = map[textKey][7]string{
+	xThemeColor: {
+		"Theme color", "主题颜色", "主題顏色", "테마 색상", "テーマカラー", "Цвет темы", "Couleur du thème",
+	},
+	xColorBrown: {
+		"Brown (default)", "棕色（默认）", "棕色（預設）", "갈색(기본)", "ブラウン（デフォルト）", "Коричневый (по умолчанию)", "Brun (par défaut)",
+	},
+	xColorBlue:     {"Blue", "蓝色", "藍色", "파란색", "ブルー", "Синий", "Bleu"},
+	xColorPurple:   {"Purple", "紫色", "紫色", "보라색", "パープル", "Фиолетовый", "Violet"},
+	xColorPink:     {"Pink", "粉色", "粉紅色", "분홍색", "ピンク", "Розовый", "Rose"},
+	xColorRed:      {"Red", "红色", "紅色", "빨간색", "レッド", "Красный", "Rouge"},
+	xColorOrange:   {"Orange", "橙色", "橙色", "주황색", "オレンジ", "Оранжевый", "Orange"},
+	xColorYellow:   {"Yellow", "黄色", "黃色", "노란색", "イエロー", "Жёлтый", "Jaune"},
+	xColorGreen:    {"Green", "绿色", "綠色", "초록색", "グリーン", "Зелёный", "Vert"},
+	xColorGraphite: {"Graphite", "石墨色", "石墨色", "그래파이트", "グラファイト", "Графит", "Graphite"},
+	xColorCustom:   {"Custom", "自定义", "自訂", "사용자 지정", "カスタム", "Свой цвет", "Personnalisée"},
+	xFloatingSection: {
+		"Floating window", "桌面悬浮窗", "桌面浮動視窗", "플로팅 창", "フローティングウインドウ", "Плавающее окно", "Fenêtre flottante",
+	},
+	xFloatingEnabled: {
+		"Show floating window", "显示悬浮窗", "顯示浮動視窗", "플로팅 창 표시", "フローティングウインドウを表示", "Показывать плавающее окно", "Afficher la fenêtre flottante",
+	},
+	xFloatingEnabledHint: {
+		"Keeps the remaining quota on top of other windows. Click to open the main panel, drag to move it, right-click for more",
+		"置顶显示剩余额度；单击打开主面板，拖动可移动，右键查看更多选项",
+		"置頂顯示剩餘額度；按一下開啟主面板，拖曳可移動，按右鍵查看更多選項",
+		"남은 한도를 다른 창 위에 표시합니다. 클릭하면 메인 패널이 열리고, 드래그로 이동하며, 오른쪽 클릭으로 더 많은 옵션을 봅니다",
+		"残りの使用枠を最前面に表示します。クリックでメインパネルを開き、ドラッグで移動、右クリックでその他の操作",
+		"Показывает остаток лимита поверх других окон. Нажмите, чтобы открыть главную панель, перетащите, чтобы переместить, правый щелчок — другие действия",
+		"Garde le quota restant au-dessus des autres fenêtres. Cliquez pour ouvrir le panneau principal, faites glisser pour la déplacer, clic droit pour plus d’options",
+	},
+	xFloatingStyle: {
+		"Floating window style", "悬浮窗样式", "浮動視窗樣式", "플로팅 창 스타일", "フローティングウインドウのスタイル", "Стиль плавающего окна", "Style de la fenêtre flottante",
+	},
+	xFloatingStyleCapsule: {
+		"Capsule", "胶囊", "膠囊", "캡슐", "カプセル", "Капсула", "Capsule",
+	},
+	xFloatingStyleCard: {
+		"Card", "卡片", "卡片", "카드", "カード", "Карточка", "Carte",
+	},
+	xFloatingStyleRings: {
+		"Rings", "圆环", "圓環", "링", "リング", "Кольца", "Anneaux",
+	},
+	xFloatingStyleBattery: {
+		"Battery", "电池", "電池", "배터리", "バッテリー", "Батарея", "Batterie",
+	},
+	xFloatingProviders: {
+		"Floating window providers", "悬浮窗服务商", "浮動視窗服務商", "플로팅 창 공급자", "フローティングウインドウのプロバイダー", "Провайдеры в плавающем окне", "Fournisseurs de la fenêtre flottante",
+	},
+	xFloatingOpacity: {
+		"Opacity", "不透明度", "不透明度", "불투명도", "不透明度", "Непрозрачность", "Opacité",
+	},
+	xFloatingLocked: {
+		"Lock position", "锁定位置", "鎖定位置", "위치 고정", "位置を固定", "Закрепить положение", "Verrouiller la position",
+	},
+	xFloatingLockedHint: {
+		"Dragging no longer moves the floating window",
+		"锁定后拖动不会移动悬浮窗",
+		"鎖定後拖曳不會移動浮動視窗",
+		"고정하면 드래그해도 플로팅 창이 움직이지 않습니다",
+		"固定するとドラッグしてもフローティングウインドウは動きません",
+		"Перетаскивание больше не перемещает плавающее окно",
+		"Le glisser ne déplace plus la fenêtre flottante",
+	},
+	xFloatingFullScreen: {
+		"Show over full-screen apps", "全屏应用上方也显示", "全螢幕 App 上方也顯示", "전체 화면 앱 위에도 표시", "フルスクリーンのアプリの上にも表示", "Показывать поверх полноэкранных приложений", "Afficher au-dessus des apps en plein écran",
+	},
+	xFloatingFullScreenHint: {
+		"When off, the floating window steps aside while another app is full screen",
+		"关闭时，其他应用全屏期间悬浮窗自动让开",
+		"關閉時，其他 App 全螢幕期間浮動視窗會自動讓開",
+		"끄면 다른 앱이 전체 화면일 때 플로팅 창이 비켜 줍니다",
+		"オフのときは、ほかのアプリがフルスクリーンの間フローティングウインドウを隠します",
+		"Если выключено, плавающее окно скрывается, пока другое приложение в полноэкранном режиме",
+		"Désactivé, la fenêtre flottante s’efface tant qu’une autre app est en plein écran",
+	},
+	xFloatingHide: {
+		"Hide floating window", "隐藏悬浮窗", "隱藏浮動視窗", "플로팅 창 숨기기", "フローティングウインドウを隠す", "Скрыть плавающее окно", "Masquer la fenêtre flottante",
+	},
+	xFloatingWayland: {
+		"On Wayland, the desktop may not let apps stay on top or choose where their windows go",
+		"Wayland 桌面可能不允许应用置顶或指定窗口位置",
+		"Wayland 桌面可能不允許 App 置頂或指定視窗位置",
+		"Wayland 데스크톱에서는 앱이 항상 위에 표시되거나 창 위치를 지정하지 못할 수 있습니다",
+		"Wayland のデスクトップでは、アプリの最前面表示やウインドウ位置の指定ができない場合があります",
+		"В Wayland рабочий стол может не позволять приложениям оставаться поверх других окон или выбирать их положение",
+		"Sous Wayland, le bureau peut empêcher les apps de rester au premier plan ou de choisir la position de leurs fenêtres",
+	},
+	xDisplayFont: {
+		"Display font", "显示字体", "顯示字體", "표시 글꼴", "表示フォント", "Шрифт интерфейса", "Police d’affichage",
+	},
+	xDisplayFontHint: {
+		"Used by the main panel and settings; the menu bar keeps the system font",
+		"用于主面板和设置窗口，菜单栏保持系统字体",
+		"用於主面板和設定視窗，選單列保持系統字體",
+		"메인 패널과 설정 창에 적용되며 메뉴 막대는 시스템 글꼴을 유지합니다",
+		"メインパネルと設定ウインドウに適用され、メニューバーはシステムフォントのままです",
+		"Для главной панели и настроек; в строке меню остаётся системный шрифт",
+		"Pour le panneau principal et les réglages ; la barre des menus garde la police du système",
+	},
+	xDisplayFontDefault: {"Default", "默认", "預設", "기본값", "デフォルト", "По умолчанию", "Par défaut"},
+	xResetTimeFormat: {
+		"Next reset time", "下次重置时间格式", "下次重置時間格式", "다음 리셋 시간 형식", "次のリセット時刻の表示", "Время следующего сброса", "Heure de la prochaine réinit.",
+	},
+	xPanelProviders: {
+		"Main panel providers", "主面板服务商", "主面板服務商", "메인 패널 공급자", "メインパネルのプロバイダー", "Провайдеры главной панели", "Fournisseurs du panneau principal",
+	},
+	xPanelProvidersHint: {
+		"Hidden Grok and Claude stop refreshing quotas unless the status bar, floating window or a widget shows them.",
+		"隐藏的 Grok、Claude 不再刷新额度，除非状态栏、悬浮窗或桌面组件仍在显示。",
+		"隱藏的 Grok、Claude 不再重新整理額度，除非狀態列、浮動視窗或桌面小工具仍在顯示。",
+		"숨긴 Grok, Claude는 상태 막대, 플로팅 창 또는 위젯에 표시되지 않으면 사용량을 새로 고치지 않습니다.",
+		"非表示の Grok・Claude は、ステータスバー・フローティングウインドウ・ウィジェットに表示されない限り使用量を更新しません。",
+		"Скрытые Grok и Claude не обновляют лимиты, если их не показывают строка состояния, плавающее окно или виджет.",
+		"Grok et Claude masqués n’actualisent plus leurs quotas, sauf s’ils figurent dans la barre d’état, la fenêtre flottante ou un widget.",
+	},
+	xPanelProvidersAll: {"Show all", "显示全部", "顯示全部", "모두 표시", "すべて表示", "Показывать все", "Tout afficher"},
+	xResetTimeFormatHint: {
+		"Click the reset time in the main panel to switch.",
+		"在主面板中点击重置时间也可切换。",
+		"在主面板中點按重置時間也可切換。",
+		"메인 패널에서 리셋 시간을 클릭해도 전환됩니다.",
+		"メインパネルでリセット時刻をクリックしても切り替えられます。",
+		"Нажмите на время сброса в главной панели, чтобы переключить.",
+		"Cliquez sur l’heure de réinit. dans le panneau principal pour basculer.",
+	},
+	xResetTimeRelative: {"Relative time", "相对时间", "相對時間", "상대 시간", "相対時間", "Относительное время", "Temps relatif"},
+	xResetTimeExact:    {"Exact time", "精准时间", "精準時間", "정확한 시간", "正確な時刻", "Точное время", "Heure exacte"},
+	xProxyTestURL: {
+		"Test site", "测试站点", "測試站點", "테스트 사이트", "テストサイト", "Тестовый сайт", "Site de test",
+	},
+	xProxyTestURLInvalid: {
+		"Enter an http or https address for the test site.",
+		"请输入 http 或 https 开头的测试站点地址",
+		"請輸入 http 或 https 開頭的測試站點位址",
+		"테스트 사이트에 http 또는 https 주소를 입력하세요.",
+		"テストサイトには http または https のアドレスを入力してください。",
+		"Введите адрес тестового сайта с http или https.",
+		"Saisissez une adresse http ou https pour le site de test.",
+	},
+	xSpeedTitle: {
+		"Speed analysis", "速率分析", "速率分析", "속도 분석", "速度分析", "Анализ скорости", "Analyse de vitesse",
+	},
+	xSpeedModuleDescription: {
+		"First-token latency and output speed by model and reasoning effort, from recent local sessions.",
+		"按模型与思考等级统计最近本机会话的首字延迟与输出速率。",
+		"按模型與思考等級統計最近本機工作階段的首字延遲與輸出速率。",
+		"최근 로컬 세션에서 모델과 추론 수준별 첫 토큰 지연과 출력 속도를 집계합니다.",
+		"直近のローカル セッションから、モデルと推論レベルごとの最初のトークンまでの遅延と出力速度を集計します。",
+		"Задержка до первого токена и скорость вывода по моделям и уровню рассуждения в недавних локальных сессиях.",
+		"Latence du premier jeton et vitesse de sortie par modèle et niveau de raisonnement, d’après les sessions locales récentes.",
+	},
+	xSpeedInfoTTFT: {
+		"TTFT (time to first token) is the wait from sending a request until the first streamed output arrives.",
+		"首字延迟（TTFT）：从发出请求到收到第一段流式输出的等待时间。",
+		"首字延遲（TTFT）：從送出請求到收到第一段串流輸出的等待時間。",
+		"TTFT(첫 토큰 지연)는 요청을 보낸 뒤 첫 스트리밍 출력이 도착할 때까지의 대기 시간입니다.",
+		"TTFT（最初のトークンまでの時間）は、リクエスト送信から最初のストリーミング出力が届くまでの待ち時間です。",
+		"TTFT (время до первого токена) — ожидание от отправки запроса до первого потокового вывода.",
+		"TTFT (délai avant le premier jeton) : attente entre l’envoi de la requête et l’arrivée de la première sortie en flux.",
+	},
+	xSpeedInfoNoTTFT: {
+		"These logs have no first-token time, so TTFT is not shown and output speed is timed from the request, wait included.",
+		"该服务商的日志没有首字时间，因此不显示首字延迟，输出速率从发出请求开始计时，包含等待时间。",
+		"該服務商的記錄沒有首字時間，因此不顯示首字延遲，輸出速率從送出請求開始計時，包含等待時間。",
+		"이 로그에는 첫 토큰 시각이 없어 TTFT를 표시하지 않으며, 출력 속도는 대기 시간을 포함해 요청 시점부터 측정합니다.",
+		"このログには最初のトークンの時刻がないため TTFT は表示せず、出力速度は待ち時間を含めリクエスト送信時から計測します。",
+		"В этих логах нет времени первого токена, поэтому TTFT не показывается, а скорость вывода считается от отправки запроса с учётом ожидания.",
+		"Ces journaux n’indiquent pas l’heure du premier jeton : le TTFT n’est pas affiché et la vitesse de sortie est mesurée depuis la requête, attente comprise.",
+	},
+	xSpeedInfoOutput: {
+		"Output speed is the output tokens (reasoning included) divided by the time they took to stream.",
+		"输出速率：输出 token（含思考）除以流式输出所用的时间。",
+		"輸出速率：輸出 token（含思考）除以串流輸出所用的時間。",
+		"출력 속도는 출력 토큰(추론 포함)을 스트리밍에 걸린 시간으로 나눈 값입니다.",
+		"出力速度は、出力トークン（推論を含む）をストリーミングにかかった時間で割った値です。",
+		"Скорость вывода — число выходных токенов (с рассуждением), делённое на время потоковой передачи.",
+		"Vitesse de sortie : jetons de sortie (raisonnement inclus) divisés par la durée du flux.",
+	},
+	xSpeedInfoSource: {
+		"Measured from timestamps in the local CLI logs, so network latency and queueing are included. Results are grouped by model and reasoning effort; for Grok the effort is set per session.",
+		"根据本机 CLI 日志中的时间戳测得，包含网络延迟与排队时间。按模型与思考等级分组；Grok 的思考等级以会话为单位。",
+		"根據本機 CLI 記錄中的時間戳記測得，包含網路延遲與排隊時間。按模型與思考等級分組；Grok 的思考等級以工作階段為單位。",
+		"로컬 CLI 로그의 타임스탬프로 측정하므로 네트워크 지연과 대기 시간이 포함됩니다. 모델과 추론 수준별로 묶으며, Grok의 추론 수준은 세션 단위입니다.",
+		"ローカル CLI ログのタイムスタンプから計測するため、ネットワーク遅延や待機時間を含みます。モデルと推論レベルごとに集計し、Grok の推論レベルはセッション単位です。",
+		"Измерено по меткам времени в локальных логах CLI, поэтому включает сетевые задержки и очередь. Группировка по модели и уровню рассуждения; у Grok уровень задаётся на сессию.",
+		"Mesuré d’après les horodatages des journaux CLI locaux : latence réseau et file d’attente comprises. Regroupé par modèle et niveau de raisonnement ; pour Grok, le niveau est défini par session.",
+	},
+	xSpeedTTFT:   {"TTFT", "首字", "首字", "첫 토큰", "TTFT", "TTFT", "TTFT"},
+	xSpeedOutput: {"Output", "输出", "輸出", "출력", "出力", "Вывод", "Sortie"},
+	xSpeedModel:  {"Model", "模型", "模型", "모델", "モデル", "Модель", "Modèle"},
+	xSpeedCalls:  {"Calls", "次数", "次數", "횟수", "回数", "Вызовы", "Appels"},
+	xSpeedByModel: {
+		"By model and reasoning effort", "按模型与思考等级", "按模型與思考等級", "모델 및 추론 수준별", "モデルと推論レベル別",
+		"По модели и уровню рассуждения", "Par modèle et niveau de raisonnement",
+	},
+	xSpeedBasis: {
+		"Based on the latest %@ sessions", "基于最近 %@ 个会话", "基於最近 %@ 個工作階段", "최근 세션 %@개 기준",
+		"直近 %@ 件のセッションに基づく", "По последним сессиям: %@", "Sur les %@ dernières sessions",
+	},
+	xSpeedBasisOne: {
+		"Based on the latest session", "基于最近 1 个会话", "基於最近 1 個工作階段", "최근 세션 1개 기준",
+		"直近 1 件のセッションに基づく", "По последней сессии", "Sur la dernière session",
+	},
+	xSpeedLatest: {"Latest: %@", "最新：%@", "最新：%@", "최신: %@", "最新: %@", "Последняя: %@", "Dernière : %@"},
+	xSpeedEmpty: {
+		"No speed data in recent sessions.", "最近的会话中暂无速率数据。", "最近的工作階段中暫無速率資料。",
+		"최근 세션에 속도 데이터가 없습니다.", "直近のセッションに速度データがありません。",
+		"В недавних сессиях нет данных о скорости.", "Aucune donnée de vitesse dans les sessions récentes.",
+	},
+	xSpeedRange: {
+		"Samples from %@ to %@", "样本时间：%@ 至 %@", "樣本時間：%@ 至 %@", "표본 기간: %@ ~ %@",
+		"サンプル期間: %@ ～ %@", "Период выборки: %@ — %@", "Échantillons du %@ au %@",
+	},
+	xSpeedTierFast:     {"Fast", "Fast", "Fast", "Fast", "Fast", "Fast", "Fast"},
+	xSpeedTierStandard: {"Standard", "标准", "標準", "표준", "標準", "Стандарт", "Standard"},
+	xSpeedInfoTier: {
+		"Once a Fast call falls in the range, Fast and standard calls are listed separately; calls whose log does not record the tier stay unmarked. Speed also depends on load and time of day, so treat the comparison as a rough guide.",
+		"统计范围内出现 Fast 调用时，Fast 与标准档分行列出；日志未记录档位的调用不加标记。速率还受负载与时段影响，对比仅供参考。",
+		"統計範圍內出現 Fast 呼叫時，Fast 與標準檔分行列出；記錄未標示檔位的呼叫不加標記。速率也受負載與時段影響，比較僅供參考。",
+		"범위 안에 Fast 호출이 있으면 Fast와 표준 호출을 따로 표시하며, 로그에 등급이 기록되지 않은 호출에는 표시를 붙이지 않습니다. 속도는 부하와 시간대의 영향도 받으므로 비교는 참고용입니다.",
+		"範囲内に Fast の呼び出しがあると、Fast と標準を別々の行に表示し、ログに区分がない呼び出しには表示を付けません。速度は負荷や時間帯にも左右されるため、比較は目安です。",
+		"Если в периоде есть вызовы Fast, они показываются отдельно от стандартных; вызовы без указания режима в логе не помечаются. Скорость зависит также от нагрузки и времени суток, поэтому сравнение приблизительное.",
+		"Dès qu’un appel Fast figure dans la période, les appels Fast et standard sont listés séparément ; ceux dont le journal n’indique pas le niveau ne sont pas marqués. La vitesse dépend aussi de la charge et de l’heure : la comparaison reste indicative.",
+	},
 	xAccountCount: {
 		"%@ accounts", "%@ 个账号", "%@ 個帳號", "계정 %@개", "%@ アカウント", "Аккаунтов: %@", "%@ comptes",
 	},
@@ -174,6 +461,36 @@ var extraTexts = map[textKey][7]string{
 		"このシステムではまだパスワードを安全に保存できないため、認証付きのプロキシは保存できません。",
 		"Пока невозможно безопасно сохранить пароль в этой системе, поэтому прокси с аутентификацией сохранить нельзя.",
 		"Le mot de passe ne peut pas encore être stocké de façon sécurisée sur ce système ; un proxy avec authentification ne peut donc pas être enregistré.",
+	},
+	xLegacyRunningTitle: {
+		"CodexRunway is running", "CodexRunway 正在运行", "CodexRunway 正在執行", "CodexRunway가 실행 중입니다",
+		"CodexRunway が実行中です", "CodexRunway запущен", "CodexRunway est en cours d’exécution",
+	},
+	xLegacyRunningDetail: {
+		"Quosparr and the previous CodexRunway refresh and switch the same Codex and Grok sign-ins; running both can sign you out, so they cannot run together. Quosparr starts once CodexRunway quits. The data of CodexRunway is kept.",
+		"Quosparr 与旧版 CodexRunway 会刷新和切换同一份 Codex、Grok 登录凭据，同时运行可能导致账号被登出，因此不能同时运行。退出 CodexRunway 后 Quosparr 会继续启动，旧版数据会保留。",
+		"Quosparr 與舊版 CodexRunway 會重新整理和切換同一份 Codex、Grok 登入憑證，同時執行可能導致帳號被登出，因此不能同時執行。結束 CodexRunway 後 Quosparr 會繼續啟動，舊版資料會保留。",
+		"Quosparr와 이전 CodexRunway는 같은 Codex, Grok 로그인 정보를 갱신하고 전환하므로 함께 실행하면 로그아웃될 수 있어 동시에 실행할 수 없습니다. CodexRunway를 종료하면 Quosparr가 이어서 시작되며, CodexRunway의 데이터는 유지됩니다.",
+		"Quosparr と以前の CodexRunway は同じ Codex、Grok のログイン情報を更新・切り替えるため、同時に実行するとログアウトされることがあり、同時には実行できません。CodexRunway を終了すると Quosparr が起動を続けます。CodexRunway のデータは保持されます。",
+		"Quosparr и прежний CodexRunway обновляют и переключают одни и те же входы Codex и Grok; при одновременной работе возможен выход из аккаунта, поэтому их нельзя запускать вместе. Quosparr продолжит запуск после выхода из CodexRunway. Данные CodexRunway сохранятся.",
+		"Quosparr et l’ancien CodexRunway actualisent et changent les mêmes connexions Codex et Grok ; les exécuter ensemble peut vous déconnecter, ils ne peuvent donc pas fonctionner en même temps. Quosparr démarre dès que CodexRunway est quitté. Les données de CodexRunway sont conservées.",
+	},
+	xLegacyRunningManual: {
+		"Quosparr cannot run while CodexRunway is running, because both manage the same sign-ins. Quit CodexRunway, then open Quosparr again.",
+		"CodexRunway 运行期间无法启动 Quosparr，因为两者会管理同一份登录凭据。请先退出 CodexRunway，再重新打开 Quosparr。",
+		"CodexRunway 執行期間無法啟動 Quosparr，因為兩者會管理同一份登入憑證。請先結束 CodexRunway，再重新開啟 Quosparr。",
+		"CodexRunway가 실행 중일 때는 두 앱이 같은 로그인 정보를 관리하므로 Quosparr를 시작할 수 없습니다. CodexRunway를 종료한 뒤 Quosparr를 다시 여세요.",
+		"CodexRunway の実行中は、両方が同じログイン情報を管理するため Quosparr を起動できません。CodexRunway を終了してから、Quosparr をもう一度開いてください。",
+		"Quosparr нельзя запустить, пока работает CodexRunway: оба управляют одними и теми же входами. Закройте CodexRunway и снова откройте Quosparr.",
+		"Quosparr ne peut pas démarrer tant que CodexRunway est en cours d’exécution, car les deux gèrent les mêmes connexions. Quittez CodexRunway, puis rouvrez Quosparr.",
+	},
+	xLegacyQuitAndContinue: {
+		"Quit CodexRunway and Continue", "退出 CodexRunway 并继续", "結束 CodexRunway 並繼續", "CodexRunway 종료 후 계속",
+		"CodexRunway を終了して続ける", "Закрыть CodexRunway и продолжить", "Quitter CodexRunway et continuer",
+	},
+	xLegacyQuitFailed: {
+		"CodexRunway did not quit", "CodexRunway 没有退出", "CodexRunway 沒有結束", "CodexRunway가 종료되지 않았습니다",
+		"CodexRunway が終了しませんでした", "CodexRunway не закрылся", "CodexRunway ne s’est pas fermé",
 	},
 }
 

@@ -21,6 +21,8 @@ type panelState struct {
 	info              string // id of the open (i) popover
 	// setChartStyle saves the chart style; panelView points it at Settings.
 	setChartStyle func(store.ChartStyle)
+	// setResetTimeFormat persists the reset timestamp display mode.
+	setResetTimeFormat func(store.ResetTimeFormat)
 }
 
 // detailAccounts is the multi-account page. It is not a module, but it is

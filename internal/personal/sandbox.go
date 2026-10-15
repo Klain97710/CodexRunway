@@ -22,7 +22,7 @@ func DevelopmentHome() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	for key, dir := range map[string]string{"CODEX_HOME": ".codex", "GROK_HOME": ".grok"} {
+	for key, dir := range map[string]string{"CODEX_HOME": ".codex", "GROK_HOME": ".grok", "CLAUDE_CONFIG_DIR": ".claude"} {
 		if value := os.Getenv(key); value != "" && filepath.Clean(value) != filepath.Join(root, dir) {
 			return "", ErrSandbox
 		}
@@ -45,7 +45,7 @@ func ValidateSandbox(root, realHome string) (string, error) {
 	if err != nil || within(root, realHome) {
 		return "", ErrSandbox
 	}
-	for _, dir := range []string{".codex", ".codex-runway", ".quosparr", ".grok", "Library"} {
+	for _, dir := range []string{".codex", ".codex-runway", ".quosparr", ".grok", ".claude", "Library"} {
 		protected := filepath.Join(realHome, dir)
 		if within(protected, root) || within(root, protected) {
 			return "", ErrSandbox

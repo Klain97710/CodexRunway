@@ -250,7 +250,7 @@ func TestResolveTier(t *testing.T) {
 		{"pro-200", "", TierPro200}, {"pro200", "", TierPro200}, {"pro-custom", "", TierPro200},
 		{"promax", "", TierPro500}, {"pro-max", "", TierPro500}, {"pro_500", "", TierPro500},
 		{"pro 500", "", TierPro500}, {"pro500", "", TierPro500}, {"codex-pro-500", "", TierPro500},
-		{"self-serve-business-prolite", "", TierBusiness}, {"business", "", TierBusiness},
+		{"self-serve-business-prolite", "", TierBusinessPremium}, {"self_serve_business_prolite", "", TierBusinessPremium}, {"business", "", TierBusiness},
 		{"team", "", TierTeam}, {"enterprise", "", TierEnterprise}, {"edu", "", TierEdu},
 		{"api_key", "", TierAPI}, {"", "plus", TierPlus}, {"mystery", "", TierUnknown},
 	}

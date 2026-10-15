@@ -61,7 +61,7 @@ func (u *settingsUI) previewAccountFiles(f *accountForm, rt *liveApp) {
 		paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{Title: l.Text(l10n.KeyAccountsAddFile), Multiple: true})
 		var selection *accountSelection
 		if err == nil && len(paths) > 0 {
-			if kind == 0 {
+			if kind == accountKindCodex {
 				selection = codexImportSelection(rt.codex, paths)
 			} else {
 				preview, previewErr := rt.grokMod.PreviewImportFiles(context.Background(), paths)
@@ -76,11 +76,11 @@ func (u *settingsUI) previewAccountFiles(f *accountForm, rt *liveApp) {
 		u.post(func() {
 			f.busy = false
 			if err != nil {
-				f.status = l.Text(l10n.KeyAccountsImportFailed)
+				u.accountNotice(f, l.Text(l10n.KeyAccountsImportFailed))
 				return
 			}
 			if selection != nil && len(selection.rows) == 0 {
-				f.status = l.Text(l10n.KeyAccountsImportNoCredentials)
+				u.accountNotice(f, l.Text(l10n.KeyAccountsImportNoCredentials))
 				return
 			}
 			f.selection = selection
@@ -155,13 +155,13 @@ func accountSelectionBody(c *ui.Context, u *settingsUI, f *accountForm, rt *live
 
 func (rt *liveApp) commitAccountSelection(l l10n.Localizer, s *accountSelection, ids []string, kind int) (string, bool) {
 	if s.export {
-		if kind == 1 {
+		if kind == accountKindGrok {
 			return rt.exportGrok(l, ids)
 		}
 		return rt.exportCodex(l, ids)
 	}
 	count, failed := 0, false
-	if kind == 0 {
+	if kind == accountKindCodex {
 		batch := (&codex.Importer{Store: rt.codex}).ImportPreviewSelection(context.Background(), s.codex, ids, false)
 		count, failed = len(batch.Succeeded), len(batch.Failures) > 0
 		rt.svc.ReloadAccounts()

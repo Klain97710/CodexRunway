@@ -4,14 +4,12 @@ import (
 	"context"
 	"strconv"
 	"sync"
-
 	"testing"
 	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/l10n"
-
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
@@ -78,7 +76,7 @@ func TestPanelClickRoutesStayImmediate(t *testing.T) {
 		if err := tt.Click(key); err != nil {
 			t.Fatal(err)
 		}
-		if elapsed := time.Since(at); elapsed >= time.Second {
+		if elapsed := time.Since(at); elapsed >= latencyBudget(time.Second) {
 			t.Fatalf("click %q blocked for %s", key, elapsed)
 		}
 	}
@@ -122,10 +120,7 @@ func TestPanelClickRoutesStayImmediate(t *testing.T) {
 	if a.panelState.detail != "" {
 		t.Fatal("back did not restore summary")
 	}
-	click(a.L().Text(l10n.KeyProviderCodex))
-	if err := tt.ChooseMenuItem(a.L().Text(l10n.KeyProviderGrok)); err != nil {
-		t.Fatal(err)
-	}
+	click(a.L().Text(l10n.KeyProviderGrok))
 	if selected != store.ProviderGrok || a.panelState.provider != store.ProviderGrok {
 		t.Fatal("provider was not applied")
 	}

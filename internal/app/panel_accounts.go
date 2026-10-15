@@ -13,11 +13,16 @@ import (
 // accountsPage is the multi-account page of the open provider: a fixed
 // toolbar over the scrolling account cards.
 func (a *App) accountsPage(c *ui.Context, l l10n.Localizer, prefs store.Preferences, snap runway.Snapshot, acts PanelActions) {
-	if prefs.SelectedProvider == store.ProviderGrok {
+	a.panelState.accounts.page = prefs.SelectedProvider
+	defer a.accountsNoticeDialog(c, l)
+	switch prefs.SelectedProvider {
+	case store.ProviderGrok:
 		a.grokAccountsPage(c, l, prefs, snap, acts)
-		return
+	case store.ProviderClaude:
+		a.claudeAccountsPage(c, l, prefs, snap, acts)
+	default:
+		a.codexAccountsPage(c, l, prefs, snap, acts)
 	}
-	a.codexAccountsPage(c, l, prefs, snap, acts)
 }
 
 // accountsList scrolls the cards under the toolbar.
@@ -54,7 +59,7 @@ func (a *App) codexAccountsPage(c *ui.Context, l l10n.Localizer, prefs store.Pre
 			}
 		}, nil, func() {
 			if accentButton(c, icPlus, l.Text(l10n.KeyAccountsAdd), false).Clicked() {
-				a.OpenSettingsTab(1)
+				a.openAccountsSettings(accountKindCodex)
 			}
 		})
 		a.accountsList(c, func() {
@@ -64,7 +69,7 @@ func (a *App) codexAccountsPage(c *ui.Context, l l10n.Localizer, prefs store.Pre
 			for _, acc := range view.Sidebar {
 				a.codexAccountCard(c, l, prefs, view, acc, ac)
 			}
-			accountsNotice(c, []string{view.Message, st.notice}, snap.Codex.LastError)
+			accountsNotice(c, []string{view.Message}, snap.Codex.LastError)
 		})
 	})
 }
@@ -275,6 +280,8 @@ func accountTierKey(tier codex.Tier) l10n.Key {
 		return l10n.KeyPlanPro500
 	case codex.TierBusiness:
 		return l10n.KeyPlanBusiness
+	case codex.TierBusinessPremium:
+		return l10n.KeyPlanBusinessPremium
 	case codex.TierTeam:
 		return l10n.KeyPlanTeam
 	case codex.TierEnterprise:

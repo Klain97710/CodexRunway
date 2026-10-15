@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/licoy/quosparr/internal/claude"
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/grok"
 	"github.com/licoy/quosparr/internal/platform"
@@ -44,6 +45,10 @@ func validateIndex(data []byte, name string) error {
 	if name == "grok-index.json" {
 		var idx grok.AccountIndex
 		idx, err = grok.ParseAccountIndex(data)
+		version = idx.Version
+	} else if name == "claude-index.json" {
+		var idx claude.AccountIndex
+		idx, err = claude.ParseAccountIndex(data)
 		version = idx.Version
 	} else {
 		var idx codex.AccountIndex

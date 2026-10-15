@@ -76,10 +76,14 @@ func (a *App) startCostQuery(q CostQuery, acts PanelActions) {
 }
 
 func activePanelAccount(s runway.Snapshot, p store.Provider) string {
-	if p == store.ProviderGrok {
+	switch p {
+	case store.ProviderGrok:
 		return s.Grok.Accounts.ActiveID
+	case store.ProviderClaude:
+		return s.Claude.Accounts.ActiveID
+	default:
+		return s.Accounts.ActiveID
 	}
-	return s.Accounts.ActiveID
 }
 
 func activePanelGeneration(s runway.Snapshot, p store.Provider) uint64 {

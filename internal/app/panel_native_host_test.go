@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/licoy/quosparr/internal/personal"
 	"os"
 	"testing"
 	"time"
@@ -13,7 +12,7 @@ import (
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/estimate"
 	"github.com/licoy/quosparr/internal/grok"
-
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
@@ -44,7 +43,7 @@ func runNativePanelHost() error {
 	if err := DirectMygoPaths(mygo.App, home); err != nil {
 		return err
 	}
-	s := NewSettings(store.New(store.NewMemoryDomain(), nil), System{Features: personal.Features{Grok: true}}, UnavailableCredentials{})
+	s := NewSettings(store.New(store.NewMemoryDomain(), nil), System{Features: personal.Features{Grok: true, Claude: true}}, UnavailableCredentials{})
 	if err := s.Load(); err != nil {
 		return err
 	}

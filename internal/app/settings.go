@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"reflect"
+	"slices"
 	"sync"
 
 	"github.com/licoy/quosparr/internal/l10n"
@@ -323,6 +324,12 @@ func (s *Settings) SetSelectedProvider(v store.Provider) bool {
 	return s.Update(func(p *store.Preferences) { p.SelectedProvider = v })
 }
 
+// SetPanelProviders chooses the providers the main panel offers; empty shows
+// every provider. A hidden selected provider moves to the first shown one.
+func (s *Settings) SetPanelProviders(providers []store.Provider) bool {
+	return s.Update(func(p *store.Preferences) { p.PanelProviders = slices.Clone(providers) })
+}
+
 // SetLanguage selects the language; it takes effect at once.
 func (s *Settings) SetLanguage(v store.Language) bool {
 	return s.Update(func(p *store.Preferences) { p.Language = v })
@@ -332,6 +339,18 @@ func (s *Settings) SetLanguage(v store.Language) bool {
 // effect at once.
 func (s *Settings) SetAppearance(v store.Appearance) bool {
 	return s.Update(func(p *store.Preferences) { p.Appearance = v })
+}
+
+// SetThemeColor selects the accent of the app's windows, "#RRGGBB" or empty
+// for the brand brown; it takes effect at once.
+func (s *Settings) SetThemeColor(v string) bool {
+	return s.Update(func(p *store.Preferences) { p.ThemeColor = v })
+}
+
+// SetFontFamily selects the font of the app's windows, empty for the
+// system's; it takes effect at once.
+func (s *Settings) SetFontFamily(v string) bool {
+	return s.Update(func(p *store.Preferences) { p.FontFamily = v })
 }
 
 // SetPanelBackground selects the main panel background.
@@ -366,7 +385,41 @@ func (s *Settings) SetStatusBarBatteryDetail(v store.BatteryDetail) bool {
 
 // SetStatusBarProviderScope selects which providers the status item shows.
 func (s *Settings) SetStatusBarProviderScope(v store.StatusBarProviderScope) bool {
-	return s.Update(func(p *store.Preferences) { p.StatusBarProviderScope = v })
+	return s.Update(func(p *store.Preferences) {
+		p.StatusBarProviderScope = v
+		draft := *p
+		draft.StatusBarProviderScope = v
+		if v == store.ProviderScopeCustom && len(draft.StatusBarSelection()) == 0 {
+			pick := p.SelectedProvider
+			if !pick.Valid() {
+				pick = store.ProviderCodex
+			}
+			p.StatusBarProviders = []store.Provider{pick}
+		}
+	})
+}
+
+// SetStatusBarProviders stores a custom status-bar selection of one or two providers.
+func (s *Settings) SetStatusBarProviders(providers []store.Provider) bool {
+	return s.Update(func(p *store.Preferences) {
+		if codexAndGrokOnly(providers) {
+			p.StatusBarProviderScope = store.ProviderScopeBoth
+			p.StatusBarProviders = nil
+			return
+		}
+		p.StatusBarProviderScope = store.ProviderScopeCustom
+		p.StatusBarProviders = append([]store.Provider(nil), providers...)
+	})
+}
+
+func codexAndGrokOnly(providers []store.Provider) bool {
+	seen := map[store.Provider]bool{}
+	for _, p := range providers {
+		if p.Valid() {
+			seen[p] = true
+		}
+	}
+	return len(seen) == 2 && seen[store.ProviderCodex] && seen[store.ProviderGrok]
 }
 
 // SetRefreshInterval sets the refresh interval, limited to 60...1800 s.
@@ -410,6 +463,17 @@ func (s *Settings) SetQuotaEstimateWindowMode(v store.WindowMode) bool {
 	return s.Update(func(p *store.Preferences) { p.QuotaEstimateWindowMode = v })
 }
 
+// SetProxyTestURL saves the site "Test Connection" fetches; the default is
+// stored as empty.
+func (s *Settings) SetProxyTestURL(v string) bool {
+	return s.Update(func(p *store.Preferences) { p.ProxyTestURL = v })
+}
+
+// SetQuotaResetTimeFormat selects how the quota rows show the next reset.
+func (s *Settings) SetQuotaResetTimeFormat(v store.ResetTimeFormat) bool {
+	return s.Update(func(p *store.Preferences) { p.QuotaResetTimeFormat = v })
+}
+
 // SetTokenUsageChartStyle selects the token usage chart style.
 func (s *Settings) SetTokenUsageChartStyle(v store.ChartStyle) bool {
 	return s.Update(func(p *store.Preferences) { p.TokenUsageChartStyle = v })
@@ -427,6 +491,8 @@ func moduleShown(p *store.Preferences, m store.Module) *bool {
 		return &p.ShowsQuotaSummary
 	case store.ModuleTokenUsage:
 		return &p.ShowsTokenUsageHeatmap
+	case store.ModuleSpeedAnalysis:
+		return &p.ShowsSpeedAnalysis
 	case store.ModuleRateLimitResetToday:
 		return &p.ShowsRateLimitResetToday
 	case store.ModuleQuotaEstimate:

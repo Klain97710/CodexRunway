@@ -19,14 +19,18 @@ func TestSettingsQuotaUsesMainBranchSummaries(t *testing.T) {
 	reset := now.Add(6 * time.Hour)
 	acc := codex.ManagedAccount{ID: "one", DisplayName: "Personal", Email: "personal@example.com", CachedQuota: &codex.CachedAccountQuota{PrimaryUsedPercent: 49, PrimaryResetsAt: &reset, UpdatedAt: now}}
 	q := runway.GrokAccountQuota{Plan: "SuperGrok", UsedPercent: 49, ResetsAt: reset, IncludedUSD: "$73.50 / $150.00", UpdatedAt: now}
+	cq := runway.ClaudeAccountQuota{Plan: "Max 20x", UsedPercent: 49, ResetsAt: reset, ExtraUsage: "10 / 1234 USD", UpdatedAt: now}
 	for _, provider := range store.Providers() {
-		v := accountIdentityView{account: acc, current: true, provider: provider, grokQuota: &q}
+		v := accountIdentityView{account: acc, current: true, provider: provider, grokQuota: &q, claudeQuota: &cq}
 		tt := ui.NewTester(func(c *ui.Context) {
 			ui.Column(c).Fill().Padding(16).Children(func() { accountSettingsIdentity(c, l, v) })
 		}, 520, 220)
 		want := accountUpdatedSummary(l, "51%", now)
 		if provider == store.ProviderGrok {
 			want = "$73.50 / $150.00 · 51% left"
+		}
+		if provider == store.ProviderClaude {
+			want = "10 / 1234 USD · 51% left"
 		}
 		if !tt.HasText(want) || !tt.HasText(l.Text(l10n.KeyNextResetIn)) {
 			t.Fatalf("missing %s quota summary/countdown: %q", provider, tt.Texts())

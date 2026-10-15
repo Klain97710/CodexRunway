@@ -122,9 +122,9 @@ type ProxyHooks struct {
 	// Applied is called on the main thread after a proxy configuration was
 	// saved, with its credentials (nil without authentication).
 	Applied func(store.NetworkProxyConfiguration, *ProxyCredentials)
-	// Test checks the connection through the draft configuration; nil hides
-	// the test button.
-	Test func(ctx context.Context, c store.NetworkProxyConfiguration, creds *ProxyCredentials) error
+	// Test fetches site through the draft configuration; nil hides the test
+	// button.
+	Test func(ctx context.Context, c store.NetworkProxyConfiguration, creds *ProxyCredentials, site string) error
 }
 
 // SetProxyHooks installs hooks; call before the window opens.

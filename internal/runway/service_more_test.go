@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-
 	"os"
+	"reflect"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -461,6 +462,7 @@ type fakeGrok struct {
 	mu       sync.Mutex
 	state    GrokState
 	refresh  int
+	local    int
 	onChange func()
 }
 
@@ -475,8 +477,15 @@ func (g *fakeGrok) Refresh(context.Context) error {
 	}
 	return nil
 }
+func (g *fakeGrok) RefreshLocal(context.Context) error {
+	g.mu.Lock()
+	g.local++
+	g.mu.Unlock()
+	return nil
+}
 func (g *fakeGrok) SetOnChange(fn func()) { g.mu.Lock(); g.onChange = fn; g.mu.Unlock() }
 func (g *fakeGrok) count() int            { g.mu.Lock(); defer g.mu.Unlock(); return g.refresh }
+func (g *fakeGrok) localCount() int       { g.mu.Lock(); defer g.mu.Unlock(); return g.local }
 
 type fakeResetToday struct {
 	mu       sync.Mutex
@@ -511,7 +520,9 @@ func (r *fakeResetToday) PendingAlerts(time.Time) []alerts.Alert {
 func (r *fakeResetToday) SetOnChange(fn func()) { r.mu.Lock(); r.onChange = fn; r.mu.Unlock() }
 func (r *fakeResetToday) count() int            { r.mu.Lock(); defer r.mu.Unlock(); return r.refresh }
 
-func TestGrokPanelRefreshSkipsCodexData(t *testing.T) {
+// The provider strip shows every provider, so the Grok panel still runs the
+// full Codex refresh.
+func TestGrokPanelRefreshCoversEveryProvider(t *testing.T) {
 	f := newFake(t)
 	g := &fakeGrok{state: GrokState{Availability: GrokReady, Plan: "heavy"}}
 	s, _ := newService(t, f, func(o *Options) {
@@ -523,11 +534,107 @@ func TestGrokPanelRefreshSkipsCodexData(t *testing.T) {
 	if g.count() != 1 {
 		t.Errorf("grok refreshed %d times", g.count())
 	}
-	if f.count("quota") != 0 {
-		t.Error("Codex was fetched while only Grok is shown")
+	if f.count("quota") != 1 || f.count("credits") != 1 {
+		t.Errorf("Codex quota %d, credits %d", f.count("quota"), f.count("credits"))
 	}
 	if s.Snapshot().Grok.Plan != "heavy" || s.Snapshot().Provider != store.ProviderGrok {
 		t.Errorf("grok state missing: %+v", s.Snapshot().Grok)
+	}
+}
+
+type fakeClaude struct {
+	mu     sync.Mutex
+	forced []bool
+	local  int
+}
+
+func (c *fakeClaude) State(time.Time) ClaudeState { return ClaudeState{} }
+func (c *fakeClaude) Refresh(_ context.Context, force bool) error {
+	c.mu.Lock()
+	c.forced = append(c.forced, force)
+	c.mu.Unlock()
+	return nil
+}
+func (c *fakeClaude) RefreshLocal(context.Context) error {
+	c.mu.Lock()
+	c.local++
+	c.mu.Unlock()
+	return nil
+}
+func (c *fakeClaude) SetOnChange(func()) {}
+func (c *fakeClaude) localCount() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.local
+}
+func (c *fakeClaude) calls() []bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return append([]bool(nil), c.forced...)
+}
+
+func TestOnlyManualRefreshForcesClaude(t *testing.T) {
+	f := newFake(t)
+	c := &fakeClaude{}
+	s, _ := newService(t, f, func(o *Options) { o.Claude = c })
+	wait(t, s.Refresh(usage.RefreshForce))
+	settle(t, s)
+	s.Tick(f.clk.Advance(time.Duration(s.Preferences().RefreshIntervalSeconds) * time.Second))
+	settle(t, s)
+	wait(t, s.RefreshQuota())
+	settle(t, s)
+	if got := c.calls(); !reflect.DeepEqual(got, []bool{true, false, true}) {
+		t.Fatalf("forced = %v", got)
+	}
+}
+
+func TestManualQuotaRefreshRestartsTheInterval(t *testing.T) {
+	f := newFake(t)
+	s, _ := newService(t, f, nil)
+	refreshAll(t, s)
+	interval := time.Duration(s.Preferences().RefreshIntervalSeconds) * time.Second
+	s.Tick(f.clk.Advance(interval / 2))
+	settle(t, s)
+	wait(t, s.RefreshQuota())
+	settle(t, s)
+	quota := f.count("quota")
+	s.Tick(f.clk.Advance(interval/2 + time.Second))
+	settle(t, s)
+	if f.count("quota") != quota {
+		t.Fatal("the old deadline still fired after a manual refresh")
+	}
+	s.Tick(f.clk.Advance(interval / 2))
+	settle(t, s)
+	if f.count("quota") != quota+1 {
+		t.Fatal("the restarted interval did not fire")
+	}
+}
+
+func TestBusySectionDoesNotHoldBackScheduledRefresh(t *testing.T) {
+	f := newFake(t)
+	gate := newGate()
+	defer gate.open()
+	var armed atomic.Bool
+	s, _ := newService(t, f, func(o *Options) {
+		o.Sources.DryRunSessions = func(ctx context.Context) (sessions.Report, error) {
+			if armed.Load() {
+				gate.waitCtx(ctx)
+			}
+			return sessions.Report{}, nil
+		}
+	})
+	refreshAll(t, s)
+	quota := f.count("quota")
+	armed.Store(true)
+	s.RefreshSessionReport(true)
+	gate.waitStarted(t)
+	s.Tick(f.clk.Advance(time.Duration(s.Preferences().RefreshIntervalSeconds) * time.Second))
+	deadline := time.Now().Add(5 * time.Second)
+	for f.count("quota") == quota {
+		if time.Now().After(deadline) {
+			t.Fatal("a busy section held back the scheduled quota refresh")
+		}
+		time.Sleep(5 * time.Millisecond)
 	}
 }
 
@@ -578,15 +685,25 @@ func TestTickRefreshesResetTodayOnItsOwnInterval(t *testing.T) {
 	if rt.forced[len(rt.forced)-1] != true {
 		t.Error("force flag not passed on")
 	}
-	// Hidden card, no widget: nothing to refresh.
+	// Alerts alone keep it polling, whichever provider the panel shows.
 	p := s.Preferences()
 	p.ShowsRateLimitResetToday = false
+	p.SelectedProvider = store.ProviderClaude
 	s.SetPreferences(p)
 	before := rt.count()
 	s.Tick(f.clk.Advance(time.Hour))
 	settle(t, s)
+	if rt.count() != before+1 {
+		t.Error("reset-today alerts stopped polling on another provider")
+	}
+	// Hidden card, alerts off, no widget: nothing to refresh.
+	p.RateLimitResetTodayAlertsEnabled = false
+	s.SetPreferences(p)
+	before = rt.count()
+	s.Tick(f.clk.Advance(time.Hour))
+	settle(t, s)
 	if rt.count() != before {
-		t.Error("hidden reset-today card was refreshed")
+		t.Error("an unused reset-today feed was refreshed")
 	}
 }
 
@@ -597,6 +714,7 @@ func TestStatusJSONExportHasNoCredentials(t *testing.T) {
 	s, _ := newService(t, f, func(o *Options) { o.Preferences.ExportsStatusJSON = true })
 	var statusPath string
 	s2, _ := newService(t, f, func(o *Options) { o.Preferences.ExportsStatusJSON = true; statusPath = o.StatusPath })
+	showPanel(s2)
 	_ = s
 	refreshAll(t, s2)
 	data, err := os.ReadFile(statusPath)
@@ -708,7 +826,7 @@ func TestWidgetSnapshotIsWrittenForActiveWidgets(t *testing.T) {
 	if codexBlock == nil || codexBlock.Availability != export.Available || len(codexBlock.Quota) == 0 {
 		t.Fatalf("codex block: %+v", codexBlock)
 	}
-	if got := s.WidgetSnapshot(f.clk.Now()); len(got.Providers) != 2 {
+	if got := s.WidgetSnapshot(f.clk.Now()); len(got.Providers) != 3 {
 		t.Errorf("providers: %d", len(got.Providers))
 	}
 }
@@ -847,6 +965,7 @@ func TestSessionReportRepairAndRecentSessions(t *testing.T) {
 			return sessions.Summary{Items: []sessions.Item{{ID: "s1", Title: "Fix bug", UpdatedAt: t0}}}, nil
 		}
 	})
+	showPanel(s)
 	c := refreshAll(t, s).Codex
 	if c.SessionReport == nil || len(c.SessionReport.MissingIndexIDs) != 2 || len(c.SessionLines) == 0 {
 		t.Fatalf("report: %+v", c.SessionReport)
@@ -869,6 +988,7 @@ func TestSessionFailuresAreShownNotFatal(t *testing.T) {
 			return sessions.Report{}, errors.New("index unreadable")
 		}
 	})
+	showPanel(s)
 	c := refreshAll(t, s).Codex
 	if c.Quota == nil {
 		t.Error("session failure broke the quota")

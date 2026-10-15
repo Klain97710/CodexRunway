@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/licoy/quosparr/internal/claude"
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/grok"
 	"github.com/licoy/quosparr/internal/l10n"
@@ -17,6 +18,7 @@ type accountIdentityView struct {
 	provider         store.Provider
 	current, privacy bool
 	grokQuota        *runway.GrokAccountQuota
+	claudeQuota      *runway.ClaudeAccountQuota
 }
 
 func accountSettingsIdentity(c *ui.Context, l l10n.Localizer, v accountIdentityView) {
@@ -33,6 +35,8 @@ func accountSettingsIdentity(c *ui.Context, l l10n.Localizer, v accountIdentityV
 			} else if v.grokQuota != nil && v.grokQuota.Plan != "" {
 				kind := grok.TierResolve(v.grokQuota.Plan)
 				tierBadgePadded(c, grokTierLook(c.Theme(), kind), kind.DisplayName(), 1, 5)
+			} else if v.claudeQuota != nil && v.claudeQuota.Plan != "" {
+				tierBadgePadded(c, claudeTierLook(c.Theme(), claude.TierResolve(v.claudeQuota.Plan)), v.claudeQuota.Plan, 1, 5)
 			}
 		})
 		if acc.Email != "" && acc.Email != name {
@@ -61,6 +65,17 @@ func accountSettingsStatus(c *ui.Context, l l10n.Localizer, v accountIdentityVie
 		ui.Text(c, l.Text(key)).FontSize(11).TextColor(c.Theme().Danger)
 	case acc.LastError != "":
 		ui.Text(c, accountDiagnosticText(acc.LastError, v.privacy)).FontSize(11).TextColor(sys(c.Theme(), sysOrange)).MaxLines(2).Tooltip(accountDiagnosticText(acc.LastError, v.privacy))
+	case v.provider == store.ProviderClaude && v.claudeQuota != nil:
+		q := v.claudeQuota
+		percent := fmt.Sprintf("%d%% %s", max(0, min(100, 100-q.UsedPercent)), l.Text(l10n.KeyLeft))
+		text := accountUpdatedSummary(l, percent, q.UpdatedAt)
+		if q.ExtraUsage != "" {
+			text = q.ExtraUsage + " · " + percent
+		}
+		ui.Row(c).Gap(10).AlignItems(ui.Center).Wrap().Children(func() {
+			dimText(c, text).NoWrap().Shrink(0)
+			accountSettingsReset(c, l, q.ResetsAt)
+		})
 	case v.provider == store.ProviderGrok && v.grokQuota != nil:
 		q := v.grokQuota
 		percent := fmt.Sprintf("%d%% %s", max(0, min(100, 100-q.UsedPercent)), l.Text(l10n.KeyLeft))

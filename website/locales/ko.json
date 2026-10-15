@@ -1,0 +1,144 @@
+{
+  "meta": {
+    "title": "Quosparr: 메뉴 막대에서 보는 Codex, Claude Code, Grok 할당량",
+    "description": "Quosparr는 macOS, Windows, Linux용 무료 네이티브 메뉴 막대 / 시스템 트레이 앱입니다. Codex, Claude Code, Grok 구독 할당량, reset credits, API 환산 비용, 로컬 세션을 보여 줍니다."
+  },
+  "nav": {
+    "features": "기능",
+    "screenshots": "스크린샷",
+    "privacy": "개인정보",
+    "download": "다운로드"
+  },
+  "ui": {
+    "skip": "본문으로 건너뛰기",
+    "language": "언어",
+    "themeSystem": "테마: 시스템 설정",
+    "themeLight": "테마: 라이트",
+    "themeDark": "테마: 다크"
+  },
+  "hero": {
+    "etymology": "이름은 <b>Quo</b>ta(할당량) + <b>Sparr</b>ow(참새)에서 왔습니다",
+    "tagline": "메뉴 막대에 앉은 작은 참새가 Codex, Claude, Grok 할당량을 지켜봅니다.",
+    "description": "macOS, Windows, Linux용 네이티브 메뉴 막대 / 시스템 트레이 앱입니다. 구독 할당량, reset credits, API 환산 비용, 로컬 세션을 한눈에 확인하고, 공급자별로 계정을 따로 관리합니다.",
+    "download": "다운로드",
+    "downloadFor": "{os}용 다운로드",
+    "source": "GitHub에서 보기",
+    "license": "무료 오픈 소스"
+  },
+  "features": {
+    "title": "기능",
+    "lead": "Codex, Claude Code, Grok은 각자의 탭을 가지며, 할당량과 비용, 계정은 공급자별로 분리됩니다.",
+    "codex": [
+      "5시간, 주간, 추가 창의 남은 할당량과 계정, 요금제, 만료일",
+      "reset credits 개수, 상태, 만료 시간",
+      "공식 주간 비율로 추정한 이번 주 허용량을 지난주들과 비교해 할당량 축소를 확인",
+      "계정 전환, 최근 세션, 로컬 세션 인덱스 복구"
+    ],
+    "claude": [
+      "Claude Code 구독 사용량: 5시간 창, 7일 창, 모델별 주간 창, 추가 사용량",
+      "로컬 세션 로그 기반의 토큰 사용량, API 환산 비용, 최근 세션, 출력 속도",
+      "구독 계정을 가져와 전환하며, 전환할 때 MCP 토큰은 유지"
+    ],
+    "grok": [
+      "포함 할당량과 Build / Imagine / Chat 분류, 선불 잔액, 온디맨드 사용량",
+      "격리된 로그인과 명시적 전환을 지원하는 여러 OAuth / SuperGrok 계정",
+      "로컬 Grok CLI 로그의 최근 세션"
+    ],
+    "commonTitle": "세 공급자 공통",
+    "common": [
+      { "title": "메뉴 막대에서 한눈에", "text": "현재 탭을 따르거나, 최대 두 공급자를 메뉴 막대에 함께 표시합니다." },
+      { "title": "플로팅 창", "text": "세 플랫폼 모두에서 항상 위에 떠 있는 창으로, 최대 세 공급자를 캡슐, 카드, 링, 배터리 스타일로 보여 주며 불투명도 조절과 위치 고정을 지원합니다." },
+      { "title": "메인 패널 정리", "text": "쓰지 않는 공급자는 메인 패널에서 숨기고, 하나만 남으면 공급자 탭을 표시하지 않습니다." },
+      { "title": "API 환산 비용", "text": "오늘, 이번 주기, 지난 주기, 이번 달 또는 사용자 지정 범위를 로컬 로그로 계산합니다." },
+      { "title": "토큰 차트", "text": "연간 사용량을 히트맵, 꺾은선, 막대 차트로 일별, 주별, 누적으로 봅니다." },
+      { "title": "테마와 언어", "text": "라이트, 다크, 시스템 설정 모양과 7개 언어를 지원합니다." },
+      { "title": "표시 글꼴", "text": "메인 패널과 설정 창에 시스템 글꼴이나 설치된 다른 글꼴을 사용할 수 있습니다." },
+      { "title": "업데이트와 위젯", "text": "세 플랫폼 모두 서명 검증을 거치는 내장 업데이트를 제공하며, macOS 14+에서는 데스크톱 위젯을 쓸 수 있습니다." },
+      { "title": "네트워크 프록시", "text": "시스템 설정을 따르거나 HTTP, SOCKS5를 사용합니다. 프록시 비밀번호는 시스템 자격 증명 저장소에 보관됩니다." }
+    ]
+  },
+  "shots": {
+    "title": "스크린샷",
+    "note": "스크린샷은 macOS와 Windows에서 실행한 v1 화면입니다.",
+    "main": "메인 패널",
+    "cost": "API 환산 비용",
+    "estimate": "구독 할당량 추정",
+    "accounts": "공급자 계정",
+    "display": "표시 설정",
+    "windows": "Windows 설정과 Grok 패널"
+  },
+  "privacy": {
+    "title": "개인정보",
+    "lead": "Quosparr는 로컬 CLI 파일을 읽고, 각 공급자의 자체 엔드포인트, 공개 상태 및 가격 소스, 업데이트용 GitHub에만 접속합니다. Quosparr 자체 서버는 없습니다.",
+    "items": [
+      { "title": "전용 데이터 폴더", "text": "비밀이 아닌 파생 데이터는 ~/.quosparr에 저장하며, ~/.codex에는 앱 캐시를 쓰지 않습니다." },
+      { "title": "자격 증명은 내 컴퓨터에", "text": "관리 계정 사본은 소유자만 접근할 수 있는 권한으로 저장하며, 계정 인덱스에는 토큰이 없습니다." },
+      { "title": "로그에 토큰 없음", "text": "토큰과 API 키는 로그, 자체 점검 출력, issue 템플릿에 나타나지 않습니다." },
+      { "title": "비용은 로컬에서 계산", "text": "API 환산 비용은 로컬 세션 로그에서 계산하며, 세션 내용은 업로드하지 않습니다." },
+      { "title": "신중한 쓰기", "text": "공식 로그인 파일은 토큰 갱신이나 사용자가 전환을 확인할 때만 바뀌며, 세션 복구 전에 인덱스를 먼저 백업합니다." }
+    ]
+  },
+  "download": {
+    "title": "다운로드",
+    "lead": "시스템과 CPU에 맞는 패키지를 고르세요. 모든 패키지에 SQLite 런타임이 들어 있어 처음 실행할 때 따로 내려받지 않습니다.",
+    "latest": "최신 버전",
+    "released": "출시일",
+    "recommended": "이 기기에 권장",
+    "macReq": "macOS 12 이상이 필요하며, 데스크톱 위젯은 macOS 14+가 필요합니다.",
+    "macNote": "앱은 ad-hoc signed이며 notarized되지 않았습니다. 개발자를 확인할 수 없다는 메시지가 나오면 Quosparr.app을 마우스 오른쪽 버튼으로 클릭해 열기를 선택하거나, 시스템 설정 → 개인 정보 보호 및 보안에서 그래도 열기를 클릭하세요.",
+    "macFix": "앱이 손상되었다는 메시지가 나오면 응용 프로그램 폴더로 옮긴 뒤 다음을 실행하세요:",
+    "winReq": "Windows 10 또는 11",
+    "winPortable": "포터블",
+    "winSetup": "설치 프로그램",
+    "winNote": "설치 프로그램은 현재 사용자용으로 %LOCALAPPDATA%\\Programs\\Quosparr에 설치되며, 관리자 권한이 필요 없습니다.",
+    "portNote": "포터블 버전은 설치가 필요 없습니다. 압축을 풀고 쓰기 가능한 아무 폴더에서 <code>Quosparr.exe</code>를 실행하세요. Windows 11은 파일 탐색기에서 .tar.gz를 바로 풀 수 있고, Windows 10은 명령 프롬프트에서 <code>tar -xf</code> 뒤에 파일 이름을 붙여 실행합니다. 설정과 데이터는 사용자 폴더의 <code>.quosparr</code>에 저장됩니다.",
+    "linuxReq": "GTK3, AppIndicator, 트레이를 지원하는 데스크톱, GNOME Keyring이나 KWallet 같은 Secret Service 세션이 필요합니다.",
+    "linuxNote": ".deb는 패키지 관리자로 설치하거나, <code>install.sh</code>를 .tar.gz와 같은 폴더에 두고 <code>sh install.sh</code>를 실행해 <code>~/.local</code>에 설치하세요.",
+    "allReleases": "모든 릴리스",
+    "checksums": "SHA256 체크섬",
+    "upgrade": "CodexRunway를 사용했었나요?",
+    "copy": "복사",
+    "copied": "복사됨"
+  },
+  "panel": {
+    "caption": "샘플 데이터 · 탭을 눌러 공급자 전환",
+    "providers": "공급자",
+    "privacy": "프라이버시 모드",
+    "updates": "업데이트 확인",
+    "refresh": "새로고침",
+    "quota": "할당량",
+    "fiveHour": "5시간",
+    "weekly": "주간",
+    "left": "{n}% 남음",
+    "used": "{n}% 사용됨",
+    "burnRate": "소진 속도",
+    "exhaustsIn": "소진까지",
+    "projected": "리셋 시점 예측",
+    "nextReset": "다음 리셋: ",
+    "resetSwitch": "상대 시간 / 정확한 시간",
+    "validUntil": "유효 기한",
+    "tokenUsage": "토큰 사용량",
+    "daily": "일간",
+    "weeklyChart": "주간",
+    "total": "합계",
+    "official": "공식 집계일 {date}",
+    "speed": "속도 분석",
+    "ttft": "첫 토큰",
+    "basis": "최근 세션 {n}개 기준",
+    "details": "세부 정보 보기",
+    "apiCost": "API 환산 비용",
+    "apiEquivalent": "API 환산",
+    "extraUsage": "추가 사용량",
+    "grokIncluded": "포함 할당량",
+    "grokWeekly": "주간 포함 할당량",
+    "settings": "설정",
+    "quit": "종료"
+  },
+  "footer": {
+    "source": "소스 코드",
+    "releases": "릴리스",
+    "issues": "이슈",
+    "license": "라이선스",
+    "disclaimer": "Quosparr는 독립 프로젝트이며 OpenAI, Anthropic, xAI와 관련이 없습니다."
+  }
+}

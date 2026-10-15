@@ -128,6 +128,28 @@ func TierFromJWTClaim(tier uint64) TierKind {
 	return TierUnknown
 }
 
+// Monthly included allowances of the plans whose limit identifies them.
+const (
+	superGrokLimitCents      = 15_000
+	superGrokHeavyLimitCents = 150_000
+)
+
+// TierFromMonthlyLimit names the plan from its monthly included limit when
+// no tier field or claim names it: 15,000 cents is SuperGrok and 150,000
+// cents SuperGrok Heavy.
+func TierFromMonthlyLimit(limitCents *int64) TierKind {
+	if limitCents == nil {
+		return TierUnknown
+	}
+	switch *limitCents {
+	case superGrokLimitCents:
+		return TierSuperGrok
+	case superGrokHeavyLimitCents:
+		return TierSuperGrokHeavy
+	}
+	return TierUnknown
+}
+
 // TierDisplayNameFromJWTClaim maps a numeric claim to its label, "Tier N" for
 // an unmapped number.
 func TierDisplayNameFromJWTClaim(tier uint64) string {

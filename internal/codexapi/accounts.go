@@ -165,7 +165,7 @@ func shouldFetchWorkspaceName(target AccountTarget) bool {
 		return false
 	}
 	switch target.Tier {
-	case TierTeam, TierBusiness, TierEnterprise, TierEdu:
+	case TierTeam, TierBusiness, TierBusinessPremium, TierEnterprise, TierEdu:
 		return true
 	}
 	return false

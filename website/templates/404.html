@@ -1,0 +1,25 @@
+{{define "404.html"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page not found · Quosparr</title>
+<meta name="robots" content="noindex">
+{{template "head" .}}
+</head>
+<body>
+{{template "header" .}}
+<main id="main" class="wrap missing">
+  <img src="/img/logo-384.webp" width="88" height="88" alt="">
+  <h1>404</h1>
+  <p class="section-lead">This page flew away.</p>
+  <ul class="lang-list">
+    {{- range .Locales}}
+    <li><a class="btn" href="{{.Path}}" hreflang="{{.Lang}}" lang="{{.Lang}}" data-lang="{{.Code}}">{{.Name}}</a></li>
+    {{- end}}
+  </ul>
+</main>
+{{template "footer" .}}
+</body>
+</html>
+{{end}}

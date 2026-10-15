@@ -9,6 +9,7 @@ import (
 	"github.com/licoy/quosparr/internal/estimate"
 	"github.com/licoy/quosparr/internal/l10n"
 	"github.com/licoy/quosparr/internal/sessions"
+	"github.com/licoy/quosparr/internal/speed"
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
 )
@@ -24,6 +25,7 @@ const (
 	SectionQuotaEstimate  Section = "quotaEstimate"
 	SectionAPICost        Section = "apiCost"
 	SectionTokenHeatmap   Section = "tokenHeatmap"
+	SectionSpeed          Section = "speedAnalysis"
 	SectionSessionRepair  Section = "sessionRepair"
 	SectionRecentSessions Section = "recentSessions"
 )
@@ -43,9 +45,11 @@ type Snapshot struct {
 	Accounts   AccountsView
 	Codex      CodexView
 	Grok       GrokState
+	Claude     ClaudeState
 	ResetToday ResetTodayState
 	Refresh    RefreshView
 	StatusBar  StatusBarView
+	Floating   FloatingView
 }
 
 // AccountsView is the managed account list and the signed-in identity.
@@ -102,7 +106,11 @@ type CodexView struct {
 	DisplayedRange store.CostRange
 	CostScanNote   string
 
-	Heatmap        HeatmapData
+	Heatmap HeatmapData
+	// Speed is the model speed of the recent local sessions; SpeedError the
+	// user-facing error of its last scan.
+	Speed          *speed.Report
+	SpeedError     string
 	RecentSessions []sessions.Item
 	SessionReport  *sessions.Report
 

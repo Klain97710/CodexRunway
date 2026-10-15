@@ -2,13 +2,13 @@ package app
 
 import (
 	"context"
-	"github.com/licoy/quosparr/internal/personal"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/runway"
 )
 
@@ -18,7 +18,7 @@ func TestAccountActionsExplainUnsupportedCredentialMode(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := codex.NewStore(home, t.TempDir())
-	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Sources: runway.Sources{
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}, Sources: runway.Sources{
 		SwitchAccount: func(context.Context, string) (codex.SwitchResult, error) {
 			return codex.SwitchResult{}, codex.ErrCredentialStoreUnsupported
 		},

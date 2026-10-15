@@ -62,7 +62,7 @@ func allNonDefault() Preferences {
 		WidgetRefreshIntervalSeconds:              600,
 		APICostSummaryRange:                       CostRangeThisMonth,
 		MainPanelHeight:                           700.5,
-		MainPanelModuleOrder:                      []Module{ModuleSessionRepair, ModuleRecentSessions, ModuleQuota, ModuleTokenUsage, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost},
+		MainPanelModuleOrder:                      []Module{ModuleSessionRepair, ModuleRecentSessions, ModuleQuota, ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost},
 		ShowsQuotaSummary:                         false,
 		ShowsResetCreditsSummary:                  false,
 		ShowsQuotaEstimateSummary:                 false,
@@ -83,6 +83,8 @@ func allNonDefault() Preferences {
 		RateLimitResetTodayAlertsEnabled:          false,
 		ExportsStatusJSON:                         true,
 		AccountPrivacyModeEnabled:                 true,
+		// The frozen Swift fixture knows no speed analysis switch; it reads as on.
+		ShowsSpeedAnalysis: true,
 	}
 }
 
@@ -91,8 +93,8 @@ func TestThirtyFourFieldsAllDifferFromDefaults(t *testing.T) {
 	typ := d.Type()
 	count := 0
 	for i := 0; i < typ.NumField(); i++ {
-		if typ.Field(i).Tag.Get("json") == "" {
-			continue // the unexported extra map
+		if typ.Field(i).Tag.Get("json") == "" || typ.Field(i).Name == "ThemeColor" || typ.Field(i).Name == "FontFamily" || typ.Field(i).Name == "QuotaResetTimeFormat" || typ.Field(i).Name == "ProxyTestURL" || typ.Field(i).Name == "ShowsSpeedAnalysis" || typ.Field(i).Name == "StatusBarProviders" || typ.Field(i).Name == "FloatingWindow" || typ.Field(i).Name == "PanelProviders" {
+			continue // the unexported extra map, and the keys only Go writes
 		}
 		count++
 		if reflect.DeepEqual(d.Field(i).Interface(), a.Field(i).Interface()) {
@@ -166,9 +168,10 @@ func TestBoolMissingVersusExplicit(t *testing.T) {
 		"rateLimitResetTodayAlertsEnabled": func(p *Preferences) *bool { return &p.RateLimitResetTodayAlertsEnabled },
 		"exportsStatusJSON":                func(p *Preferences) *bool { return &p.ExportsStatusJSON },
 		"accountPrivacyModeEnabled":        func(p *Preferences) *bool { return &p.AccountPrivacyModeEnabled },
+		"showsSpeedAnalysis":               func(p *Preferences) *bool { return &p.ShowsSpeedAnalysis },
 	}
-	if len(bools) != 17 {
-		t.Fatalf("expected 17 bool fields, have %d", len(bools))
+	if len(bools) != 18 {
+		t.Fatalf("expected 18 bool fields, have %d", len(bools))
 	}
 	defaults := DefaultPreferences()
 	for key, field := range bools {
@@ -228,7 +231,8 @@ func TestEveryEnumValue(t *testing.T) {
 	checkEnum(t, "statusBarMetersDetailStyle", MetersDetails(), MetersDetail.Valid, func(p Preferences) MetersDetail { return p.StatusBarMetersDetailStyle })
 	checkEnum(t, "statusBarBatteryScope", BatteryScopes(), BatteryScope.Valid, func(p Preferences) BatteryScope { return p.StatusBarBatteryScope })
 	checkEnum(t, "statusBarBatteryDetailStyle", BatteryDetails(), BatteryDetail.Valid, func(p Preferences) BatteryDetail { return p.StatusBarBatteryDetailStyle })
-	checkEnum(t, "statusBarProviderScope", StatusBarProviderScopes(), StatusBarProviderScope.Valid, func(p Preferences) StatusBarProviderScope { return p.StatusBarProviderScope })
+	// custom with no list falls back to selected, so it is not a round-trip value here.
+	checkEnum(t, "statusBarProviderScope", []StatusBarProviderScope{ProviderScopeSelected, ProviderScopeBoth}, StatusBarProviderScope.Valid, func(p Preferences) StatusBarProviderScope { return p.StatusBarProviderScope })
 	checkEnum(t, "apiCostSummaryRange", CostRanges(), CostRange.Valid, func(p Preferences) CostRange { return p.APICostSummaryRange })
 	checkEnum(t, "tokenUsageChartStyle", ChartStyles(), ChartStyle.Valid, func(p Preferences) ChartStyle { return p.TokenUsageChartStyle })
 }
@@ -247,7 +251,7 @@ func TestEnumRawValuesMatchSwift(t *testing.T) {
 		got  []string
 		want []string
 	}{
-		"provider":      {conv(Providers()), strs("codex", "grok")},
+		"provider":      {conv(Providers()), strs("codex", "claude", "grok")},
 		"language":      {conv(Languages()), strs("system", "english", "simplifiedChinese", "traditionalChinese", "korean", "japanese", "russian", "french")},
 		"appearance":    {conv(Appearances()), strs("system", "light", "dark")},
 		"background":    {conv(PanelBackgrounds()), strs("translucent", "opaque")},
@@ -255,16 +259,48 @@ func TestEnumRawValuesMatchSwift(t *testing.T) {
 		"metersDetail":  {conv(MetersDetails()), strs("remainingPercent", "resetTime", "both")},
 		"batteryScope":  {conv(BatteryScopes()), strs("fiveHour", "weekly", "both")},
 		"batteryDetail": {conv(BatteryDetails()), strs("countdown", "remainingPercent")},
-		"providerScope": {conv(StatusBarProviderScopes()), strs("selected", "both")},
+		"providerScope": {conv(StatusBarProviderScopes()), strs("selected", "both", "custom")},
 		"costRange":     {conv(CostRanges()), strs("today", "current", "previous", "thisMonth")},
 		"chart":         {conv(ChartStyles()), strs("heatmap", "line", "bar")},
-		"modules":       {conv(Modules()), strs("quota", "tokenUsage", "rateLimitResetToday", "quotaEstimate", "resetCredits", "apiCost", "sessionRepair", "recentSessions")},
+		"modules":       {conv(Modules()), strs("quota", "tokenUsage", "speedAnalysis", "rateLimitResetToday", "quotaEstimate", "resetCredits", "apiCost", "sessionRepair", "recentSessions")},
 		"windowMode":    {conv(WindowModes()), strs("auto", "rollingWeek")},
 		"proxyMode":     {conv(ProxyModes()), strs("system", "http", "socks5")},
 	} {
 		if !slices.Equal(tc.got, tc.want) {
 			t.Errorf("%s: %v, want %v", name, tc.got, tc.want)
 		}
+	}
+}
+
+func TestStatusBarProviderSelection(t *testing.T) {
+	both := mustDecode(t, `{"statusBarProviderScope":"both"}`)
+	if both.StatusBarProviderScope != ProviderScopeBoth || !slices.Equal(both.StatusBarSelection(), []Provider{ProviderCodex, ProviderGrok}) {
+		t.Fatalf("both = %+v selection %v", both.StatusBarProviderScope, both.StatusBarSelection())
+	}
+	enc, err := EncodePreferences(both)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(enc), "statusBarProviders") || !strings.Contains(string(enc), `"statusBarProviderScope":"both"`) {
+		t.Fatalf("legacy both must stay both without a provider list: %s", enc)
+	}
+	custom := mustDecode(t, `{"statusBarProviderScope":"custom","statusBarProviders":["claude","codex","nope","codex"]}`)
+	if custom.StatusBarProviderScope != ProviderScopeCustom || !slices.Equal(custom.StatusBarProviders, []Provider{ProviderCodex, ProviderClaude}) {
+		t.Fatalf("custom = %v %v", custom.StatusBarProviderScope, custom.StatusBarProviders)
+	}
+	enc, err = EncodePreferences(custom)
+	if err != nil || !strings.Contains(string(enc), `"statusBarProviders":["codex","claude"]`) {
+		t.Fatalf("encode custom: %v %s", err, enc)
+	}
+	if back := mustDecode(t, string(enc)); !slices.Equal(back.StatusBarProviders, custom.StatusBarProviders) {
+		t.Fatalf("round trip %v", back.StatusBarProviders)
+	}
+	empty := mustDecode(t, `{"statusBarProviderScope":"custom","statusBarProviders":["nope"]}`)
+	if empty.StatusBarProviderScope != ProviderScopeSelected || empty.StatusBarProviders != nil {
+		t.Fatalf("empty custom = %v %v", empty.StatusBarProviderScope, empty.StatusBarProviders)
+	}
+	if _, err := DecodePreferences([]byte(`{"statusBarProviders":"codex"}`)); !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("bad list: %v", err)
 	}
 }
 
@@ -386,11 +422,11 @@ func TestModuleOrderNormalization(t *testing.T) {
 		{"empty array", `{"mainPanelModuleOrder":[]}`, d},
 		{"null", `{"mainPanelModuleOrder":null}`, d},
 		{"Swift test: duplicates, unknown, missing", `{"mainPanelModuleOrder":["apiCost","unknown-future-module","quota","apiCost"]}`,
-			[]Module{ModuleTokenUsage, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost, ModuleQuota, ModuleSessionRepair, ModuleRecentSessions}},
+			[]Module{ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost, ModuleQuota, ModuleSessionRepair, ModuleRecentSessions}},
 		{"user order kept, missing appended before neighbours", `{"mainPanelModuleOrder":["recentSessions","apiCost"]}`,
-			[]Module{ModuleSessionRepair, ModuleRecentSessions, ModuleQuota, ModuleTokenUsage, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost}},
+			[]Module{ModuleSessionRepair, ModuleRecentSessions, ModuleQuota, ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost}},
 		{"reversed is kept", `{"mainPanelModuleOrder":["recentSessions","sessionRepair","apiCost","resetCredits","quotaEstimate","rateLimitResetToday","tokenUsage","quota"]}`,
-			[]Module{ModuleRecentSessions, ModuleSessionRepair, ModuleAPICost, ModuleResetCredits, ModuleQuotaEstimate, ModuleRateLimitResetToday, ModuleTokenUsage, ModuleQuota}},
+			[]Module{ModuleRecentSessions, ModuleSessionRepair, ModuleAPICost, ModuleResetCredits, ModuleQuotaEstimate, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleTokenUsage, ModuleQuota}},
 		{"new module inserted before its default neighbour (quotaEstimate before resetCredits)",
 			`{"mainPanelModuleOrder":["quota","tokenUsage","rateLimitResetToday","resetCredits","apiCost","sessionRepair","recentSessions"]}`, d},
 		{"all unknown", `{"mainPanelModuleOrder":["a","b"]}`, d},
@@ -438,7 +474,7 @@ func TestNormalizeModuleOrderProperties(t *testing.T) {
 func TestMoveAndResetModuleOrder(t *testing.T) {
 	p := DefaultPreferences()
 	p.MoveMainPanelModule(ModuleAPICost, -1)
-	want := []Module{ModuleQuota, ModuleTokenUsage, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleAPICost, ModuleResetCredits, ModuleSessionRepair, ModuleRecentSessions}
+	want := []Module{ModuleQuota, ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleAPICost, ModuleResetCredits, ModuleSessionRepair, ModuleRecentSessions}
 	if !slices.Equal(p.MainPanelModuleOrder, want) {
 		t.Errorf("after move: %v", p.MainPanelModuleOrder)
 	}
@@ -542,7 +578,7 @@ func TestEncodeNormalizesAndValidates(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := mustDecode(t, string(enc))
-	if got.MainPanelHeight != 900 || got.WidgetRefreshIntervalSeconds != 60 || got.RateLimitResetTodayRefreshIntervalSeconds != 300 || len(got.MainPanelModuleOrder) != 8 {
+	if got.MainPanelHeight != 900 || got.WidgetRefreshIntervalSeconds != 60 || got.RateLimitResetTodayRefreshIntervalSeconds != 300 || len(got.MainPanelModuleOrder) != len(Modules()) {
 		t.Errorf("not normalized: %+v", got)
 	}
 	if p.MainPanelHeight != 5000 {
@@ -584,4 +620,297 @@ func TestEncodedFloatFormat(t *testing.T) {
 func jsonInt(key string, v int) string {
 	b, _ := json.Marshal(map[string]int{key: v})
 	return string(b)
+}
+
+func TestThemeColorIsGoOnlyAndLenient(t *testing.T) {
+	enc, err := EncodePreferences(DefaultPreferences())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(enc), "themeColor") {
+		t.Errorf("the brand color is written: %s", enc)
+	}
+	for raw, want := range map[string]string{
+		`"#007aff"`: "#007AFF",
+		`"#B3582D"`: "#B3582D",
+		`"blue"`:    "",
+		`"#12345"`:  "",
+		`"#GGGGGG"`: "",
+		`12`:        "",
+		`null`:      "",
+	} {
+		got := mustDecode(t, `{"themeColor":`+raw+`}`)
+		if got.ThemeColor != want {
+			t.Errorf("themeColor %s decoded to %q, want %q", raw, got.ThemeColor, want)
+		}
+	}
+	p := DefaultPreferences()
+	p.ThemeColor = "#62ba46"
+	enc, err = EncodePreferences(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := mustDecode(t, string(enc)); got.ThemeColor != "#62BA46" {
+		t.Errorf("round trip = %q", got.ThemeColor)
+	}
+}
+
+func TestPanelProvidersAreGoOnlyAndLenient(t *testing.T) {
+	enc, err := EncodePreferences(DefaultPreferences())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(enc), "panelProviders") {
+		t.Errorf("showing every provider is written: %s", enc)
+	}
+	for raw, want := range map[string][]Provider{
+		`["grok","codex","codex"]`: {ProviderCodex, ProviderGrok},
+		`["claude","gemini"]`:      {ProviderClaude},
+		`["gemini"]`:               nil,
+		`[]`:                       nil,
+		`"codex"`:                  nil,
+		`[1]`:                      nil,
+		`null`:                     nil,
+	} {
+		if got := mustDecode(t, `{"panelProviders":`+raw+`}`); !slices.Equal(got.PanelProviders, want) {
+			t.Errorf("panelProviders %s decoded to %v, want %v", raw, got.PanelProviders, want)
+		}
+	}
+	p := DefaultPreferences()
+	p.PanelProviders = []Provider{ProviderCodex}
+	if enc, err = EncodePreferences(p); err != nil {
+		t.Fatal(err)
+	}
+	if got := mustDecode(t, string(enc)); !slices.Equal(got.PanelProviders, p.PanelProviders) {
+		t.Errorf("round trip = %v", got.PanelProviders)
+	}
+}
+
+func TestPanelSelectionKeepsSelectedProviderShown(t *testing.T) {
+	p := DefaultPreferences()
+	if got := p.PanelSelection(); !slices.Equal(got, Providers()) {
+		t.Errorf("default selection = %v, want every provider", got)
+	}
+	p.SelectedProvider = ProviderGrok
+	p.PanelProviders = []Provider{ProviderGrok, ProviderClaude}
+	p.Normalize()
+	if p.SelectedProvider != ProviderGrok {
+		t.Errorf("a shown selection moved to %s", p.SelectedProvider)
+	}
+	if got := p.PanelSelection(); !slices.Equal(got, []Provider{ProviderClaude, ProviderGrok}) {
+		t.Errorf("selection = %v, want Providers() order", got)
+	}
+	p.PanelProviders = []Provider{ProviderClaude}
+	p.Normalize()
+	if p.SelectedProvider != ProviderClaude {
+		t.Errorf("a hidden selection stayed on %s, want claude", p.SelectedProvider)
+	}
+	got := mustDecode(t, `{"selectedProvider":"grok","panelProviders":["codex"]}`)
+	if got.SelectedProvider != ProviderCodex {
+		t.Errorf("decoded a hidden selection as %s, want codex", got.SelectedProvider)
+	}
+}
+
+func TestFontFamilyIsGoOnlyAndLenient(t *testing.T) {
+	enc, err := EncodePreferences(DefaultPreferences())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(enc), "fontFamily") {
+		t.Errorf("the system font is written: %s", enc)
+	}
+	for raw, want := range map[string]string{
+		`"PingFang SC"`:      "PingFang SC",
+		`"  Menlo  "`:        "Menlo",
+		`"Menlo, monospace"`: "",
+		`"Bad\nName"`:        "",
+		`12`:                 "",
+		`null`:               "",
+	} {
+		if got := mustDecode(t, `{"fontFamily":`+raw+`}`); got.FontFamily != want {
+			t.Errorf("fontFamily %s decoded to %q, want %q", raw, got.FontFamily, want)
+		}
+	}
+	p := DefaultPreferences()
+	p.FontFamily = "Source Han Serif SC"
+	if enc, err = EncodePreferences(p); err != nil {
+		t.Fatal(err)
+	}
+	if got := mustDecode(t, string(enc)); got.FontFamily != p.FontFamily {
+		t.Errorf("round trip = %q", got.FontFamily)
+	}
+	if got := NormalizeFontFamily(strings.Repeat("a", 257)); got != "" {
+		t.Errorf("an overlong name normalized to %q", got)
+	}
+}
+
+func TestQuotaResetTimeFormatIsGoOnlyAndLenient(t *testing.T) {
+	enc, err := EncodePreferences(DefaultPreferences())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(enc), "quotaResetTimeFormat") {
+		t.Errorf("the relative format is written: %s", enc)
+	}
+	for raw, want := range map[string]ResetTimeFormat{
+		`"exact"`:    ResetTimeExact,
+		`"relative"`: ResetTimeRelative,
+		`"Exact"`:    ResetTimeRelative,
+		`1`:          ResetTimeRelative,
+		`null`:       ResetTimeRelative,
+	} {
+		if got := mustDecode(t, `{"quotaResetTimeFormat":`+raw+`}`); got.QuotaResetTimeFormat != want {
+			t.Errorf("quotaResetTimeFormat %s decoded to %q, want %q", raw, got.QuotaResetTimeFormat, want)
+		}
+	}
+	p := DefaultPreferences()
+	p.QuotaResetTimeFormat = ResetTimeExact
+	if enc, err = EncodePreferences(p); err != nil {
+		t.Fatal(err)
+	}
+	if got := mustDecode(t, string(enc)); got.QuotaResetTimeFormat != ResetTimeExact {
+		t.Errorf("round trip = %q", got.QuotaResetTimeFormat)
+	}
+	p.QuotaResetTimeFormat = "bogus"
+	if p.Normalize(); p.QuotaResetTimeFormat != ResetTimeRelative {
+		t.Errorf("normalized bogus format = %q", p.QuotaResetTimeFormat)
+	}
+	if ResetTimeExact.Toggled() != ResetTimeRelative || ResetTimeRelative.Toggled() != ResetTimeExact {
+		t.Error("Toggled does not flip the format")
+	}
+}
+
+func TestProxyTestURLIsGoOnlyAndLenient(t *testing.T) {
+	enc, err := EncodePreferences(DefaultPreferences())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(enc), "proxyTestURL") {
+		t.Errorf("the default test site is written: %s", enc)
+	}
+	if got := DefaultPreferences().ProxyTestTarget(); got != DefaultProxyTestURL {
+		t.Errorf("default target = %q", got)
+	}
+	for raw, want := range map[string]string{
+		`"https://example.com/ping"`:     "https://example.com/ping",
+		`"` + DefaultProxyTestURL + `"`:  "",
+		`"` + DefaultProxyTestURL + `/"`: "",
+		`"ftp://example.com"`:            "",
+		`"https://u:p@example.com"`:      "",
+		`1`:                              "",
+		`null`:                           "",
+	} {
+		if got := mustDecode(t, `{"proxyTestURL":`+raw+`}`); got.ProxyTestURL != want {
+			t.Errorf("proxyTestURL %s decoded to %q, want %q", raw, got.ProxyTestURL, want)
+		}
+	}
+	p := DefaultPreferences()
+	p.ProxyTestURL = "http://192.168.1.2:8080/health"
+	if enc, err = EncodePreferences(p); err != nil {
+		t.Fatal(err)
+	}
+	if got := mustDecode(t, string(enc)); got.ProxyTestTarget() != p.ProxyTestURL {
+		t.Errorf("round trip = %q", got.ProxyTestURL)
+	}
+}
+
+func TestParseProxyTestURL(t *testing.T) {
+	for raw, want := range map[string]string{
+		" example.com ":            "https://example.com",
+		"http://example.com/a?b=c": "http://example.com/a?b=c",
+		"HTTPS://Example.com":      "https://Example.com",
+	} {
+		if got, err := ParseProxyTestURL(raw); err != nil || got != want {
+			t.Errorf("ParseProxyTestURL(%q) = %q, %v; want %q", raw, got, err, want)
+		}
+	}
+	for _, raw := range []string{"", "   ", "https://", "file:///etc/hosts", "https://a b.com", "https://user@example.com", "mailto:a@b.c"} {
+		if _, err := ParseProxyTestURL(raw); !errors.Is(err, ErrInvalidProxyTestURL) {
+			t.Errorf("ParseProxyTestURL(%q) err = %v", raw, err)
+		}
+	}
+}
+
+func TestShowsSpeedAnalysisIsWrittenOnlyWhenOff(t *testing.T) {
+	p := DefaultPreferences()
+	enc, err := EncodePreferences(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(enc), "showsSpeedAnalysis") || strings.Contains(string(enc), "speedAnalysis") {
+		t.Errorf("a default document carries the speed analysis: %s", enc)
+	}
+	p.ShowsSpeedAnalysis = false
+	enc, err = EncodePreferences(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(enc), `"showsSpeedAnalysis":false`) {
+		t.Errorf("off is not written: %s", enc)
+	}
+	if got := mustDecode(t, string(enc)); got.ShowsSpeedAnalysis {
+		t.Error("off did not round trip")
+	}
+	if got := mustDecode(t, `{"showsSpeedAnalysis":true}`); !got.ShowsSpeedAnalysis {
+		t.Error("explicit on read as off")
+	}
+	// An explicit true is the default and is not written back.
+	back, err := EncodePreferences(mustDecode(t, `{"showsSpeedAnalysis":true,"futureKey":1}`))
+	if err != nil || strings.Contains(string(back), "showsSpeedAnalysis") || !strings.Contains(string(back), `"futureKey":1`) {
+		t.Errorf("re-encode = %s, %v", back, err)
+	}
+}
+
+func TestSpeedModuleOrderWire(t *testing.T) {
+	// The Swift order has no speedAnalysis: reading puts it after tokenUsage and
+	// writing leaves it out again, so the document is the one that was read.
+	const swiftOrder = `["sessionRepair","recentSessions","quota","tokenUsage","rateLimitResetToday","quotaEstimate","resetCredits","apiCost"]`
+	p := mustDecode(t, `{"mainPanelModuleOrder":`+swiftOrder+`}`)
+	want := []Module{ModuleSessionRepair, ModuleRecentSessions, ModuleQuota, ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost}
+	if !slices.Equal(p.MainPanelModuleOrder, want) {
+		t.Fatalf("read order = %v", p.MainPanelModuleOrder)
+	}
+	enc, err := EncodePreferences(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(enc), `"mainPanelModuleOrder":`+swiftOrder) {
+		t.Errorf("written order changed: %s", enc)
+	}
+}
+
+func TestSpeedModuleOrderMovedByTheUserRoundTrips(t *testing.T) {
+	for _, order := range [][]Module{
+		{ModuleSpeedAnalysis, ModuleQuota, ModuleTokenUsage, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost, ModuleSessionRepair, ModuleRecentSessions},
+		{ModuleQuota, ModuleTokenUsage, ModuleRateLimitResetToday, ModuleSpeedAnalysis, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost, ModuleSessionRepair, ModuleRecentSessions},
+		{ModuleQuota, ModuleTokenUsage, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost, ModuleSessionRepair, ModuleRecentSessions, ModuleSpeedAnalysis},
+		{ModuleRecentSessions, ModuleSessionRepair, ModuleAPICost, ModuleResetCredits, ModuleQuotaEstimate, ModuleRateLimitResetToday, ModuleTokenUsage, ModuleQuota, ModuleSpeedAnalysis},
+	} {
+		p := DefaultPreferences()
+		p.MainPanelModuleOrder = slices.Clone(order)
+		enc, err := EncodePreferences(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(enc), `"speedAnalysis"`) {
+			t.Errorf("order %v lost the moved module: %s", order, enc)
+		}
+		if got := mustDecode(t, string(enc)).MainPanelModuleOrder; !slices.Equal(got, order) {
+			t.Errorf("order %v round-tripped to %v", order, got)
+		}
+	}
+}
+
+func TestSpeedModuleOrderDefaultsAreOmittedWhereverTheyFall(t *testing.T) {
+	// Moving a neighbour does not move the module in the written form: whatever
+	// order reading would rebuild is not written.
+	p := DefaultPreferences()
+	p.MoveMainPanelModule(ModuleQuota, 1) // tokenUsage, quota, speedAnalysis, ...
+	enc, err := EncodePreferences(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := mustDecode(t, string(enc)).MainPanelModuleOrder; !slices.Equal(got, p.MainPanelModuleOrder) {
+		t.Errorf("order %v round-tripped to %v", p.MainPanelModuleOrder, got)
+	}
 }

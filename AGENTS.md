@@ -4,7 +4,8 @@
 
 - This branch migrates the Klain97710 CodexRunway edition onto upstream Quosparr Go + mygo/ui. It is not an accepted daily replacement yet.
 - Follow `docs/superpowers/plans/2026-10-14-quosparr-migration-validation.md`; retain Swift stable code on `personal/legacy-swift` and keep `personal/main` stable until acceptance.
-- User-required behavior: Codex only; no Grok runtime or reset reactions; remaining-quota tray columns `5h | bar | %`, `7d | bar | %`; Pro hides standard 5h in the tray only; action-only context menu.
+- Upstream synchronized through `07ca0fe4f7d39c8c12e0e3ddc98d9ecadf41b76c` (v1.2.0 plus website changes) on 2026-10-15; source build is 0.2.0/2003. Installed build remains 2002 until a separately requested replacement.
+- User-required behavior: Codex only; no Grok/Claude runtime or reset reactions; remaining-quota tray columns `5h | bar | %`, `7d | bar | %`; Pro hides standard 5h in the tray only; action-only context menu. Floating windows, provider lists and deep links must also respect the production feature gate.
 - Work sequentially in the main agent. No subagents. Independent read-only tools may run in parallel.
 
 ## Architecture and compatibility
@@ -24,7 +25,7 @@
 - Production application data remains ~/.codex-runway; credential directories 0700, auth files and snapshots 0600, atomic writes. Acquire the legacy-compatible single lock before migrations or writes; skip upstream directory renaming when source and destination coincide.
 - Official Codex auth changes are limited to legitimate OAuth refresh or user-requested account switching. Non-current account refresh only writes the managed copy; reject stale writes after external switch/logout.
 - Session repair only edits session_index.jsonl after backup; never delete session directories.
-- Development packages disable updates, login items, system credential access and real notifications. Retained Grok code requires explicit test opt-in, never a user setting.
+- Development packages disable updates, login items, system credential access and real notifications. Retained Grok and Claude code requires explicit test opt-in, never a user setting. The synthetic sandbox also owns CLAUDE_CONFIG_DIR.
 
 ## Builds and releases
 

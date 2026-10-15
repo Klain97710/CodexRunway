@@ -2,7 +2,6 @@ package runway
 
 import (
 	"context"
-	"github.com/licoy/quosparr/internal/personal"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -12,6 +11,7 @@ import (
 	"github.com/licoy/quosparr/internal/codexapi"
 	"github.com/licoy/quosparr/internal/export"
 	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
 	"github.com/licoy/quosparr/internal/usage/decimal"
@@ -262,7 +262,7 @@ func newService(t *testing.T, f *fake, tweak func(*Options)) (*Service, *rec) {
 	t.Helper()
 	r := &rec{}
 	dir := t.TempDir()
-	o := Options{Features: personal.Features{Grok: true},
+	o := Options{Features: personal.Features{Grok: true, Claude: true},
 		Sources:     f.sources(),
 		Preferences: testPrefs(),
 		Now:         f.clk.Now,
@@ -315,4 +315,12 @@ func switchTo(f *fake, auth codex.Auth) func(context.Context, string) (codex.Swi
 		f.setAuth(auth, nil)
 		return codex.SwitchResult{Auth: auth, Account: codex.ManagedAccount{ID: id, PlanType: "plus"}}, nil
 	}
+}
+
+// showPanel marks the main panel open without the refresh opening it starts,
+// for tests of what a full refresh does while the panel shows.
+func showPanel(s *Service) {
+	s.mu.Lock()
+	s.panelOpen = true
+	s.mu.Unlock()
 }

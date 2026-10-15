@@ -19,7 +19,7 @@
     "infoPlist": {
       "LSUIElement": true,
       "SUPublicEDKey": "2rx0XvBCujbFPl3oRQicR2dZIWzknWEsnWr5o2wjK2Y=",
-      "CFBundleVersion": "2002",
+      "CFBundleVersion": "2003",
       "CFBundleURLTypes": [
         {
           "CFBundleURLName": "CodexRunway Widget",

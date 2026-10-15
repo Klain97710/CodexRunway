@@ -14,7 +14,7 @@ const grokInstallGuideURL = "https://docs.x.ai/build/overview"
 
 // panelGrokQuota is GrokDashboardView: the included quota rows, the billing
 // details behind the info button, or the empty state of the CLI.
-func panelGrokQuota(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState) {
+func panelGrokQuota(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState, rs resetSwitch) {
 	g := snap.Grok
 	refreshing := g.Refreshing || snap.Refresh.Has(runway.SectionQuota)
 	spec := sectionSpec{title: l.Text(l10n.KeyGrokIncludedQuota), refreshing: refreshing, refresh: sectionRefresh(acts, runway.SectionQuota)}
@@ -30,7 +30,7 @@ func panelGrokQuota(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts 
 		ui.Column(c).Gap(12).Children(func() {
 			now := time.Now()
 			for i, m := range g.Meters {
-				grokMeterRow(c, l, m, i == 0, now)
+				grokMeterRow(c, l, m, i == 0, now, rs)
 			}
 		})
 	})
@@ -38,7 +38,7 @@ func panelGrokQuota(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts 
 
 // grokMeterRow is GrokQuotaMeterRow: the overall row is a quota row, the
 // per-product rows are slim used-share bars.
-func grokMeterRow(c *ui.Context, l l10n.Localizer, m runway.Meter, primary bool, now time.Time) {
+func grokMeterRow(c *ui.Context, l l10n.Localizer, m runway.Meter, primary bool, now time.Time, rs resetSwitch) {
 	if primary {
 		t := c.Theme()
 		ui.Column(c).Gap(6).Children(func() {
@@ -50,7 +50,7 @@ func grokMeterRow(c *ui.Context, l l10n.Localizer, m runway.Meter, primary bool,
 			if m.HasReset() {
 				ui.Row(c).Children(func() {
 					ui.Spacer(c).Grow(1)
-					dimText(c, resetCountdown(l, m.ResetsAt, now)).FontFeatures("tnum").SingleLine()
+					resetLine(c, l, "reset-grok", m.ResetsAt, now, rs)
 				})
 			}
 		})

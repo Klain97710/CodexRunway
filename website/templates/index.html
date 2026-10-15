@@ -1,0 +1,324 @@
+{{define "head"}}<meta name="color-scheme" content="light dark">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#F7F3EE">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1B1C1F">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="stylesheet" href="{{.CSS}}">
+<script>(function(){try{var t=localStorage.getItem("quosparr-theme");if(t==="light"||t==="dark"){document.documentElement.dataset.theme=t}}catch(e){}})();</script>
+<script src="{{.JS}}" defer></script>
+{{end}}
+
+{{define "header"}}<a class="skip" href="#main">{{.T.UI.Skip}}</a>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="{{.Locale.Path}}"><img src="/img/logo-192.png" width="28" height="28" alt=""><span>Quosparr</span></a>
+    <nav class="nav" aria-label="Quosparr">
+      <a href="{{.Locale.Path}}#features">{{.T.Nav.Features}}</a>
+      <a href="{{.Locale.Path}}#screenshots">{{.T.Nav.Screenshots}}</a>
+      <a href="{{.Locale.Path}}#privacy">{{.T.Nav.Privacy}}</a>
+      <a href="{{.Locale.Path}}#download">{{.T.Nav.Download}}</a>
+    </nav>
+    <div class="tools">
+      <details class="lang">
+        <summary aria-label="{{.T.UI.Language}}">{{icon "translate-2"}}<span class="lang-name">{{.Locale.Name}}</span>{{icon "arrow-down-s-line"}}</summary>
+        <ul>
+          {{- range .Locales}}
+          <li><a href="{{.Path}}" hreflang="{{.Lang}}" lang="{{.Lang}}" data-lang="{{.Code}}"{{if eq .Code $.Locale.Code}} aria-current="page"{{end}}>{{.Name}}</a></li>
+          {{- end}}
+        </ul>
+      </details>
+      <button class="icon-btn theme" type="button" aria-label="{{.T.UI.ThemeSystem}}" title="{{.T.UI.ThemeSystem}}"
+        data-system="{{.T.UI.ThemeSystem}}" data-light="{{.T.UI.ThemeLight}}" data-dark="{{.T.UI.ThemeDark}}">
+        <span class="t-system">{{icon "contrast-2-line"}}</span><span class="t-light">{{icon "sun-line"}}</span><span class="t-dark">{{icon "moon-line"}}</span>
+      </button>
+      <a class="icon-btn" href="{{.Repo}}" aria-label="GitHub" title="GitHub">{{icon "github-fill"}}</a>
+    </div>
+  </div>
+</header>
+{{end}}
+
+{{define "footer"}}<footer class="site-footer">
+  <div class="wrap foot">
+    <a class="brand" href="{{.Locale.Path}}"><img src="/img/logo-192.png" width="24" height="24" alt="" loading="lazy"><span>Quosparr</span></a>
+    <nav class="foot-links" aria-label="{{.T.Footer.Source}}">
+      <a href="{{.Repo}}">{{.T.Footer.Source}}</a>
+      <a href="{{.Repo}}/releases">{{.T.Footer.Releases}}</a>
+      <a href="{{.Repo}}/issues">{{.T.Footer.Issues}}</a>
+      <a href="{{.Repo}}/blob/main/LICENSE">{{.T.Footer.License}} (AGPL-3.0)</a>
+    </nav>
+    <p class="fine">{{.T.Footer.Disclaimer}}</p>
+    <p class="fine">© {{.Year}} Licoy</p>
+  </div>
+</footer>
+{{end}}
+
+{{define "dl"}}<a class="btn{{if .primary}} primary{{end}}" href="{{.asset.URL}}" data-asset="{{.key}}" data-name="{{.name}}">{{icon "download-2-line"}}<span>{{.label}}</span>{{with .asset.HumanSize}}<small>{{.}}</small>{{end}}</a>{{end}}
+
+{{define "panel"}}<figure class="hero-app">
+  <div class="app" data-app role="group" aria-label="{{.T.Shots.Main}}">
+    <div class="app-top">
+      <div class="app-title"><img src="/img/logo-192.png" width="20" height="20" alt=""><span>Quosparr</span>
+        <span class="app-acts" aria-hidden="true">
+          <span class="app-act on" title="{{.T.Panel.Privacy}}">{{icon "eye-off-line"}}</span>
+          <span class="app-act" title="{{.T.Panel.Updates}}">{{icon "download-cloud-2-line"}}</span>
+          <span class="app-act" title="GitHub">{{icon "github-fill"}}</span>
+          <span class="app-act" title="{{.T.Panel.Refresh}}">{{icon "refresh-line"}}</span>
+        </span>
+      </div>
+      <div class="app-tabs" role="tablist" aria-label="{{.T.Panel.Providers}}">
+        {{- range $i, $p := .Panel.Providers}}
+        <button type="button" role="tab" id="app-tab-{{.Key}}" aria-controls="app-{{.Key}}" aria-selected="{{if $i}}false{{else}}true{{end}}" tabindex="{{if $i}}-1{{else}}0{{end}}">
+          <span class="app-tab-name">{{if eq .Key "grok"}}{{provider "grok"}}{{else}}<span class="logo-c">{{logo (printf "%s-color" .Key)}}</span><span class="logo-m">{{provider .Key}}</span>{{end}}{{.Name}}</span>
+          <span class="meter {{.Health}}"><i style="width: {{.Remaining}}%"></i></span>
+        </button>
+        {{- end}}
+      </div>
+    </div>
+    {{- range $i, $p := .Panel.Providers}}
+    <div class="app-view" id="app-{{.Key}}" role="tabpanel" aria-labelledby="app-tab-{{.Key}}"{{if $i}} hidden{{end}}>
+      <div class="app-id">
+        <span class="app-who"><span class="tier {{.TierClass}}">{{.Tier}}</span><span class="acct{{if .Gilded}} gilded{{end}}">{{.Account}}</span>{{icon "arrow-right-s-line"}}</span>
+        {{- with .Expiry}}
+        <span class="expiry"><span class="exp-k"><svg class="ring" viewBox="0 0 11 11" aria-hidden="true"><circle cx="5.5" cy="5.5" r="4.5"/><circle class="arc" cx="5.5" cy="5.5" r="4.5" stroke-dasharray="{{.Dash}}"/></svg>{{$.T.Panel.ValidUntil}}</span><span class="exp-v">{{.Date}} · {{.Left}}</span></span>
+        {{- end}}
+      </div>
+      <div class="app-body">
+        <div class="sec">
+          <div class="sec-h"><p class="sec-t">{{.QuotaHead}}</p><span class="sec-b">{{icon "refresh-line"}}</span></div>
+          {{- range .Rows}}
+          <div class="q">
+            <div class="q-top"><span>{{.Title}}</span><b class="{{.Health}}">{{.Left}}</b></div>
+            <span class="qbar {{.Health}}"><i style="width: {{.Pct}}%"></i></span>
+            <div class="q-foot"><span>{{.Pace}}</span><button type="button" class="reset" title="{{$.T.Panel.ResetSwitch}}"><span class="rel">{{.ResetRel}}</span><span class="abs">{{.ResetAbs}}</span>{{icon "arrow-left-right-line"}}</button></div>
+          </div>
+          {{- end}}
+          {{- range .Slim}}
+          <div class="slim">
+            <div class="q-top"><span>{{.Title}}</span><b class="{{.Health}}">{{.Used}}</b></div>
+            <span class="qbar {{.Health}}"><i style="width: {{.Pct}}%"></i></span>
+          </div>
+          {{- end}}
+          {{- with .Extra}}
+          <p class="slim extra"><b>{{$.T.Panel.ExtraUsage}}</b><span>{{.}}</span></p>
+          {{- end}}
+        </div>
+        <div class="sec">
+          <div class="sec-h"><div><p class="sec-t">{{$.T.Panel.TokenUsage}}</p>{{with .Official}}<p class="sec-c">{{.}}</p>{{end}}</div><span class="sec-b">{{icon "error-warning-line"}}</span><span class="sec-b">{{icon "refresh-line"}}</span></div>
+          <div class="seg" role="group" aria-label="{{$.T.Panel.TokenUsage}}">
+            <button type="button" aria-pressed="true" data-view="day">{{$.T.Panel.Daily}}</button><button type="button" aria-pressed="false" data-view="week">{{$.T.Panel.WeeklyChart}}</button><button type="button" aria-pressed="false" data-view="total">{{$.T.Panel.Total}}</button>
+          </div>
+          <div class="chart" data-view="day">
+            <div class="hm" style="--cols: {{.Chart.Cols}}">{{range .Chart.Cells}}<i class="l{{.}}"></i>{{end}}</div>
+            <div class="months" style="--cols: {{.Chart.Cols}}">{{range .Chart.Months}}<span style="grid-column: {{.Col}}">{{.Text}}</span>{{end}}</div>
+          </div>
+          <div class="chart xy" data-view="week" hidden><div class="axis"><span>{{index .Chart.Weekly 0}}</span><span>{{index .Chart.Weekly 1}}</span><span>0</span></div>{{.Chart.Bars}}</div>
+          <div class="chart xy" data-view="total" hidden><div class="axis"><span>{{index .Chart.Total 0}}</span><span>{{index .Chart.Total 1}}</span><span>0</span></div>{{.Chart.Line}}</div>
+        </div>
+        <div class="sec">
+          <div class="sec-h"><p class="sec-t">{{$.T.Panel.Speed}}</p><span class="sec-b">{{icon "error-warning-line"}}</span><span class="sec-b">{{icon "refresh-line"}}</span></div>
+          <div class="speed">
+            {{- range .Speed}}
+            <div class="sp-row"><span class="sp-m">{{.Model}}{{with .Effort}} <span class="dim">{{.}}</span>{{end}}</span>{{if $p.TTFT}}<span class="sp-t"><span class="dim">{{$.T.Panel.TTFT}}</span> {{.TTFT}}</span>{{end}}<span class="sp-r">{{.Rate}}</span></div>
+            {{- end}}
+          </div>
+          <p class="sp-note">{{.Basis}}</p>
+          <p class="disc">{{$.T.Panel.Details}}{{icon "arrow-right-s-line"}}</p>
+        </div>
+        <div class="sec">
+          <div class="sec-h"><p class="sec-t">{{$.T.Panel.APICost}}</p><span class="sec-b">{{icon "refresh-line"}}</span></div>
+          <p class="cost">{{.Cost}}</p>
+          <p class="disc">{{$.T.Panel.Details}}{{icon "arrow-right-s-line"}}</p>
+        </div>
+      </div>
+    </div>
+    {{- end}}
+    <div class="app-foot" aria-hidden="true"><span>{{icon "equalizer-line"}}{{.T.Panel.Settings}}</span><span>{{icon "shut-down-line"}}{{.T.Panel.Quit}}</span></div>
+  </div>
+  <figcaption>{{.T.Panel.Caption}}</figcaption>
+</figure>
+{{end}}
+
+{{define "index.html"}}<!doctype html>
+<html lang="{{.Locale.Lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.T.Meta.Title}}</title>
+<meta name="description" content="{{.T.Meta.Description}}">
+<link rel="canonical" href="{{.URL}}">
+{{- range .Locales}}
+<link rel="alternate" hreflang="{{.Lang}}" href="{{$.Base}}{{.Path}}">
+{{- end}}
+<link rel="alternate" hreflang="x-default" href="{{.Base}}/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Quosparr">
+<meta property="og:title" content="{{.T.Meta.Title}}">
+<meta property="og:description" content="{{.T.Meta.Description}}">
+<meta property="og:url" content="{{.URL}}">
+<meta property="og:image" content="{{.Base}}/img/og-{{.Locale.Code}}.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{{.T.Meta.Title}}">
+<meta property="og:locale" content="{{.Locale.OG}}">
+{{- range .Locales}}{{if ne .Code $.Locale.Code}}
+<meta property="og:locale:alternate" content="{{.OG}}">
+{{- end}}{{end}}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{.T.Meta.Title}}">
+<meta name="twitter:description" content="{{.T.Meta.Description}}">
+<meta name="twitter:image" content="{{.Base}}/img/og-{{.Locale.Code}}.png">
+{{template "head" .}}
+{{- if eq .Locale.Code "en"}}
+<script>(function(){if(location.pathname!=="/")return;try{if(localStorage.getItem("quosparr-lang"))return}catch(e){return}
+var langs=navigator.languages||[navigator.language||""];for(var i=0;i<langs.length;i++){var l=(langs[i]||"").toLowerCase(),c="";
+if(/^zh-(tw|hk|mo|hant)/.test(l))c="zh-hant";else if(/^zh/.test(l))c="zh-hans";else{var p=l.split("-")[0];if(/^(en|ko|ja|ru|fr)$/.test(p))c=p}
+if(c){if(c!=="en")location.replace("/"+c+"/"+location.hash);return}}})();</script>
+{{- end}}
+<script type="application/ld+json">{{.JSONLD}}</script>
+</head>
+<body>
+{{template "header" .}}
+<main id="main">
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <img class="hero-logo" src="/img/logo-384.webp" width="88" height="88" alt="Quosparr">
+      <h1>Quosparr</h1>
+      <p class="etym">{{html .T.Hero.Etymology}}</p>
+      <p class="tagline">{{.T.Hero.Tagline}}</p>
+      <p class="lead">{{.T.Hero.Description}}</p>
+      <div class="cta">
+        <a class="btn primary lg" id="hero-download" href="#download" data-label="{{.T.Hero.DownloadFor}}">{{icon "download-2-line"}}<span>{{.T.Hero.Download}}</span></a>
+        <a class="btn lg" href="{{.Repo}}">{{icon "github-fill"}}<span>{{.T.Hero.Source}}</span></a>
+      </div>
+      <p class="meta">v{{.Release.Version}} · macOS 12+ · Windows 10 / 11 · Linux · {{.T.Hero.License}}</p>
+    </div>
+    {{template "panel" .}}
+  </section>
+
+  <section id="features" class="section">
+    <div class="wrap">
+      <h2>{{.T.Features.Title}}</h2>
+      <p class="section-lead">{{.T.Features.Lead}}</p>
+      <div class="providers">
+        <article class="provider">
+          <h3>{{provider "codex"}}Codex</h3>
+          <ul>{{range .T.Features.Codex}}<li>{{.}}</li>{{end}}</ul>
+        </article>
+        <article class="provider">
+          <h3>{{provider "claude"}}Claude</h3>
+          <ul>{{range .T.Features.Claude}}<li>{{.}}</li>{{end}}</ul>
+        </article>
+        <article class="provider">
+          <h3>{{provider "grok"}}Grok</h3>
+          <ul>{{range .T.Features.Grok}}<li>{{.}}</li>{{end}}</ul>
+        </article>
+      </div>
+      <h3 class="sub">{{.T.Features.CommonTitle}}</h3>
+      <ul class="facts">
+        {{- range $i, $f := .T.Features.Common}}
+        <li>{{icon (index $.Features $i)}}<div><h4>{{$f.Title}}</h4><p>{{$f.Text}}</p></div></li>
+        {{- end}}
+      </ul>
+    </div>
+  </section>
+
+  <section id="screenshots" class="section alt">
+    <div class="wrap">
+      <h2>{{.T.Shots.Title}}</h2>
+      <p class="section-lead">{{.T.Shots.Note}}</p>
+      <figure class="shot wide">
+        <img src="{{.Wide.Src}}" width="{{.Wide.W}}" height="{{.Wide.H}}" alt="{{.Wide.Alt}}" loading="lazy" decoding="async">
+        <figcaption>{{.Wide.Alt}}</figcaption>
+      </figure>
+      <div class="gallery">
+        {{- range .Gallery}}
+        <figure class="shot">
+          <img src="{{.Src}}" width="{{.W}}" height="{{.H}}" alt="{{.Alt}}" loading="lazy" decoding="async">
+          <figcaption>{{.Alt}}</figcaption>
+        </figure>
+        {{- end}}
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy" class="section">
+    <div class="wrap split">
+      <div>
+        <h2>{{.T.Privacy.Title}}</h2>
+        <p class="section-lead">{{.T.Privacy.Lead}}</p>
+      </div>
+      <ul class="facts single">
+        {{- range $i, $f := .T.Privacy.Items}}
+        <li>{{icon (index $.Privacy $i)}}<div><h3>{{$f.Title}}</h3><p>{{$f.Text}}</p></div></li>
+        {{- end}}
+      </ul>
+    </div>
+  </section>
+
+  <section id="download" class="section alt">
+    <div class="wrap">
+      <h2>{{.T.Download.Title}}</h2>
+      <p class="section-lead">{{.T.Download.Lead}}</p>
+      {{- $dl := .Release.DL}}
+      <div class="platforms">
+        <article class="platform" id="download-macos" data-os="mac">
+          <p class="badge">{{icon "check-line"}}{{.T.Download.Recommended}}</p>
+          <h3>{{icon "apple-fill"}}macOS</h3>
+          <p class="req">{{.T.Download.MacReq}}</p>
+          <div class="arch"><span>Apple Silicon</span><div class="links">
+            {{template "dl" dict "asset" $dl.MacArm64DMG "key" "mac-arm64" "label" "DMG" "name" "macOS (Apple Silicon)" "primary" true}}
+            {{template "dl" dict "asset" $dl.MacArm64ZIP "key" "mac-arm64-zip" "label" "ZIP" "name" "" "primary" false}}
+          </div></div>
+          <div class="arch"><span>Intel</span><div class="links">
+            {{template "dl" dict "asset" $dl.MacX64DMG "key" "mac-x64" "label" "DMG" "name" "macOS (Intel)" "primary" true}}
+            {{template "dl" dict "asset" $dl.MacX64ZIP "key" "mac-x64-zip" "label" "ZIP" "name" "" "primary" false}}
+          </div></div>
+          <p class="note">{{.T.Download.MacNote}}</p>
+          <p class="note">{{.T.Download.MacFix}}</p>
+          <div class="cmd"><code>xattr -dr com.apple.quarantine /Applications/Quosparr.app</code><button class="icon-btn copy" type="button" aria-label="{{.T.Download.Copy}}" title="{{.T.Download.Copy}}" data-copied="{{.T.Download.Copied}}">{{icon "file-copy-line"}}{{icon "check-line"}}</button></div>
+        </article>
+        <article class="platform" id="download-windows" data-os="win">
+          <p class="badge">{{icon "check-line"}}{{.T.Download.Recommended}}</p>
+          <h3>{{icon "windows-fill"}}Windows</h3>
+          <p class="req">{{.T.Download.WinReq}}</p>
+          <div class="arch"><span>x64</span><div class="links">
+            {{template "dl" dict "asset" $dl.WinX64Portable "key" "win-x64" "label" .T.Download.WinPortable "name" "Windows (x64)" "primary" true}}
+            {{template "dl" dict "asset" $dl.WinX64 "key" "win-x64-setup" "label" .T.Download.WinSetup "name" "" "primary" false}}
+          </div></div>
+          <div class="arch"><span>ARM64</span><div class="links">
+            {{template "dl" dict "asset" $dl.WinArm64Portable "key" "win-arm64" "label" .T.Download.WinPortable "name" "Windows (ARM64)" "primary" true}}
+            {{template "dl" dict "asset" $dl.WinArm64 "key" "win-arm64-setup" "label" .T.Download.WinSetup "name" "" "primary" false}}
+          </div></div>
+          <p class="note">{{html .T.Download.PortNote}}</p>
+          <p class="note">{{.T.Download.WinNote}}</p>
+        </article>
+        <article class="platform" id="download-linux" data-os="linux">
+          <p class="badge">{{icon "check-line"}}{{.T.Download.Recommended}}</p>
+          <h3>{{icon "terminal-box-fill"}}Linux</h3>
+          <p class="req">{{.T.Download.LinuxReq}}</p>
+          <div class="arch"><span>x64</span><div class="links">
+            {{template "dl" dict "asset" $dl.LinuxX64Deb "key" "linux-x64" "label" ".deb" "name" "Linux (x64)" "primary" true}}
+            {{template "dl" dict "asset" $dl.LinuxX64Tar "key" "linux-x64-tar" "label" ".tar.gz" "name" "" "primary" false}}
+          </div></div>
+          <div class="arch"><span>ARM64</span><div class="links">
+            {{template "dl" dict "asset" $dl.LinuxArm64Deb "key" "linux-arm64" "label" ".deb" "name" "Linux (ARM64)" "primary" true}}
+            {{template "dl" dict "asset" $dl.LinuxArm64Tar "key" "linux-arm64-tar" "label" ".tar.gz" "name" "" "primary" false}}
+          </div></div>
+          <p class="note">{{html .T.Download.LinuxNote}} <a href="{{$dl.InstallScript.URL}}">{{icon "download-2-line"}}install.sh</a></p>
+        </article>
+      </div>
+      <p class="dl-meta">
+        <span>{{.T.Download.Latest}} <a href="{{.Release.Page}}"><strong>{{.Release.Tag}}</strong></a>{{with .Release.Date}} · {{$.T.Download.Released}} <time datetime="{{.}}">{{.}}</time>{{end}}</span>
+        <a href="{{.Repo}}/releases">{{icon "arrow-right-up-line"}}{{.T.Download.AllReleases}}</a>
+        <a href="{{$dl.Checksums.URL}}">{{icon "shield-check-line"}}{{.T.Download.Checksums}}</a>
+        <a href="{{.UpgradeURL}}">{{icon "book-open-line"}}{{.T.Download.Upgrade}}</a>
+      </p>
+    </div>
+  </section>
+</main>
+{{template "footer" .}}
+</body>
+</html>
+{{end}}

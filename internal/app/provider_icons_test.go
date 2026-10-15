@@ -13,7 +13,7 @@ import (
 )
 
 func TestProviderIconsPreserveColorAndFollowTheme(t *testing.T) {
-	for _, data := range [][]byte{codexProviderSVG, grokProviderSVG} {
+	for _, data := range [][]byte{codexProviderSVG, grokProviderSVG, claudeProviderSVG} {
 		svg, err := ui.ParseSVG(data)
 		if err != nil {
 			t.Fatal(err)
@@ -68,7 +68,7 @@ func coloredProviderPixels(img *image.RGBA, box ui.Rect) int {
 
 func TestProviderTabsSelectDisableAndCompactNames(t *testing.T) {
 	l := l10n.New(l10n.English)
-	labels := []string{l.Text(l10n.KeyProviderCodex), l.Text(l10n.KeyProviderGrok)}
+	labels := []string{l.Text(l10n.KeyProviderCodex), l.Text(l10n.KeyProviderClaude)}
 	for _, compact := range []bool{false, true} {
 		selected, changes, disabled := 0, 0, false
 		args := labels

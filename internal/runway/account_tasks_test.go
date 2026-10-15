@@ -3,7 +3,6 @@ package runway
 import (
 	"context"
 	"errors"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -82,17 +81,13 @@ func TestCostDetailFlightDoesNotCrossAccounts(t *testing.T) {
 	settle(t, s)
 }
 
-func TestProviderChangeCancelsStandaloneCostBeforeNewRefresh(t *testing.T) {
+func TestProviderChangeKeepsInFlightWork(t *testing.T) {
 	f := newFake(t)
 	gate := newGate()
 	g := &fakeGrok{}
-	var calls atomic.Int32
 	f.quotaFn = func(ctx context.Context, _ codexapi.Auth) (codexapi.QuotaSnapshot, error) {
-		if calls.Add(1) == 1 {
-			gate.waitCtx(ctx)
-			return f.quota("late", 99), nil
-		}
-		return f.quota("new", 25), nil
+		gate.waitCtx(ctx)
+		return f.quota("kept", 40), nil
 	}
 	s, _ := newService(t, f, func(o *Options) { o.Grok = g })
 	done := s.RefreshCost(usage.RefreshForce)
@@ -100,16 +95,17 @@ func TestProviderChangeCancelsStandaloneCostBeforeNewRefresh(t *testing.T) {
 	p := s.Preferences()
 	p.SelectedProvider = store.ProviderGrok
 	s.SetPreferences(p)
+	if !s.IsRefreshing(SectionAPICost) {
+		t.Fatal("switching cancelled the running cost refresh")
+	}
+	gate.open()
 	wait(t, done)
 	settle(t, s)
-	if g.count() != 1 {
-		t.Fatalf("new provider refreshes = %d", g.count())
+	if g.count() != 0 {
+		t.Fatalf("switching refreshed Grok %d times", g.count())
 	}
-	if s.IsRefreshing(SectionAPICost) {
-		t.Fatal("old cost kept section busy")
-	}
-	if q := s.Snapshot().Codex.Quota; q != nil && q.Plan == "late" {
-		t.Fatal("cancelled standalone result overwrote state")
+	if q := s.Snapshot().Codex.Quota; q == nil || q.Plan != "kept" {
+		t.Fatal("running Codex result was dropped by the switch")
 	}
 }
 

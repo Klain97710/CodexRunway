@@ -9,10 +9,24 @@ import (
 // Titles of the option values, as the Swift settings show them.
 
 func providerKey(v store.Provider) l10n.Key {
-	if v == store.ProviderGrok {
+	switch v {
+	case store.ProviderGrok:
 		return l10n.KeyProviderGrok
+	case store.ProviderClaude:
+		return l10n.KeyProviderClaude
+	default:
+		return l10n.KeyProviderCodex
 	}
-	return l10n.KeyProviderCodex
+}
+
+func providerTabLabels(l l10n.Localizer) []string { return providerLabels(l, store.Providers()) }
+
+func providerLabels(l l10n.Localizer, providers []store.Provider) []string {
+	labels := make([]string, 0, len(providers))
+	for _, p := range providers {
+		labels = append(labels, l.Text(providerKey(p)))
+	}
+	return labels
 }
 
 func appearanceKey(v store.Appearance) l10n.Key {
@@ -47,10 +61,14 @@ func statusBarStyleKey(v store.StatusBarStyle) l10n.Key {
 }
 
 func providerScopeKey(v store.StatusBarProviderScope) l10n.Key {
-	if v == store.ProviderScopeBoth {
+	switch v {
+	case store.ProviderScopeBoth:
 		return l10n.KeyStatusBarProviderScopeBoth
+	case store.ProviderScopeCustom:
+		return l10n.KeyStatusBarProviderScopeCustom
+	default:
+		return l10n.KeyStatusBarProviderScopeSelected
 	}
-	return l10n.KeyStatusBarProviderScopeSelected
 }
 
 func metersDetailKey(v store.MetersDetail) l10n.Key {
@@ -120,12 +138,24 @@ type moduleInfo struct {
 	config, configWhenHidden bool
 }
 
+// moduleTexts is the title and description a module has in the settings.
+// The speed analysis texts are Go-only, so its moduleInfo keys are empty.
+func moduleTexts(l l10n.Localizer, m store.Module) (title, subtitle string) {
+	if m == store.ModuleSpeedAnalysis {
+		return tx(l, xSpeedTitle), tx(l, xSpeedModuleDescription)
+	}
+	info := moduleInfoOf(m)
+	return l.Text(info.title), l.Text(info.subtitle)
+}
+
 func moduleInfoOf(m store.Module) moduleInfo {
 	switch m {
 	case store.ModuleQuota:
 		return moduleInfo{l10n.KeyQuota, l10n.KeyModuleQuotaDescription, true, icGauge, true, true}
 	case store.ModuleTokenUsage:
 		return moduleInfo{l10n.KeyTokenUsageHeatmap, l10n.KeyTokenUsageHeatmapDescription, true, icChart, true, false}
+	case store.ModuleSpeedAnalysis:
+		return moduleInfo{"", "", true, icTimerFlash, false, false}
 	case store.ModuleRateLimitResetToday:
 		return moduleInfo{l10n.KeyRateLimitResetToday, l10n.KeyRateLimitResetTodayDescription, false, icReset, true, false}
 	case store.ModuleQuotaEstimate:

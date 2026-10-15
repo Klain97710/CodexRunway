@@ -133,6 +133,53 @@ func TestDualStackOrderAndPrefix(t *testing.T) {
 	}
 }
 
+func TestClaudeStatusPrefersFiveHour(t *testing.T) {
+	five := testMeter("5-hour", 20, 300, SourceStandard)
+	week := testMeter("7-day", 11, 10080, SourceStandard)
+	in := StatusInputs{
+		Prefs:       store.Preferences{StatusBarProviderScope: store.ProviderScopeCustom, StatusBarProviders: []store.Provider{store.ProviderCodex, store.ProviderClaude}},
+		Provider:    store.ProviderCodex,
+		CodexMeters: []Meter{five},
+		Claude:      ClaudeState{Meters: []Meter{week, five}},
+		Now:         time.Now(),
+	}
+	meters := SelectedMeters(zh, in)
+	if len(meters) != 2 || meters[1].WindowMinutes != 300 || meters[1].Title != "Claude · 5小时" {
+		t.Fatalf("meters = %+v", meters)
+	}
+}
+
+func TestClaudeAloneShowsStandardMeters(t *testing.T) {
+	five := testMeter("5-hour", 20, 300, SourceStandard)
+	week := testMeter("7-day", 11, 10080, SourceStandard)
+	opus := testMeter("Opus", 5, 10080, SourceModelSpecific)
+	in := StatusInputs{
+		Prefs:    store.Preferences{StatusBarProviderScope: store.ProviderScopeCustom, StatusBarProviders: []store.Provider{store.ProviderClaude}},
+		Provider: store.ProviderCodex,
+		Claude:   ClaudeState{Meters: []Meter{five, week, opus}},
+		Now:      time.Now(),
+	}
+	meters := SelectedMeters(zh, in)
+	if len(meters) != 2 || meters[0].Title != "5小时" || meters[1].Title != "每周" {
+		t.Fatalf("meters = %+v", meters)
+	}
+}
+
+func TestPairTextFallsBackToSecondProvider(t *testing.T) {
+	five := testMeter("5-hour", 20, 300, SourceStandard)
+	in := StatusInputs{
+		Prefs:     store.Preferences{StatusBarProviderScope: store.ProviderScopeCustom, StatusBarProviders: []store.Provider{store.ProviderGrok, store.ProviderClaude}},
+		Provider:  store.ProviderCodex,
+		Grok:      GrokState{Availability: GrokNotLoggedIn},
+		Claude:    ClaudeState{Availability: ClaudeReady, Meters: []Meter{five}},
+		CodexText: "codex",
+		Now:       time.Now(),
+	}
+	if got, want := SelectedStatusText(zh, in), ClaudeStatusText(zh, in.Claude, in.Now); got != want {
+		t.Fatalf("text = %q, want %q", got, want)
+	}
+}
+
 func TestShortWindowTitlesMatchCodexWording(t *testing.T) {
 	for minutes, want := range map[int]string{300: "5小时", 10080: "每周", 30 * 24 * 60: "每月"} {
 		if got := ShortWindowTitle(zh, minutes); got != want {
@@ -142,5 +189,29 @@ func TestShortWindowTitlesMatchCodexWording(t *testing.T) {
 	long := testMeter("周度包含额度", 27, 10080, SourceStandard)
 	if WithShortTitle(zh, long).Title != "每周" {
 		t.Error("long title not shortened")
+	}
+}
+
+func TestShortestWindowMeterPrefersShortestStandardWindow(t *testing.T) {
+	weekly := testMeter("weekly", 10, WeeklyMinutes, SourceStandard)
+	five := testMeter("5h", 40, FiveHourMinutes, SourceStandard)
+	model := testMeter("model", 90, 60, SourceModelSpecific)
+	unknown := testMeter("unknown", 20, 0, SourceStandard)
+	cases := []struct {
+		in   []Meter
+		want string
+	}{
+		{[]Meter{weekly, five, model}, "5h"},
+		{[]Meter{unknown, weekly}, "weekly"},
+		{[]Meter{unknown}, "unknown"},
+		{[]Meter{model}, "model"},
+	}
+	for _, tc := range cases {
+		if m, ok := ShortestWindowMeter(tc.in); !ok || m.Title != tc.want {
+			t.Errorf("got %q, want %q", m.Title, tc.want)
+		}
+	}
+	if _, ok := ShortestWindowMeter(nil); ok {
+		t.Error("empty meters picked a meter")
 	}
 }

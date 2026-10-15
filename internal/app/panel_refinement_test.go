@@ -20,6 +20,9 @@ func TestPanelIdentityWholeRowIsClickable(t *testing.T) {
 			if provider == store.ProviderGrok {
 				label = a.L().Text(l10n.KeyGrokAccountsTitle)
 			}
+			if provider == store.ProviderClaude {
+				label = a.L().Text(l10n.KeyClaudeNotLoggedIn)
+			}
 			row, ok := tt.Find(label)
 			if !ok || row.X+row.W < 389 {
 				t.Fatalf("account hit area does not fill row: %v", row)
@@ -64,7 +67,7 @@ func TestPanelQuotaCountdownFitsBesideProjection(t *testing.T) {
 	m := runway.Meter{Title: "weekly", RemainingPercent: 53, ResetsAt: now.Add(5*24*time.Hour + 6*time.Hour), Projection: &runway.BurnProjection{ExhaustsAt: now.Add(46 * time.Hour)}}
 	tt := ui.NewTester(func(c *ui.Context) {
 		applyTheme(c)
-		ui.Column(c).Fill().Padding(16).Children(func() { quotaRow(c, l, m, now, true) })
+		ui.Column(c).Fill().Padding(16).Children(func() { quotaRow(c, l, m, now, true, resetSwitch{}) })
 	}, 400, 150)
 	r, ok := tt.Find(resetCountdown(l, m.ResetsAt, now))
 	if !ok || r.X+r.W > 384 {

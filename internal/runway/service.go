@@ -2,7 +2,6 @@ package runway
 
 import (
 	"context"
-	"github.com/licoy/quosparr/internal/personal"
 	"sync"
 	"time"
 
@@ -12,7 +11,9 @@ import (
 	"github.com/licoy/quosparr/internal/estimate"
 	"github.com/licoy/quosparr/internal/export"
 	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/sessions"
+	"github.com/licoy/quosparr/internal/speed"
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
 )
@@ -41,8 +42,9 @@ type Options struct {
 	CostCachePath       string // api-equivalent-cost.json
 	StatusPath          string // status.json (written when ExportsStatusJSON)
 
-	// Grok and ResetToday are optional providers (see providers.go).
+	// Grok, Claude and ResetToday are optional providers (see providers.go).
 	Grok       GrokProvider
+	Claude     ClaudeProvider
 	ResetToday ResetTodayProvider
 
 	// WidgetSink receives the widget snapshot when the widget schedule is
@@ -118,6 +120,7 @@ type Service struct {
 	estDaily    *usage.Summary
 	est         *estimate.Snapshot
 	estErr      string
+	estAt       time.Time
 	cost        *usage.Summary
 	disp        *usage.Summary
 	dispRange   store.CostRange
@@ -145,6 +148,9 @@ type Service struct {
 	recentAt     time.Time
 	recentErr    string
 	recentSet    bool
+	speed        *speed.Report
+	speedAt      time.Time
+	speedErr     string
 
 	index          codex.AccountIndex
 	indexLoaded    bool
@@ -168,8 +174,13 @@ type Service struct {
 	widgetSchedule Schedule
 	widgetPending  bool
 	widgetReqs     export.Requirements
-	lastReset      time.Time
-	lastTickKey    string
+	// panelOpen is set while the main panel shows: only then does the panel's
+	// provider refresh its local data. localPending asks the full refresh
+	// that was running when the panel opened to do it once it ends.
+	panelOpen    bool
+	localPending bool
+	lastReset    time.Time
+	lastTickKey  string
 }
 
 // flight is one shared detail cost query.
@@ -186,6 +197,9 @@ func New(o Options) *Service {
 	o.Preferences.ApplyFeatures(o.Features)
 	if !o.Features.Grok {
 		o.Grok = nil
+	}
+	if !o.Features.Claude {
+		o.Claude = nil
 	}
 	if o.Now == nil {
 		o.Now = time.Now
@@ -221,6 +235,9 @@ func New(o Options) *Service {
 	s.bootstrap()
 	if o.Grok != nil {
 		o.Grok.SetOnChange(s.publish)
+	}
+	if o.Claude != nil {
+		o.Claude.SetOnChange(s.publish)
 	}
 	if o.ResetToday != nil {
 		o.ResetToday.SetOnChange(s.publish)
@@ -442,8 +459,13 @@ func (s *Service) SetPreferences(p store.Preferences) {
 	p.ApplyFeatures(s.opts.Features)
 	s.mu.Lock()
 	old := s.prefs
+	hadGrok := s.quotaWantedLocked(store.ProviderGrok)
+	hadClaude := s.quotaWantedLocked(store.ProviderClaude)
 	s.prefs = p.Clone()
 	s.lc = s.localizer()
+	// A provider shown again fetches its quota now instead of at the next tick.
+	grokBack := !hadGrok && s.quotaWantedLocked(store.ProviderGrok)
+	claudeBack := !hadClaude && s.quotaWantedLocked(store.ProviderClaude)
 	now := s.now()
 	s.refreshIntervalChangedLocked(now)
 	if old.QuotaEstimateWindowMode != p.QuotaEstimateWindowMode && s.est != nil && s.quota != nil && s.estDaily != nil {
@@ -456,42 +478,50 @@ func (s *Service) SetPreferences(p store.Preferences) {
 	rangeChanged := old.APICostSummaryRange != p.APICostSummaryRange
 	costOn := p.ShowsCostSummary && !old.ShowsCostSummary
 	heatOn := p.ShowsTokenUsageHeatmap && !old.ShowsTokenUsageHeatmap
-	providerChanged := old.SelectedProvider != p.SelectedProvider || old.StatusBarProviderScope != p.StatusBarProviderScope
-	if providerChanged {
-		s.epoch++
-		s.clearAccountBusyLocked()
-	}
 	reportOn := codexSelected && p.ShowsSessionRepairSummary && !old.ShowsSessionRepairSummary
-	recentOn := codexSelected && p.ShowsRecentSessions && !old.ShowsRecentSessions
+	recentOn := p.ShowsRecentSessions && !old.ShowsRecentSessions
+	speedOn := p.ShowsSpeedAnalysis && !old.ShowsSpeedAnalysis
+	// Quotas keep their schedule; a switch only loads the local data of the
+	// provider the open panel now shows.
+	switched := old.SelectedProvider != p.SelectedProvider
 	if p.ExportsStatusJSON && !old.ExportsStatusJSON {
 		s.exportStatusLocked()
 	}
 	s.publishLocked()
 	s.mu.Unlock()
-	if providerChanged {
-		s.run(func() {
-			s.cancelAccountScoped()
-			s.beginFullRefresh(usage.RefreshForce)
-		})
-	} else if p.SelectedProvider == store.ProviderGrok && (rangeChanged && p.ShowsCostSummary || costOn || heatOn || (!old.ShowsRecentSessions && p.ShowsRecentSessions)) {
+	if switched {
+		s.refreshPanelLocal()
+	}
+	if grokBack {
 		s.refreshGrok()
+	}
+	if claudeBack {
+		s.refreshClaude(false)
+	}
+	if p.SelectedProvider == store.ProviderGrok && (rangeChanged && p.ShowsCostSummary || costOn || heatOn || recentOn || speedOn) {
+		s.refreshGrokLocal()
+	} else if p.SelectedProvider == store.ProviderClaude && (rangeChanged && p.ShowsCostSummary || costOn || heatOn || recentOn || speedOn) {
+		s.refreshClaudeLocal()
 	}
 	if reportOn {
 		s.RefreshSessionReport(true)
 	}
-	if recentOn {
+	if codexSelected && recentOn {
 		s.RefreshRecentSessions(true)
 	}
-	if wantEstimate && !providerChanged {
+	if codexSelected && speedOn {
+		s.RefreshSpeed(true)
+	}
+	if wantEstimate {
 		s.RefreshQuotaEstimate()
 	}
 	if wantResetToday {
 		s.RefreshResetToday(true)
 	}
-	if codexSelected && !providerChanged && (rangeChanged && p.ShowsCostSummary || costOn) {
+	if codexSelected && (rangeChanged && p.ShowsCostSummary || costOn) {
 		s.RefreshCost(usage.RefreshForce)
 	}
-	if codexSelected && !providerChanged && heatOn {
+	if codexSelected && heatOn {
 		s.RefreshTokenHeatmap(usage.RefreshForce)
 	}
 }
@@ -503,7 +533,7 @@ func (s *Service) Preferences() store.Preferences {
 	return s.prefs.Clone()
 }
 
-// SelectProvider switches the panel between Codex and Grok.
+// SelectProvider switches the panel. claude is accepted like codex and grok.
 func (s *Service) SelectProvider(p store.Provider) {
 	prefs := s.Preferences()
 	if prefs.SelectedProvider == p {

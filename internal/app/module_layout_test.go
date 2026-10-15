@@ -22,7 +22,7 @@ func moduleLayoutView(t *testing.T, width int, language store.Language, module s
 	e.s.SetLanguage(language)
 	e.s.Apply()
 	u := newSettingsUI(e.s, SettingsOptions{Version: "1.0.0"})
-	u.tab = tabDisplay
+	u.tab = tabModules
 	viewWidth := width
 	if module != "" {
 		viewWidth -= settingsSidebarWidth
@@ -70,9 +70,10 @@ func TestModuleLayoutColumnsAndConfiguration(t *testing.T) {
 					defer e.settle()
 					for _, dark := range []bool{false, true} {
 						tt.SetDark(dark)
-						info, l := moduleInfoOf(module), u.L()
-						title := moduleLayoutRect(t, tt, l.Text(info.title))
-						detail := moduleLayoutRect(t, tt, l.Text(info.subtitle))
+						l := u.L()
+						titleText, detailText := moduleTexts(l, module)
+						title := moduleLayoutRect(t, tt, titleText)
+						detail := moduleLayoutRect(t, tt, detailText)
 						stateKey := l10n.KeyModuleHidden
 						if ModuleShown(e.s.Prefs(), module) {
 							stateKey = l10n.KeyModuleVisible
@@ -211,11 +212,9 @@ func TestExportModuleLayoutReview(t *testing.T) {
 				page := ui.NewTester(u.view, width, settingsHeight)
 				page.SetDark(dark)
 				page.SetTitleBar(ui.TitleBar{Height: 28, Left: 80})
-				header := moduleLayoutRect(t, page, u.text(l10n.KeyMainPanelModules))
-				page.Scroll(float32(width-100), 500, 0, header.Y-96)
-				exportReviewPNG(t, page, filepath.Join(dir, name+"-display-top.png"))
+				exportReviewPNG(t, page, filepath.Join(dir, name+"-page-top.png"))
 				page.Scroll(float32(width-100), 500, 0, 500)
-				exportReviewPNG(t, page, filepath.Join(dir, name+"-display-bottom.png"))
+				exportReviewPNG(t, page, filepath.Join(dir, name+"-page-bottom.png"))
 				e.settle()
 			}
 		}

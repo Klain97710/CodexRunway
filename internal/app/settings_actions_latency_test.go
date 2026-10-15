@@ -32,7 +32,7 @@ func TestSettingsSelfCheckClickReturnsBeforeDiagnostics(t *testing.T) {
 	tt.Key(0, ui.KeySpace)
 	elapsed := time.Since(start)
 	t.Logf("self-check event=%s completed=%v", elapsed, completed.Load())
-	if elapsed > 100*time.Millisecond || completed.Load() || !u.selfCheckTask.Running || u.noticeOpen {
+	if elapsed > latencyBudget(100*time.Millisecond) || completed.Load() || !u.selfCheckTask.Running || u.noticeOpen {
 		t.Fatal("self-check event waits for diagnostics")
 	}
 	tt.Key(0, ui.KeySpace)
@@ -73,7 +73,7 @@ func TestSettingsSelfCheckUsesRedactedTemporaryHomeReport(t *testing.T) {
 func TestSettingsProxyTestCredentialFailureIsVisible(t *testing.T) {
 	e := newEnv(t, nil)
 	var tested atomic.Bool
-	e.s.SetProxyHooks(ProxyHooks{Test: func(context.Context, store.NetworkProxyConfiguration, *ProxyCredentials) error {
+	e.s.SetProxyHooks(ProxyHooks{Test: func(context.Context, store.NetworkProxyConfiguration, *ProxyCredentials, string) error {
 		tested.Store(true)
 		return nil
 	}})
@@ -86,6 +86,36 @@ func TestSettingsProxyTestCredentialFailureIsVisible(t *testing.T) {
 	awaitSettingsTask(t, e, &u.testTask)
 	if tested.Load() || !u.proxyMsgErr || u.testTask.Err == nil || u.proxyMsg != e.s.L().Text(l10n.KeyProxyCredentialsUnavailable) {
 		t.Fatal("credential read failure was hidden or network test still ran")
+	}
+}
+
+func TestSettingsProxyTestUsesAndSavesTheTestSite(t *testing.T) {
+	e := newEnv(t, nil)
+	var site atomic.Value
+	e.s.SetProxyHooks(ProxyHooks{Test: func(_ context.Context, _ store.NetworkProxyConfiguration, _ *ProxyCredentials, s string) error {
+		site.Store(s)
+		return nil
+	}})
+	u, tt := openSettingsView(t, e, tabGeneral)
+	tt.SetPreferences(ui.Preferences{ReduceMotion: true})
+	if u.testURL != store.DefaultProxyTestURL {
+		t.Fatalf("test site starts as %q", u.testURL)
+	}
+	u.testURL = "ftp://example.com"
+	u.testProxy()
+	if u.testTask.Running || site.Load() != nil || !u.proxyMsgErr || u.proxyMsg != tx(e.s.L(), xProxyTestURLInvalid) {
+		t.Fatal("an invalid test site was not rejected before the network test")
+	}
+	u.testURL = " example.com/ping "
+	tt.Frame()
+	focusSettingsAction(t, tt, e.s.L().Text(l10n.KeyNetworkProxyTest))
+	tt.Key(0, ui.KeySpace)
+	awaitSettingsTask(t, e, &u.testTask)
+	if got := site.Load(); got != "https://example.com/ping" || u.proxyMsgErr {
+		t.Fatalf("tested %v, message %q", got, u.proxyMsg)
+	}
+	if got := e.s.Prefs().ProxyTestURL; got != "https://example.com/ping" {
+		t.Fatalf("saved test site = %q", got)
 	}
 }
 
@@ -112,10 +142,12 @@ func TestSettingsProxyTestClickReturnsBeforeCredentialRead(t *testing.T) {
 	if err := e.creds.Save(id, ProxyCredentials{Username: "test", Password: "fixture"}); err != nil {
 		t.Fatal(err)
 	}
-	creds := &delayedCredentials{CredentialStore: e.creds, delay: 200 * time.Millisecond}
+	// The credential delay stays above the event budget, so a blocking read
+	// still fails the check under race instrumentation.
+	creds := &delayedCredentials{CredentialStore: e.creds, delay: latencyBudget(200 * time.Millisecond)}
 	e.s.creds = creds
 	var tested atomic.Bool
-	e.s.SetProxyHooks(ProxyHooks{Test: func(context.Context, store.NetworkProxyConfiguration, *ProxyCredentials) error {
+	e.s.SetProxyHooks(ProxyHooks{Test: func(context.Context, store.NetworkProxyConfiguration, *ProxyCredentials, string) error {
 		tested.Store(true)
 		return nil
 	}})
@@ -128,10 +160,10 @@ func TestSettingsProxyTestClickReturnsBeforeCredentialRead(t *testing.T) {
 	tt.Key(0, ui.KeySpace)
 	elapsed := time.Since(start)
 	t.Logf("proxy-test event=%s loads=%d tested=%v", elapsed, creds.loads.Load(), tested.Load())
-	if elapsed > 100*time.Millisecond || tested.Load() {
+	if elapsed > latencyBudget(100*time.Millisecond) || tested.Load() {
 		t.Fatal("proxy-test event waits for saved credentials")
 	}
-	deadline := time.Now().Add(time.Second)
+	deadline := time.Now().Add(latencyBudget(time.Second))
 	for !tested.Load() && time.Now().Before(deadline) {
 		time.Sleep(time.Millisecond)
 	}
@@ -185,7 +217,7 @@ func TestSettingsAutomaticUpdateClickReturnsBeforeUpdaterStateWrite(t *testing.T
 	tt.Key(0, ui.KeySpace)
 	elapsed := time.Since(start)
 	t.Logf("automatic-update event=%s state written=%v", elapsed, written.Load())
-	if elapsed > 100*time.Millisecond || written.Load() {
+	if elapsed > latencyBudget(100*time.Millisecond) || written.Load() {
 		t.Fatal("automatic-update event waits for updater state write")
 	}
 	deadline := time.Now().Add(time.Second)
@@ -222,7 +254,7 @@ func TestSettingsProxySaveAndLoadEventsStayResponsive(t *testing.T) {
 			tt.Key(0, ui.KeySpace)
 			elapsed := time.Since(start)
 			t.Logf("proxy %s event=%s", action, elapsed)
-			if elapsed > 100*time.Millisecond || !u.proxyTask.Running {
+			if elapsed > latencyBudget(100*time.Millisecond) || !u.proxyTask.Running {
 				t.Fatal("proxy save/load event waits for credential store")
 			}
 			awaitSettingsTask(t, e, &u.proxyTask)

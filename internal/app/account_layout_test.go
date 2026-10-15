@@ -72,11 +72,11 @@ func accountLayoutFixture(t *testing.T, language store.Language, kind, width int
 					return
 				}
 				accountProviderHeader(c, u, f)
-				accountToolbar(c, u, f, accountCountTitle(u.L(), len(rows)), func(*ui.Menu) {}, func() string { return "" }, func() string { return "" })
+				accountToolbar(c, u, f, accountCountTitle(u.L(), len(rows)), accountFolder{u.text(l10n.KeyCodexFolder), "/codex"}, func(*ui.Menu) {}, func() string { return "" }, func() string { return "" })
 				accountEditor(c, u, f)
 				accountSelectionEditor(c, u, f, nil)
 				for _, account := range rows {
-					if f.kind == 0 {
+					if f.kind == accountKindCodex {
 						renderCodexSettingsRow(c, u, f, nil, account, "current", e.s.Prefs().AccountPrivacyModeEnabled)
 					} else {
 						renderGrokAccountRow(c, u, f, nil, account, "current", e.s.Prefs().AccountPrivacyModeEnabled)
@@ -100,7 +100,7 @@ func accountLayoutRows() []codex.ManagedAccount {
 func TestAccountRowsKeepCurrentTagByNameAndMaskIdentity(t *testing.T) {
 	for _, language := range []store.Language{store.LanguageEnglish, store.LanguageSimplifiedChinese} {
 		for _, width := range []int{settingsMinWidth, settingsWidth} {
-			for _, kind := range []int{0, 1} {
+			for _, kind := range []int{accountKindCodex, accountKindGrok} {
 				t.Run(fmt.Sprintf("%s/%d/%d", language, width, kind), func(t *testing.T) {
 					var actionX, refreshX float32
 					for i, account := range accountLayoutRows() {
@@ -116,7 +116,7 @@ func TestAccountRowsKeepCurrentTagByNameAndMaskIdentity(t *testing.T) {
 							if !ok || gap < 5 || gap > 7 || baseline < -1 || baseline > 1 {
 								t.Fatalf("current tag must immediately follow account name: name=%+v current=%+v", name, current)
 							}
-							if kind == 0 {
+							if kind == accountKindCodex {
 								quota, found := tt.Find("68%")
 								if !found || quota.Y <= name.Y+name.H || quota.X != name.X {
 									t.Fatalf("quota must be below identity: %v", quota)
@@ -131,21 +131,21 @@ func TestAccountRowsKeepCurrentTagByNameAndMaskIdentity(t *testing.T) {
 								t.Fatalf("%q outside %d window: %+v", text, width, r)
 							}
 						}
-						if err := tt.Click(u.text(tabDisplay.key())); err != nil {
+						if err := tt.Click(tabDisplay.title(u.L())); err != nil {
 							t.Fatal(err)
 						}
 						clickAccountPrivacySwitch(t, u, tt)
-						if err := tt.Click(u.text(tabAccounts.key())); err != nil {
+						if err := tt.Click(tabAccounts.title(u.L())); err != nil {
 							t.Fatal(err)
 						}
 						if tt.HasText(account.DisplayName) || tt.HasText(account.Email) || !hasExact(tt, maskAccount(true, account.Email)) {
 							t.Fatal("privacy toggle left unmasked account labels or did not redraw")
 						}
-						if err := tt.Click(u.text(tabDisplay.key())); err != nil {
+						if err := tt.Click(tabDisplay.title(u.L())); err != nil {
 							t.Fatal(err)
 						}
 						clickAccountPrivacySwitch(t, u, tt)
-						if err := tt.Click(u.text(tabAccounts.key())); err != nil {
+						if err := tt.Click(tabAccounts.title(u.L())); err != nil {
 							t.Fatal(err)
 						}
 						if !tt.HasText(account.DisplayName) || !tt.HasText(account.Email) {
@@ -159,7 +159,7 @@ func TestAccountRowsKeepCurrentTagByNameAndMaskIdentity(t *testing.T) {
 }
 
 func TestAccountPrivacyPreservesDiagnosticText(t *testing.T) {
-	for _, kind := range []int{0, 1} {
+	for _, kind := range []int{accountKindCodex, accountKindGrok} {
 		for _, message := range []string{"Quota unavailable", "Sign-in failed for private@example.com"} {
 			account := codex.ManagedAccount{ID: "current", DisplayName: "Private account", Email: "private@example.com", LastError: message}
 			_, tt := accountLayoutFixture(t, store.LanguageEnglish, kind, settingsMinWidth, true, []codex.ManagedAccount{account})
@@ -177,7 +177,7 @@ func TestExportAccountLayoutReview(t *testing.T) {
 	base := filepath.Join("..", "..", ".build", "v1-settings-layout-qa")
 	for _, language := range []store.Language{store.LanguageEnglish, store.LanguageSimplifiedChinese} {
 		for _, width := range []int{settingsMinWidth, settingsWidth} {
-			for _, kind := range []int{0, 1} {
+			for _, kind := range []int{accountKindCodex, accountKindGrok} {
 				for _, privacy := range []bool{false, true} {
 					_, tt := accountLayoutFixture(t, language, kind, width, privacy, accountLayoutRows())
 					for _, dark := range []bool{false, true} {

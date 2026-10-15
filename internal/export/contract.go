@@ -1,10 +1,11 @@
 package export
 
 import (
-	"github.com/licoy/quosparr/internal/personal"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/licoy/quosparr/internal/personal"
 )
 
 // Kind is a widget kind identifier, registered by the WidgetKit extension.
@@ -24,21 +25,28 @@ func Kinds() []Kind { return []Kind{KindOverview, KindTokenTrend, KindMetric, Ki
 type Provider string
 
 const (
-	ProviderCodex Provider = "codex"
-	ProviderGrok  Provider = "grok"
+	ProviderCodex  Provider = "codex"
+	ProviderGrok   Provider = "grok"
+	ProviderClaude Provider = "claude"
 )
 
 // ProviderScope is which providers a widget shows.
 type ProviderScope string
 
 const (
-	ScopeCodex ProviderScope = "codex"
-	ScopeGrok  ProviderScope = "grok"
-	ScopeBoth  ProviderScope = "both"
+	ScopeCodex       ProviderScope = "codex"
+	ScopeGrok        ProviderScope = "grok"
+	ScopeClaude      ProviderScope = "claude"
+	ScopeBoth        ProviderScope = "both"
+	ScopeCodexClaude ProviderScope = "codex-claude"
+	ScopeGrokClaude  ProviderScope = "grok-claude"
 )
 
-// ProviderScopes lists the scopes in Swift declaration order.
-func ProviderScopes() []ProviderScope { return []ProviderScope{ScopeCodex, ScopeGrok, ScopeBoth} }
+// ProviderScopes lists the scopes in widget declaration order.
+// both stays Codex + Grok so widgets already on screen keep their meaning.
+func ProviderScopes() []ProviderScope {
+	return []ProviderScope{ScopeCodex, ScopeGrok, ScopeClaude, ScopeBoth, ScopeCodexClaude, ScopeGrokClaude}
+}
 
 // Providers are the providers of a scope.
 func (s ProviderScope) Providers() []Provider {
@@ -47,14 +55,26 @@ func (s ProviderScope) Providers() []Provider {
 		return []Provider{ProviderCodex}
 	case ScopeGrok:
 		return []Provider{ProviderGrok}
+	case ScopeClaude:
+		return []Provider{ProviderClaude}
 	case ScopeBoth:
 		return []Provider{ProviderCodex, ProviderGrok}
+	case ScopeCodexClaude:
+		return []Provider{ProviderCodex, ProviderClaude}
+	case ScopeGrokClaude:
+		return []Provider{ProviderGrok, ProviderClaude}
 	}
 	return nil
 }
 
 // Valid reports a known scope.
-func (s ProviderScope) Valid() bool { return s == ScopeCodex || s == ScopeGrok || s == ScopeBoth }
+func (s ProviderScope) Valid() bool {
+	switch s {
+	case ScopeCodex, ScopeGrok, ScopeClaude, ScopeBoth, ScopeCodexClaude, ScopeGrokClaude:
+		return true
+	}
+	return false
+}
 
 // MetricKind is the value a metric widget shows.
 type MetricKind string

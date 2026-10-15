@@ -15,6 +15,7 @@ import (
 func TestFullRefreshFillsEverySection(t *testing.T) {
 	f := newFake(t)
 	s, r := newService(t, f, nil)
+	showPanel(s)
 	snap := refreshAll(t, s)
 	c := snap.Codex
 	if !c.Authenticated || c.Quota == nil || c.Quota.Plan != "plan-acct-a" {
@@ -403,6 +404,7 @@ func TestSecondaryLegAuthFailureInvalidatesQuota(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			f := newFake(t)
 			s, _ := newService(t, f, func(o *Options) { setup(f, o) })
+			showPanel(s)
 			snap := refreshAll(t, s)
 			c := snap.Codex
 			if c.Quota != nil || len(c.Meters) != 0 || c.Authenticated {
@@ -424,6 +426,7 @@ func TestOnlineCostFailureIsNotASignOut(t *testing.T) {
 		return usage.Summary{}, codexapi.ErrAuthenticationRequired
 	}
 	s, _ := newService(t, f, func(o *Options) { o.Preferences.ShowsQuotaEstimateSummary = false })
+	showPanel(s)
 	c := refreshAll(t, s).Codex
 	if c.Quota == nil || !c.Authenticated {
 		t.Fatal("cost failure signed the account out")

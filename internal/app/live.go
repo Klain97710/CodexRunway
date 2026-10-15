@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"github.com/licoy/quosparr/internal/personal"
 	"io"
 	"log"
 	"math"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/egoist/mygo"
 	"github.com/licoy/quosparr/internal/alerts"
+	"github.com/licoy/quosparr/internal/claude"
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/codexapi"
 	"github.com/licoy/quosparr/internal/estimate"
@@ -23,10 +23,12 @@ import (
 	"github.com/licoy/quosparr/internal/grok"
 	"github.com/licoy/quosparr/internal/l10n"
 	"github.com/licoy/quosparr/internal/netx"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/platform"
 	"github.com/licoy/quosparr/internal/resettoday"
 	"github.com/licoy/quosparr/internal/resettoday/runwayfmt"
 	"github.com/licoy/quosparr/internal/runway"
+	"github.com/licoy/quosparr/internal/speed"
 	"github.com/licoy/quosparr/internal/sqliteruntime"
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
@@ -120,10 +122,10 @@ func ApplySavedProxy(cfg store.NetworkProxyConfiguration, creds *ProxyCredential
 	return nil
 }
 
-// TestProxyDraft dials the public personal repository through a temporary context. The
+// TestProxyDraft fetches the test site through a temporary context. The
 // draft is not installed.
-func TestProxyDraft(ctx context.Context, cfg store.NetworkProxyConfiguration, creds *ProxyCredentials) error {
-	return probeProxy(ctx, cfg, netCredentials(creds), proxyTestURL())
+func TestProxyDraft(ctx context.Context, cfg store.NetworkProxyConfiguration, creds *ProxyCredentials, site string) error {
+	return probeProxy(ctx, cfg, netCredentials(creds), site)
 }
 
 func probeProxy(ctx context.Context, cfg store.NetworkProxyConfiguration, creds *netx.Credentials, rawURL string, opts ...netx.Option) error {
@@ -145,7 +147,9 @@ func probeProxy(ctx context.Context, cfg store.NetworkProxyConfiguration, creds 
 	}
 	defer resp.Body.Close()
 	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 1<<20))
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+	// Any answer from the site proves the route works, even a 404 from a
+	// custom page; a proxy that cannot reach it answers 407 or 5xx.
+	if resp.StatusCode == http.StatusProxyAuthRequired || resp.StatusCode >= 500 {
 		return netx.ErrConnectionFailed
 	}
 	return nil
@@ -169,6 +173,8 @@ type liveApp struct {
 	codex          *codex.Store
 	grokMod        *grok.Module
 	grok           *grokBridge
+	claudeMod      *claude.Module
+	claudeB        *claudeBridge
 	reset          *resetBridge
 	repo           *usage.Repository
 	widgets        *widgetCoordinator
@@ -218,6 +224,19 @@ func newRuntime(opts BackgroundOptions) *liveApp {
 		}
 		bridge.reload(false)
 	}
+	var cmod *claude.Module
+	var cbridge *claudeBridge
+	if opts.Features.Claude {
+		cstore := claude.NewStore(claude.ResolveConfigDir(os.Getenv("CLAUDE_CONFIG_DIR"), home), platform.RunwayDir(home), home, os.Getenv("CLAUDE_CONFIG_DIR"), "")
+		cmod = claude.NewModule(cstore)
+		cmod.Usage = &claude.UsageClient{Version: claudeCLIVersion(cstore.ConfigDir())}
+		cmod.Tokens = claude.RefreshClient{}
+		cbridge = newClaudeBridge(cmod, prefs, langs)
+		if _, err := cmod.Load(context.Background()); err != nil {
+			log.Println("claude accounts: load failed")
+		}
+		cbridge.reload(false)
+	}
 	reset := newResetBridge(opts.Settings, prefs, langs)
 	repo := openUsage(home)
 	widgetRequirements := initialWidgetRequirements(opts.Settings)
@@ -244,6 +263,10 @@ func newRuntime(opts BackgroundOptions) *liveApp {
 	if bridge != nil {
 		grokProvider = bridge
 	}
+	var claudeProvider runway.ClaudeProvider
+	if cbridge != nil {
+		claudeProvider = cbridge
+	}
 	svc = runway.New(runway.Options{
 		Features: opts.Features,
 		Sources: runway.NewLiveSources(runway.LiveConfig{
@@ -256,6 +279,7 @@ func newRuntime(opts BackgroundOptions) *liveApp {
 		CostCachePath:       usage.DefaultSummaryCachePath(home),
 		StatusPath:          export.DefaultStatusPath(home),
 		Grok:                grokProvider,
+		Claude:              claudeProvider,
 		ResetToday:          reset,
 		WidgetRequirements:  widgetRequirements,
 		WidgetSink:          widgets.publish,
@@ -269,7 +293,7 @@ func newRuntime(opts BackgroundOptions) *liveApp {
 		SystemLanguages: langs,
 	})
 	rt := &liveApp{
-		svc: svc, codex: codexStore, grokMod: mod, grok: bridge, reset: reset,
+		svc: svc, codex: codexStore, grokMod: mod, grok: bridge, claudeMod: cmod, claudeB: cbridge, reset: reset,
 		repo: repo, widgets: widgets, dispatch: dispatch, widgetDispatch: widgetUI, alertDispatch: alertUI, version: opts.Version, langs: langs,
 	}
 	widgets.onRequirements = svc.SetWidgetRequirements
@@ -308,6 +332,7 @@ func (rt *liveApp) pushPreferences(s *Settings) {
 
 func (rt *liveApp) panelActions(s *Settings) PanelActions {
 	svc := rt.svc
+	panelShown := visiblePanelCounter(svc.SetPanelOpen)
 	actions := PanelActions{
 		Refresh:        func() { rt.requestRefresh(s, "") },
 		RefreshSection: func(sec runway.Section) { rt.requestRefresh(s, sec) },
@@ -358,6 +383,7 @@ func (rt *liveApp) panelActions(s *Settings) PanelActions {
 				rt.queuePreferences(livePreferenceRequest{provider: &p})
 			}
 		},
+		PanelShown: panelShown,
 	}
 	installDetailActions(rt, &actions)
 	installAccountActions(rt, s, &actions)
@@ -365,13 +391,16 @@ func (rt *liveApp) panelActions(s *Settings) PanelActions {
 }
 
 func refreshSection(s *runway.Service, sec runway.Section) {
-	if s.Preferences().SelectedProvider == store.ProviderGrok {
+	if p := s.Preferences().SelectedProvider; p == store.ProviderGrok || p == store.ProviderClaude {
 		switch sec {
 		case runway.SectionQuotaEstimate, runway.SectionSessionRepair:
 			// A queued Codex-only section can outlive a provider switch.
 			return
-		case runway.SectionQuota, runway.SectionResetCredits, runway.SectionAPICost, runway.SectionTokenHeatmap, runway.SectionRecentSessions:
-			s.Refresh(usage.RefreshForce)
+		case runway.SectionQuota, runway.SectionResetCredits:
+			s.RefreshQuota()
+			return
+		case runway.SectionAPICost, runway.SectionTokenHeatmap, runway.SectionRecentSessions, runway.SectionSpeed:
+			s.RefreshProviderLocal(p)
 			return
 		}
 	}
@@ -392,6 +421,8 @@ func refreshSection(s *runway.Service, sec runway.Section) {
 		s.RefreshSessionReport(true)
 	case runway.SectionRecentSessions:
 		s.RefreshRecentSessions(true)
+	case runway.SectionSpeed:
+		s.RefreshSpeed(true)
 	}
 }
 
@@ -634,8 +665,10 @@ type grokBridge struct {
 	local      *grok.SessionUsageSummary
 	localRange store.CostRange
 	localErr   error
+	speed      *speed.Report
 	generation uint64
 	refreshMu  sync.Mutex
+	scanMu     sync.Mutex
 }
 
 func newGrokBridge(mod *grok.Module, prefs store.Preferences, langs []string) *grokBridge {
@@ -664,12 +697,22 @@ func (g *grokBridge) Refresh(ctx context.Context) error {
 	if g.mod != nil {
 		g.mod.Refresh(ctx, grok.RefreshTarget{Kind: grok.RefreshCurrent})
 	}
-	g.reload(false)
-	if err := g.scanLocal(ctx); err != nil {
-		g.reload(true)
+	g.reload(true)
+	return ctx.Err()
+}
+
+// RefreshLocal rescans the local Grok sessions without touching the quota.
+func (g *grokBridge) RefreshLocal(ctx context.Context) error {
+	g.scanMu.Lock()
+	defer g.scanMu.Unlock()
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	err := g.scanLocal(ctx)
+	g.reload(true)
+	if err != nil {
 		return err
 	}
-	g.reload(true)
 	return ctx.Err()
 }
 
@@ -682,8 +725,12 @@ func (g *grokBridge) SetOnChange(fn func()) {
 func (g *grokBridge) setPreferences(p store.Preferences, langs []string) {
 	g.mu.Lock()
 	rangeChanged := g.prefs.APICostSummaryRange != p.APICostSummaryRange
-	if rangeChanged || g.prefs.ShowsRecentSessions != p.ShowsRecentSessions {
+	speedChanged := g.prefs.ShowsSpeedAnalysis != p.ShowsSpeedAnalysis
+	if rangeChanged || g.prefs.ShowsRecentSessions != p.ShowsRecentSessions || speedChanged {
 		g.generation++
+	}
+	if speedChanged && !p.ShowsSpeedAnalysis {
+		g.speed = nil
 	}
 	if rangeChanged {
 		g.state.Cost = nil
@@ -705,6 +752,9 @@ func (g *grokBridge) reload(notify bool) {
 	g.mu.Lock()
 	g.relabelLocked(&next)
 	applyGrokLocal(&next, g.local)
+	if g.prefs.ShowsSpeedAnalysis {
+		next.Speed = g.speed
+	}
 	if g.localRange != g.prefs.APICostSummaryRange {
 		next.Cost = nil
 	}

@@ -259,10 +259,19 @@ func mergePlan(snap BillingSnapshot, settings billingPart, token string) Billing
 		}
 	}
 	snap = snap.MergingPlan("", false)
-	if snap.Plan == nil || strings.TrimSpace(*snap.Plan) == "" {
-		if name, ok := TierDisplayNameFromAccessToken(token); ok {
-			snap = snap.MergingPlan(name, true)
-		}
+	if snap.Plan != nil && strings.TrimSpace(*snap.Plan) != "" {
+		return snap
+	}
+	// A known token claim beats the limit; an unmapped "Tier N" claim is
+	// only the last resort.
+	if tier, ok := TierFromAccessToken(token); ok && tier != TierUnknown {
+		return snap.MergingPlan(tier.DisplayName(), true)
+	}
+	if tier := TierFromMonthlyLimit(snap.IncludedLimitCents); tier != TierUnknown {
+		return snap.MergingPlan(tier.DisplayName(), true)
+	}
+	if name, ok := TierDisplayNameFromAccessToken(token); ok {
+		snap = snap.MergingPlan(name, true)
 	}
 	return snap
 }

@@ -103,7 +103,7 @@ func TestOAuthAccountID(t *testing.T) {
 func TestResolveTier(t *testing.T) {
 	cases := map[string]SubscriptionTier{
 		"free": TierFree, "plus": TierPlus, "pro": TierPro200, "prolite": TierPro100, "Pro_Max": TierPro500,
-		"pro lite": TierPro100, "chatgpt-team": TierTeam, "business": TierBusiness, "enterprise": TierEnterprise,
+		"pro lite": TierPro100, "chatgpt-team": TierTeam, "business": TierBusiness, "self_serve_business_prolite": TierBusinessPremium, "enterprise": TierEnterprise,
 		"edu": TierEdu, "api": TierAPI, "pro-whatever": TierPro200, "": TierUnknown, "mystery": TierUnknown,
 	}
 	for in, want := range cases {

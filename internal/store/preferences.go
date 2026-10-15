@@ -13,9 +13,15 @@ package store
 
 import (
 	"encoding/json"
+	"errors"
 	"maps"
 	"math"
+	"net/url"
 	"slices"
+	"strings"
+	"unicode"
+
+	"github.com/licoy/quosparr/internal/personal"
 )
 
 // Defaults and limits shared with the Swift app.
@@ -30,6 +36,7 @@ const (
 	DefaultMainPanelHeight                           = 584.0
 	MinMainPanelHeight                               = 360.0
 	MaxMainPanelHeight                               = 900.0
+	DefaultProxyTestURL                              = personal.Homepage
 )
 
 // WidgetRefreshIntervalOptions are the intervals the settings UI offers for
@@ -48,40 +55,65 @@ func RateLimitResetTodayRefreshIntervalOptions() []int {
 // DecodePreferences and EncodePreferences to read and write the stored form:
 // they keep unknown keys and reject what the Swift app would reject.
 type Preferences struct {
-	SelectedProvider                          Provider               `json:"selectedProvider"`
-	Language                                  Language               `json:"language"`
-	Appearance                                Appearance             `json:"appearance"`
-	MainPanelBackgroundStyle                  PanelBackground        `json:"mainPanelBackgroundStyle"`
-	StatusBarDisplayStyle                     StatusBarStyle         `json:"statusBarDisplayStyle"`
-	StatusBarMetersDetailStyle                MetersDetail           `json:"statusBarMetersDetailStyle"`
-	StatusBarBatteryScope                     BatteryScope           `json:"statusBarBatteryScope"`
-	StatusBarBatteryDetailStyle               BatteryDetail          `json:"statusBarBatteryDetailStyle"`
-	StatusBarProviderScope                    StatusBarProviderScope `json:"statusBarProviderScope"`
-	RefreshIntervalSeconds                    int                    `json:"refreshIntervalSeconds"`
-	WidgetRefreshIntervalSeconds              int                    `json:"widgetRefreshIntervalSeconds"`
-	APICostSummaryRange                       CostRange              `json:"apiCostSummaryRange"`
-	MainPanelHeight                           float64                `json:"mainPanelHeight"`
-	MainPanelModuleOrder                      []Module               `json:"mainPanelModuleOrder"`
-	ShowsQuotaSummary                         bool                   `json:"showsQuotaSummary"`
-	ShowsResetCreditsSummary                  bool                   `json:"showsResetCreditsSummary"`
-	ShowsQuotaEstimateSummary                 bool                   `json:"showsQuotaEstimateSummary"`
-	QuotaEstimateWindowMode                   WindowMode             `json:"quotaEstimateWindowMode"`
-	ShowsCostSummary                          bool                   `json:"showsCostSummary"`
-	ShowsRecentSessions                       bool                   `json:"showsRecentSessions"`
-	ShowsSessionRepairSummary                 bool                   `json:"showsSessionRepairSummary"`
-	ShowsRateLimitResetToday                  bool                   `json:"showsRateLimitResetToday"`
-	ShowsModelSpecificQuotaUsage              bool                   `json:"showsModelSpecificQuotaUsage"`
-	ShowsTokenUsageHeatmap                    bool                   `json:"showsTokenUsageHeatmap"`
-	TokenUsageChartStyle                      ChartStyle             `json:"tokenUsageChartStyle"`
-	RateLimitResetTodayRefreshIntervalSeconds int                    `json:"rateLimitResetTodayRefreshIntervalSeconds"`
-	AutomaticallyChecksForUpdates             bool                   `json:"automaticallyChecksForUpdates"`
-	LaunchAtLoginEnabled                      bool                   `json:"launchAtLoginEnabled"`
-	LaunchAtLoginInitialized                  bool                   `json:"launchAtLoginInitialized"`
-	QuotaAlertsEnabled                        bool                   `json:"quotaAlertsEnabled"`
-	ResetCreditAlertsEnabled                  bool                   `json:"resetCreditAlertsEnabled"`
-	RateLimitResetTodayAlertsEnabled          bool                   `json:"rateLimitResetTodayAlertsEnabled"`
-	ExportsStatusJSON                         bool                   `json:"exportsStatusJSON"`
-	AccountPrivacyModeEnabled                 bool                   `json:"accountPrivacyModeEnabled"`
+	SelectedProvider            Provider               `json:"selectedProvider"`
+	Language                    Language               `json:"language"`
+	Appearance                  Appearance             `json:"appearance"`
+	MainPanelBackgroundStyle    PanelBackground        `json:"mainPanelBackgroundStyle"`
+	StatusBarDisplayStyle       StatusBarStyle         `json:"statusBarDisplayStyle"`
+	StatusBarMetersDetailStyle  MetersDetail           `json:"statusBarMetersDetailStyle"`
+	StatusBarBatteryScope       BatteryScope           `json:"statusBarBatteryScope"`
+	StatusBarBatteryDetailStyle BatteryDetail          `json:"statusBarBatteryDetailStyle"`
+	StatusBarProviderScope      StatusBarProviderScope `json:"statusBarProviderScope"`
+	// StatusBarProviders is the custom status-bar selection, one or two
+	// providers in Providers() order. It is omitted unless the scope is custom.
+	StatusBarProviders                        []Provider `json:"statusBarProviders,omitempty"`
+	RefreshIntervalSeconds                    int        `json:"refreshIntervalSeconds"`
+	WidgetRefreshIntervalSeconds              int        `json:"widgetRefreshIntervalSeconds"`
+	APICostSummaryRange                       CostRange  `json:"apiCostSummaryRange"`
+	MainPanelHeight                           float64    `json:"mainPanelHeight"`
+	MainPanelModuleOrder                      []Module   `json:"mainPanelModuleOrder"`
+	ShowsQuotaSummary                         bool       `json:"showsQuotaSummary"`
+	ShowsResetCreditsSummary                  bool       `json:"showsResetCreditsSummary"`
+	ShowsQuotaEstimateSummary                 bool       `json:"showsQuotaEstimateSummary"`
+	QuotaEstimateWindowMode                   WindowMode `json:"quotaEstimateWindowMode"`
+	ShowsCostSummary                          bool       `json:"showsCostSummary"`
+	ShowsRecentSessions                       bool       `json:"showsRecentSessions"`
+	ShowsSessionRepairSummary                 bool       `json:"showsSessionRepairSummary"`
+	ShowsRateLimitResetToday                  bool       `json:"showsRateLimitResetToday"`
+	ShowsModelSpecificQuotaUsage              bool       `json:"showsModelSpecificQuotaUsage"`
+	ShowsTokenUsageHeatmap                    bool       `json:"showsTokenUsageHeatmap"`
+	TokenUsageChartStyle                      ChartStyle `json:"tokenUsageChartStyle"`
+	RateLimitResetTodayRefreshIntervalSeconds int        `json:"rateLimitResetTodayRefreshIntervalSeconds"`
+	AutomaticallyChecksForUpdates             bool       `json:"automaticallyChecksForUpdates"`
+	LaunchAtLoginEnabled                      bool       `json:"launchAtLoginEnabled"`
+	LaunchAtLoginInitialized                  bool       `json:"launchAtLoginInitialized"`
+	QuotaAlertsEnabled                        bool       `json:"quotaAlertsEnabled"`
+	ResetCreditAlertsEnabled                  bool       `json:"resetCreditAlertsEnabled"`
+	RateLimitResetTodayAlertsEnabled          bool       `json:"rateLimitResetTodayAlertsEnabled"`
+	ExportsStatusJSON                         bool       `json:"exportsStatusJSON"`
+	AccountPrivacyModeEnabled                 bool       `json:"accountPrivacyModeEnabled"`
+	// ThemeColor is the accent of the app's windows as "#RRGGBB", or empty
+	// for the brand brown. Only the Go app knows the key, so it is omitted
+	// while empty and an unreadable value falls back to the brand.
+	ThemeColor string `json:"themeColor,omitempty"`
+	// FontFamily is Go-only too: the family the app's windows use, omitted
+	// for the system's, and an unusable name falls back to it.
+	FontFamily string `json:"fontFamily,omitempty"`
+	// QuotaResetTimeFormat is Go-only too: omitted for the relative countdown,
+	// and an unreadable value falls back to it.
+	QuotaResetTimeFormat ResetTimeFormat `json:"quotaResetTimeFormat,omitempty"`
+	// ProxyTestURL is Go-only as well: the site "Test Connection" fetches,
+	// omitted for DefaultProxyTestURL, and an unreadable value falls back to it.
+	ProxyTestURL string `json:"proxyTestURL,omitempty"`
+	// ShowsSpeedAnalysis is Go-only: the speed analysis module, on by default
+	// and written only when turned off.
+	ShowsSpeedAnalysis bool `json:"showsSpeedAnalysis"`
+	// FloatingWindow is Go-only: the desktop floating window, omitted while
+	// it is at its default.
+	FloatingWindow FloatingWindow `json:"floatingWindow,omitzero"`
+	// PanelProviders is Go-only: the providers the main panel offers, in
+	// Providers() order. Empty shows every provider and is not written.
+	PanelProviders []Provider `json:"panelProviders,omitempty"`
 
 	// extra holds keys this version does not know, written back unchanged so
 	// that older and newer apps sharing the domain do not erase each other's
@@ -117,6 +149,7 @@ func DefaultPreferences() Preferences {
 		ShowsRateLimitResetToday:                  true,
 		ShowsModelSpecificQuotaUsage:              false,
 		ShowsTokenUsageHeatmap:                    true,
+		ShowsSpeedAnalysis:                        true,
 		TokenUsageChartStyle:                      ChartStyleHeatmap,
 		RateLimitResetTodayRefreshIntervalSeconds: DefaultRateLimitResetTodayRefreshIntervalSeconds,
 		AutomaticallyChecksForUpdates:             true,
@@ -133,8 +166,49 @@ func DefaultPreferences() Preferences {
 // Clone returns a deep copy.
 func (p Preferences) Clone() Preferences {
 	p.MainPanelModuleOrder = slices.Clone(p.MainPanelModuleOrder)
+	p.StatusBarProviders = slices.Clone(p.StatusBarProviders)
+	p.FloatingWindow = p.FloatingWindow.clone()
+	p.PanelProviders = slices.Clone(p.PanelProviders)
 	p.extra = maps.Clone(p.extra)
 	return p
+}
+
+// StatusBarSelection is the status item's providers. Nil means follow the
+// main panel. Legacy both is Codex then Grok. Custom is the stored list.
+func (p Preferences) StatusBarSelection() []Provider {
+	switch p.StatusBarProviderScope {
+	case ProviderScopeBoth:
+		return []Provider{ProviderCodex, ProviderGrok}
+	case ProviderScopeCustom:
+		return canonicalStatusBarProviders(p.StatusBarProviders)
+	default:
+		return nil
+	}
+}
+
+// canonicalStatusBarProviders keeps one or two known providers, drops
+// duplicates, and sorts them into Providers() order.
+func canonicalStatusBarProviders(in []Provider) []Provider { return canonicalProviders(in, 2) }
+
+// canonicalProviders keeps up to limit known providers, drops duplicates,
+// and sorts them into Providers() order.
+func canonicalProviders(in []Provider, limit int) []Provider {
+	seen := map[Provider]bool{}
+	for _, p := range in {
+		if p.Valid() {
+			seen[p] = true
+		}
+	}
+	out := make([]Provider, 0, limit)
+	for _, p := range Providers() {
+		if seen[p] {
+			out = append(out, p)
+			if len(out) == limit {
+				break
+			}
+		}
+	}
+	return out
 }
 
 // Normalize applies the clamping and module-order repair the Swift initializer
@@ -145,6 +219,120 @@ func (p *Preferences) Normalize() {
 	p.MainPanelModuleOrder = NormalizeModuleOrder(p.MainPanelModuleOrder)
 	p.RateLimitResetTodayRefreshIntervalSeconds =
 		ClampRateLimitResetTodayRefreshInterval(p.RateLimitResetTodayRefreshIntervalSeconds)
+	p.ThemeColor = NormalizeThemeColor(p.ThemeColor)
+	p.FontFamily = NormalizeFontFamily(p.FontFamily)
+	if !p.QuotaResetTimeFormat.Valid() {
+		p.QuotaResetTimeFormat = ResetTimeRelative
+	}
+	p.ProxyTestURL = NormalizeProxyTestURL(p.ProxyTestURL)
+	p.normalizeStatusBarProviders()
+	p.FloatingWindow.normalize()
+	p.normalizePanelProviders()
+}
+
+// PanelSelection is the providers the main panel offers: the chosen ones,
+// or every provider.
+func (p Preferences) PanelSelection() []Provider {
+	if sel := canonicalProviders(p.PanelProviders, len(Providers())); len(sel) > 0 {
+		return sel
+	}
+	return Providers()
+}
+
+// normalizePanelProviders keeps the custom panel list canonical, empty for
+// every provider, and moves the selected provider onto a shown one.
+func (p *Preferences) normalizePanelProviders() {
+	p.PanelProviders = canonicalProviders(p.PanelProviders, len(Providers()))
+	if len(p.PanelProviders) == 0 {
+		p.PanelProviders = nil
+		return
+	}
+	if !slices.Contains(p.PanelProviders, p.SelectedProvider) {
+		p.SelectedProvider = p.PanelProviders[0]
+	}
+}
+
+// normalizeStatusBarProviders applies the custom-list rules. Legacy both is
+// left as both so a frozen settings document still round-trips. An empty or
+// invalid custom list falls back to following the main panel.
+func (p *Preferences) normalizeStatusBarProviders() {
+	switch p.StatusBarProviderScope {
+	case ProviderScopeBoth, ProviderScopeSelected:
+		p.StatusBarProviders = nil
+	case ProviderScopeCustom:
+		p.StatusBarProviders = canonicalStatusBarProviders(p.StatusBarProviders)
+		if len(p.StatusBarProviders) == 0 {
+			p.StatusBarProviderScope = ProviderScopeSelected
+			p.StatusBarProviders = nil
+		}
+	default:
+		p.StatusBarProviders = nil
+	}
+}
+
+// ErrInvalidProxyTestURL rejects a test site that is not an http(s) URL with
+// a host.
+var ErrInvalidProxyTestURL = errors.New("invalid proxy test URL")
+
+// ParseProxyTestURL checks a test site typed by the user and returns it in
+// canonical form. A bare host gets "https://"; user info is refused so no
+// password ends up in the preferences.
+func ParseProxyTestURL(raw string) (string, error) {
+	s := strings.TrimSpace(raw)
+	if s == "" || len(s) > 2_048 || strings.ContainsFunc(s, func(r rune) bool { return unicode.IsSpace(r) || unicode.IsControl(r) }) {
+		return "", ErrInvalidProxyTestURL
+	}
+	if !strings.Contains(s, "://") {
+		s = "https://" + s
+	}
+	u, err := url.Parse(s)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || u.User != nil {
+		return "", ErrInvalidProxyTestURL
+	}
+	return u.String(), nil
+}
+
+// NormalizeProxyTestURL returns the stored form of a test site: empty for
+// the default or an invalid value.
+func NormalizeProxyTestURL(raw string) string {
+	s, err := ParseProxyTestURL(raw)
+	if err != nil || s == DefaultProxyTestURL || s == DefaultProxyTestURL+"/" {
+		return ""
+	}
+	return s
+}
+
+// ProxyTestTarget is the site "Test Connection" fetches.
+func (p Preferences) ProxyTestTarget() string {
+	if p.ProxyTestURL == "" {
+		return DefaultProxyTestURL
+	}
+	return p.ProxyTestURL
+}
+
+// NormalizeThemeColor returns color as an upper-case "#RRGGBB", or empty
+// when it is not one.
+func NormalizeThemeColor(color string) string {
+	if len(color) != 7 || color[0] != '#' {
+		return ""
+	}
+	for _, r := range color[1:] {
+		if !strings.ContainsRune("0123456789abcdefABCDEF", r) {
+			return ""
+		}
+	}
+	return strings.ToUpper(color)
+}
+
+// NormalizeFontFamily returns a font family name trimmed, or empty for the
+// system's font when it is not one name: too long, or with a comma, which
+// would make it a list, or a control character.
+func NormalizeFontFamily(family string) string {
+	s := strings.TrimSpace(family)
+	if len(s) > 256 || strings.ContainsFunc(s, func(r rune) bool { return r == ',' || unicode.IsControl(r) }) {
+		return ""
+	}
+	return s
 }
 
 // ClampWidgetRefreshInterval limits the widget refresh interval to 60...1800 s.

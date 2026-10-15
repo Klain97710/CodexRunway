@@ -276,7 +276,7 @@ func (a ManagedAccount) IdentityMarkerWorkspaceID() string { return firstNonEmpt
 // DisplaysWorkspaceIdentity: only organization plans show the workspace.
 func (a ManagedAccount) DisplaysWorkspaceIdentity() bool {
 	switch a.Tier() {
-	case TierTeam, TierBusiness, TierEnterprise, TierEdu:
+	case TierTeam, TierBusiness, TierBusinessPremium, TierEnterprise, TierEdu:
 		return true
 	}
 	return false

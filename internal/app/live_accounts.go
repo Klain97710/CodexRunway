@@ -26,6 +26,17 @@ func installAccountActions(rt *liveApp, s *Settings, a *PanelActions) {
 		Delete:     func(id string) string { return rt.removeCodexAccount(loc(), id) },
 	}
 	installGrokAccountActions(rt, loc, &a.Accounts)
+	installClaudeAccountActions(rt, loc, &a.Accounts)
+}
+
+func installClaudeAccountActions(rt *liveApp, loc func() l10n.Localizer, a *AccountActions) {
+	if rt.claudeMod == nil {
+		return
+	}
+	a.ClaudeRefreshAll = func() string { return rt.refreshClaudeAll(context.Background()) }
+	a.ClaudeRefresh = func(id string) string { return rt.refreshClaude(context.Background(), loc(), id) }
+	a.ClaudeSwitch = func(id string) string { return rt.switchClaude(loc(), id) }
+	a.ClaudeDelete = func(id string) string { return rt.removeClaude(loc(), id) }
 }
 
 func (rt *liveApp) removeCodexAccount(l l10n.Localizer, id string) string {

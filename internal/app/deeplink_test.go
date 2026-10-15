@@ -1,6 +1,7 @@
 package app
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/licoy/quosparr/internal/export"
@@ -46,5 +47,34 @@ func TestWidgetDeepLinkRejectsInvalidAndOverviewRefreshes(t *testing.T) {
 	}
 	if !a.OpenWidgetURL((export.DeepLink{Provider: export.ScopeBoth, Section: export.SectionOverview}).URL()) || count != 1 || a.panelState.detail != "" {
 		t.Fatal("overview did not open and refresh")
+	}
+}
+
+// A widget may name a provider the panel hides. The panel stays on its own
+// provider, opens the overview, and leaves the saved list alone.
+func TestWidgetDeepLinkHiddenProviderOpensOverview(t *testing.T) {
+	section := runway.Section("untouched")
+	refreshed := 0
+	shown := []store.Provider{store.ProviderClaude, store.ProviderGrok}
+	a, panel := newPanel(t, func(p *store.Preferences) {
+		p.SelectedProvider = store.ProviderGrok
+		p.PanelProviders = shown
+	}, panelFixture(), PanelActions{
+		Refresh:        func() { refreshed++ },
+		RefreshSection: func(s runway.Section) { section = s },
+	})
+	link := export.DeepLink{Provider: export.ScopeCodex, Section: export.SectionQuota}
+	if !a.OpenWidgetURL(link.URL()) {
+		t.Fatal("link rejected")
+	}
+	panel.Frame()
+	if a.settings.Prefs().SelectedProvider != store.ProviderGrok || a.panelState.provider != store.ProviderGrok {
+		t.Fatalf("provider became %s", a.panelState.provider)
+	}
+	if a.panelState.detail != "" || refreshed != 1 || section != "untouched" {
+		t.Fatalf("detail=%s refreshed=%d section=%s", a.panelState.detail, refreshed, section)
+	}
+	if !slices.Equal(a.settings.Prefs().PanelProviders, shown) {
+		t.Fatalf("saved list changed to %v", a.settings.Prefs().PanelProviders)
 	}
 }

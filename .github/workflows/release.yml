@@ -53,6 +53,7 @@ jobs:
             ARCH="$arch" bash Scripts/package-v1-app.sh
             cp build/replacement-candidate-"$arch"/*.zip build/replacement-candidate-"$arch"/*.dmg build/replacement-candidate-"$arch"/*.tar.gz build/replacement-candidate-"$arch"/update-*.json dist-v1/
           done
+          go run ./Scripts/release-assets notes -config mygo.json -dir dist-v1 -targets darwin-arm64,darwin-amd64 -notes docs/releases/personal-v0.2.0.md
           bash Scripts/legacy-appcast.sh "$PWD/dist-v1" "$PWD/mygo.json" "$GITHUB_REF_NAME"
           python3 Scripts/release-checksums.py write dist-v1
           bash Scripts/verify-v1-release.sh "$PWD/dist-v1" "$PWD/mygo.json"

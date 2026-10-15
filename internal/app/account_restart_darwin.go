@@ -19,11 +19,13 @@ func accountOnMain(fn func()) {
 }
 
 func restartCodexDesktop() error {
-	return runCodexRestart(codexDesktopProcesses(), findCodexApplication(), openCodexApplication)
+	return runCodexRestart(runningApplications(isCodexDesktop), findCodexApplication(), openCodexApplication)
 }
 
-func codexDesktopProcesses() []restartableCodex {
-	var apps []restartableCodex
+// runningApplications returns the running applications that match; the
+// caller must call release on each.
+func runningApplications(match func(bundleID, name string) bool) []runningApp {
+	var apps []runningApp
 	accountOnMain(func() {
 		pool := objc.ID(objc.GetClass("NSAutoreleasePool")).Send(objc.RegisterName("new"))
 		defer pool.Send(objc.RegisterName("drain"))
@@ -32,12 +34,12 @@ func codexDesktopProcesses() []restartableCodex {
 		for i := uint64(0); i < objc.Send[uint64](running, objc.RegisterName("count")); i++ {
 			app := running.Send(objc.RegisterName("objectAtIndex:"), i)
 			bundle, name := accountNSString(app.Send(objc.RegisterName("bundleIdentifier"))), accountNSString(app.Send(objc.RegisterName("localizedName")))
-			if !isCodexDesktop(bundle, name) {
+			if !match(bundle, name) {
 				continue
 			}
 			app.Send(objc.RegisterName("retain"))
 			url := app.Send(objc.RegisterName("bundleURL"))
-			item := restartableCodex{bundleID: bundle, name: name, path: accountNSString(url.Send(objc.RegisterName("path")))}
+			item := runningApp{bundleID: bundle, name: name, path: accountNSString(url.Send(objc.RegisterName("path")))}
 			item.terminate = func() bool {
 				var ok bool
 				accountOnMain(func() {

@@ -3,13 +3,13 @@ package app
 import (
 	"context"
 	"errors"
-	"github.com/licoy/quosparr/internal/personal"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/licoy/quosparr/internal/codex"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/resettoday"
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/store"
@@ -30,6 +30,16 @@ func TestPanelOpenRefreshesResetStatusEveryPresentation(t *testing.T) {
 		}
 		a.panelClosed()
 		view = ui.NewTester(a.panelView, panelWidth, 860)
+	}
+}
+
+func TestPanelPresentationIsReportedToTheService(t *testing.T) {
+	var shown []bool
+	a, _ := newPanel(t, nil, panelFixture(), PanelActions{PanelShown: func(open bool) { shown = append(shown, open) }})
+	a.panelOpened()
+	a.panelClosed()
+	if len(shown) != 2 || !shown[0] || shown[1] {
+		t.Fatalf("panel presentation = %v, want open then closed", shown)
 	}
 }
 
@@ -92,7 +102,12 @@ func TestPanelOpenLoadsLatestResetThroughLiveQueue(t *testing.T) {
 				return latest, nil
 			}
 			reset.ref.Refresh(context.Background(), true)
-			svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: prefs, ResetToday: reset})
+			// Opening also loads the Codex local data; no one is signed in.
+			svc := runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}, Preferences: prefs, ResetToday: reset, Sources: runway.Sources{
+				LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) {
+					return codex.Auth{}, &runway.AuthLoadError{}
+				},
+			}})
 			defer svc.Close()
 			rt := &liveApp{svc: svc, reset: reset}
 			defer rt.closePreferences()
@@ -149,7 +164,7 @@ func TestPanelOpenResetRefreshSurvivesQueuedFullRefresh(t *testing.T) {
 		calls.Add(1)
 		return resettoday.NewStateSnapshot(resettoday.StateNo, time.Now()), nil
 	}
-	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: prefs, ResetToday: reset, Sources: runway.Sources{
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}, Preferences: prefs, ResetToday: reset, Sources: runway.Sources{
 		LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) {
 			return codex.Auth{}, errors.New("synthetic signed-out account")
 		},

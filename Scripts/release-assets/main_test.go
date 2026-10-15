@@ -118,6 +118,40 @@ func TestManifestAuthenticatesFinalArchive(t *testing.T) {
 		t.Fatal("wrong signing key accepted")
 	}
 }
+func TestNotesKeepManifestValid(t *testing.T) {
+	dir := t.TempDir()
+	pub, key, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfgPath := filepath.Join(dir, "mygo.json")
+	cfgData := `{"version":"1.0.0","updates":{"publicKey":"` + base64.StdEncoding.EncodeToString(pub) + `","github":"Klain97710/CodexRunway","tagPrefix":"personal-v"}}`
+	if err := os.WriteFile(cfgPath, []byte(cfgData), 0600); err != nil {
+		t.Fatal(err)
+	}
+	notesPath := filepath.Join(dir, "update-notes.md")
+	if err := os.WriteFile(notesPath, []byte("\n### Features\n\n- **app**: change\n\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("MYGO_UPDATE_PRIVATE_KEY", base64.StdEncoding.EncodeToString(key))
+	fixtureArchive(t, filepath.Join(dir, archiveName("1.0.0", "linux-amd64")), []string{"quosparr", "libmygo-sqlite3.so"})
+	base := []string{"-config", cfgPath, "-dir", dir, "-targets", "linux-amd64"}
+	for _, command := range []string{"sign", "notes", "verify"} {
+		if err := run(append(append([]string{command}, base...), "-notes", notesPath)); err != nil {
+			t.Fatalf("%s: %v", command, err)
+		}
+	}
+	var m manifest
+	if err := readJSON(filepath.Join(dir, "update-linux-amd64.json"), &m); err != nil {
+		t.Fatal(err)
+	}
+	if m.Notes != "### Features\n\n- **app**: change" {
+		t.Fatalf("notes = %q", m.Notes)
+	}
+	if err := run(append([]string{"notes"}, base...)); err == nil {
+		t.Fatal("notes without a file accepted")
+	}
+}
 func TestArchiveRejectsDuplicatePayload(t *testing.T) {
 	file := filepath.Join(t.TempDir(), "test.tar.gz")
 	fixtureArchive(t, file, []string{"quosparr", "libmygo-sqlite3.so", "quosparr"})

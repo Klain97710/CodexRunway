@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
@@ -17,11 +18,18 @@ import (
 	"github.com/licoy/quosparr/internal/store"
 )
 
+// Account form kinds index the provider tabs, in store.Providers() order.
+const (
+	accountKindCodex = iota
+	accountKindClaude
+	accountKindGrok
+)
+
 // accountsPage is wired from settings_view.go.
 func renderAccountsPage(c *ui.Context, u *settingsUI) {
 	l := u.L()
 	f := accountFormOf(u)
-	if u.s.System().Features.Grok {
+	if u.s.System().Features.Grok || u.s.System().Features.Claude {
 		accountProviderHeader(c, u, f)
 	} else {
 		f.kind = 0
@@ -31,17 +39,128 @@ func renderAccountsPage(c *ui.Context, u *settingsUI) {
 		ui.Text(c, l.Text(l10n.KeyNotLoaded)).FontSize(12).TextColor(c.Theme().TextMuted)
 		return
 	}
-	if f.kind == 0 {
+	switch f.kind {
+	case accountKindCodex:
 		renderCodexAccounts(c, u, f, rt)
+	case accountKindGrok:
+		renderGrokAccounts(c, u, f, rt)
+	default:
+		renderClaudeAccounts(c, u, f, rt)
+	}
+}
+
+func renderClaudeAccounts(c *ui.Context, u *settingsUI, f *accountForm, rt *liveApp) {
+	l := u.L()
+	view := rt.svc.Snapshot().Claude.Accounts
+	panelAccountStatus(c, l, view)
+	rows := view.Sidebar
+	folder := accountFolder{l.Text(l10n.KeyProviderClaude), rt.claudeFolder()}
+	accountToolbar(c, u, f, accountCountTitle(l, len(rows)), folder, func(m *ui.Menu) {
+		if m.Item(l.Text(l10n.KeyClaudeLoginCLI)).Chosen() {
+			u.accountNotice(f, rt.claudeLoginHint(l))
+		}
+		if m.Item(l.Text(l10n.KeyClaudePasteHint)).Chosen() {
+			f.mode = "paste"
+		}
+		if m.Item(l.Text(l10n.KeyGrokAccountsAddFile)).Chosen() {
+			u.previewClaudeFile(f, rt)
+		}
+		if m.Item(l.Text(l10n.KeyClaudeImportCurrent)).Chosen() {
+			u.accountAct(f, "", func() string { return rt.importClaudeOfficial(l) })
+		}
+	}, func() string {
+		f.selection = exportAccountSelection(rows)
+		return ""
+	}, func() string {
+		return rt.refreshClaudeAll(context.Background())
+	})
+	accountEditor(c, u, f)
+	if len(rows) == 0 {
+		ui.Text(c, l.Text(l10n.KeyClaudeAccountsEmpty)).FontSize(12).TextColor(c.Theme().TextMuted)
+	}
+	priv := u.s.Prefs().AccountPrivacyModeEnabled
+	accountRows(c, len(rows), func(i int) {
+		renderClaudeAccountRow(c, u, f, rt, rows[i], view.ActiveID, priv)
+	})
+}
+
+func (rt *liveApp) claudeFolder() string {
+	if rt == nil || rt.claudeMod == nil || rt.claudeMod.Store == nil {
+		return ""
+	}
+	return rt.claudeMod.Store.ConfigDir()
+}
+
+func renderClaudeAccountRow(c *ui.Context, u *settingsUI, f *accountForm, rt *liveApp, acc codex.ManagedAccount, current string, priv bool) {
+	l := u.L()
+	name := maskAccount(priv, acc.ResolvedDisplayName())
+	var quota *runway.ClaudeAccountQuota
+	if rt != nil {
+		if q, ok := rt.svc.Snapshot().Claude.AccountQuotas[acc.ID]; ok {
+			quota = &q
+		}
+	}
+	ui.Row(c).Gap(10).Padding(10, 0).AlignItems(ui.Center).Children(func() {
+		ProviderIcon(c, store.ProviderClaude, 20)
+		accountSettingsIdentity(c, l, accountIdentityView{account: acc, current: acc.ID == current, privacy: priv, provider: store.ProviderClaude, claudeQuota: quota})
+		ui.MenuButton(c, l.Text(l10n.KeyAccountsActions), func(m *ui.Menu) {
+			if m.Item(l.Text(l10n.KeyAccountsMakeCurrent)).Disabled(acc.ID == current).Chosen() {
+				f.mode, f.editID, f.switchName = "claude-switch", acc.ID, name
+			}
+			if m.Item(l.Text(l10n.KeyAccountsMoveUp)).Chosen() {
+				u.accountAct(f, "", func() string { return rt.moveClaude(acc.ID, -1) })
+			}
+			if m.Item(l.Text(l10n.KeyAccountsMoveDown)).Chosen() {
+				u.accountAct(f, "", func() string { return rt.moveClaude(acc.ID, 1) })
+			}
+			if m.Item(l.Text(l10n.KeyAccountsDelete)).Disabled(acc.ID == current).Chosen() {
+				u.accountAct(f, "", func() string { return rt.deleteClaude(l, acc.ID) })
+			}
+		}).Disabled(f.busy || rt == nil)
+	})
+}
+
+func (rt *liveApp) moveClaude(id string, delta int) string {
+	if rt.claudeMod == nil || rt.claudeMod.Store == nil {
+		return ""
+	}
+	idx, err := rt.claudeMod.Store.LoadIndex()
+	if err != nil {
+		return err.Error()
+	}
+	rows := idx.OrderedAccounts()
+	ids := make([]string, len(rows))
+	at := -1
+	for i, row := range rows {
+		ids[i] = row.ID
+		if row.ID == id {
+			at = i
+		}
+	}
+	next := at + delta
+	if at < 0 || next < 0 || next >= len(ids) {
+		return ""
+	}
+	ids[at], ids[next] = ids[next], ids[at]
+	return rt.reorderClaude(ids)
+}
+
+func (u *settingsUI) previewClaudeFile(f *accountForm, rt *liveApp) {
+	l := u.L()
+	paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{Title: l.Text(l10n.KeyGrokAccountsAddFile)})
+	if err != nil || len(paths) == 0 {
 		return
 	}
-	renderGrokAccounts(c, u, f, rt)
+	u.accountAct(f, "", func() string {
+		msg, _ := rt.importClaudeFile(context.Background(), l, paths[0])
+		return msg
+	})
 }
 
 func accountProviderHeader(c *ui.Context, u *settingsUI, f *accountForm) {
 	l := u.L()
 	ui.Row(c).Children(func() {
-		if ProviderTabs(c.Key("accounts-provider"), &f.kind, f.busy, l.Text(l10n.KeyProviderCodex), l.Text(l10n.KeyProviderGrok)) {
+		if ProviderTabs(c.Key("accounts-provider"), &f.kind, f.busy, providerTabLabels(l)...) {
 			f.mode, f.paste, f.apiKey = "", "", ""
 			f.selection = nil
 		}
@@ -87,9 +206,23 @@ func (u *settingsUI) accountAct(f *accountForm, waiting string, fn func() string
 		u.post(func() {
 			f.busy = false
 			f.cancel = nil
-			f.status = msg
+			f.status = ""
+			u.accountNotice(f, msg)
 		})
 	}()
+}
+
+// accountNotice shows the result of an account action in a dialog titled
+// with the provider of the tab, so it never lingers under another tab. A
+// cancelled login needs no answer.
+func (u *settingsUI) accountNotice(f *accountForm, msg string) {
+	l := u.L()
+	if msg == "" || msg == l.Text(l10n.KeyAccountsOAuthCancelled) {
+		return
+	}
+	providers := store.Providers()
+	title := l.Text(providerKey(providers[min(max(f.kind, 0), len(providers)-1)]))
+	u.showNotice(title, msg)
 }
 
 func renderCodexAccounts(c *ui.Context, u *settingsUI, f *accountForm, rt *liveApp) {
@@ -97,7 +230,8 @@ func renderCodexAccounts(c *ui.Context, u *settingsUI, f *accountForm, rt *liveA
 	view := rt.svc.Snapshot().Accounts
 	panelAccountStatus(c, l, view)
 	rows := view.Sidebar
-	accountToolbar(c, u, f, accountCountTitle(l, len(rows)), func(m *ui.Menu) {
+	folder := accountFolder{l.Text(l10n.KeyCodexFolder), rt.codexFolder()}
+	accountToolbar(c, u, f, accountCountTitle(l, len(rows)), folder, func(m *ui.Menu) {
 		if m.Item(l.Text(l10n.KeyAccountsAddOAuth)).Chosen() {
 			u.startCodexLogin(f, rt)
 		}
@@ -126,9 +260,10 @@ func renderCodexAccounts(c *ui.Context, u *settingsUI, f *accountForm, rt *liveA
 		ui.Text(c, l.Text(l10n.KeyAccountsEmpty)).FontSize(12).TextColor(c.Theme().TextMuted)
 	}
 	priv := u.s.Prefs().AccountPrivacyModeEnabled
-	for _, acc := range rows {
+	accountRows(c, len(rows), func(i int) {
+		acc := rows[i]
 		renderCodexSettingsRow(c, u, f, rt, acc, view.ActiveID, priv)
-	}
+	})
 }
 
 func renderGrokAccounts(c *ui.Context, u *settingsUI, f *accountForm, rt *liveApp) {
@@ -136,7 +271,8 @@ func renderGrokAccounts(c *ui.Context, u *settingsUI, f *accountForm, rt *liveAp
 	view := rt.svc.Snapshot().Grok.Accounts
 	panelAccountStatus(c, l, view)
 	rows := view.Sidebar
-	accountToolbar(c, u, f, accountCountTitle(l, len(rows)), func(m *ui.Menu) {
+	folder := accountFolder{l.Text(l10n.KeyGrokFolder), rt.grokFolder()}
+	accountToolbar(c, u, f, accountCountTitle(l, len(rows)), folder, func(m *ui.Menu) {
 		// grok.Module has no API-key add; a key alone is not a managed login.
 		if m.Item(l.Text(l10n.KeyGrokAccountsAddOAuth)).Chosen() {
 			u.startGrokLogin(f, rt)
@@ -169,15 +305,38 @@ func renderGrokAccounts(c *ui.Context, u *settingsUI, f *accountForm, rt *liveAp
 		ui.Text(c, l.Text(l10n.KeyGrokAccountsEmpty)).FontSize(12).TextColor(c.Theme().TextMuted)
 	}
 	priv := u.s.Prefs().AccountPrivacyModeEnabled
-	for _, acc := range rows {
+	accountRows(c, len(rows), func(i int) {
+		acc := rows[i]
 		renderGrokAccountRow(c, u, f, rt, acc, view.ActiveID, priv)
-	}
+	})
 }
 
-func accountToolbar(c *ui.Context, u *settingsUI, f *accountForm, title string, menu func(*ui.Menu), export, refresh func() string) {
+// accountFolder is the official CLI directory of a provider, which the
+// toolbar opens in the file manager.
+type accountFolder struct {
+	label, path string
+}
+
+// codexFolder is CODEX_HOME (~/.codex by default); "" without a store.
+func (rt *liveApp) codexFolder() string {
+	if rt.codex == nil {
+		return ""
+	}
+	return filepath.Dir(rt.codex.OfficialAuthPath())
+}
+
+// grokFolder is GROK_HOME (~/.grok by default); "" without a store.
+func (rt *liveApp) grokFolder() string {
+	if rt.grokMod == nil || rt.grokMod.Store == nil {
+		return ""
+	}
+	return rt.grokMod.Store.OfficialHome()
+}
+
+func accountToolbar(c *ui.Context, u *settingsUI, f *accountForm, title string, folder accountFolder, menu func(*ui.Menu), export, refresh func() string) {
 	l := u.L()
-	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-		ui.Text(c, title).FontSize(16).FontWeight(600).Grow(1).Basis(0).SingleLine()
+	ui.Row(c).Gap(8).Padding(0, 0, 0, 12).AlignItems(ui.Center).Children(func() {
+		ui.Text(c, title).FontSize(13).FontWeight(600).Grow(1).Basis(0).SingleLine()
 		if f.busy {
 			ui.Spinner(c).Size(14, 14)
 			if f.cancel != nil && PillButton(c, nil, l.Text(l10n.KeyCancel), false).Clicked() {
@@ -189,12 +348,32 @@ func accountToolbar(c *ui.Context, u *settingsUI, f *accountForm, title string, 
 			u.accountAct(f, "", refresh)
 		}
 		if IconButton(c, icExport, l.Text(l10n.KeyAccountsExport), f.busy).Clicked() {
-			f.status = export()
+			u.accountNotice(f, export())
+		}
+		open := u.opts.Actions.OpenFolder
+		if IconButton(c, icFolder, folder.label, open == nil || folder.path == "").Clicked() {
+			open(folder.path)
 		}
 	})
-	if f.status != "" {
+	// Only progress stays inline; results open a dialog.
+	if f.busy && f.status != "" {
 		ui.Text(c, f.status).FontSize(12).TextColor(c.Theme().TextMuted)
 	}
+}
+
+// accountRows is the box holding the account rows, with hairlines between.
+func accountRows(c *ui.Context, n int, row func(i int)) {
+	if n == 0 {
+		return
+	}
+	Panel(c).Children(func() {
+		for i := range n {
+			if i > 0 {
+				ui.Box(c).Height(1).Background(pal(c.Theme()).Line)
+			}
+			row(i)
+		}
+	})
 }
 
 func renderCodexRow(c *ui.Context, u *settingsUI, f *accountForm, rt *liveApp, acc codex.ManagedAccount, priv bool) {
@@ -238,7 +417,6 @@ func renderCodexSettingsRow(c *ui.Context, u *settingsUI, f *accountForm, rt *li
 			}
 		}).Disabled(f.busy || rt == nil)
 	})
-	ui.Box(c).Height(1).Background(pal(c.Theme()).Line)
 }
 
 func renderGrokAccountRow(c *ui.Context, u *settingsUI, f *accountForm, rt *liveApp, acc codex.ManagedAccount, current string, priv bool) {
@@ -274,7 +452,6 @@ func renderGrokAccountRow(c *ui.Context, u *settingsUI, f *accountForm, rt *live
 			}
 		}).Disabled(f.busy || rt == nil)
 	})
-	ui.Box(c).Height(1).Background(pal(c.Theme()).Line)
 }
 
 func maskAccount(on bool, value string) string {
@@ -575,6 +752,17 @@ func (rt *liveApp) refreshGrok(id string) string {
 	return ""
 }
 
+func (rt *liveApp) deleteClaude(l l10n.Localizer, id string) string {
+	confirmed, err := confirmDialog(l, l.Text(l10n.KeyAccountsDeleteConfirmTitle), l.Text(l10n.KeyClaudeDeleteConfirmMessage), "", l.Text(l10n.KeyAccountsDelete))
+	if err != nil {
+		return l.Text(l10n.KeyStatusError)
+	}
+	if !confirmed {
+		return ""
+	}
+	return rt.removeClaude(l, id)
+}
+
 func (rt *liveApp) deleteGrok(l l10n.Localizer, id string) string {
 	confirmed, err := confirmDialog(l, l.Text(l10n.KeyGrokAccountsDeleteConfirmTitle), l.Text(l10n.KeyGrokAccountsDeleteConfirmMessage), "", l.Text(l10n.KeyGrokAccountsRemove))
 	if err != nil {
@@ -608,8 +796,11 @@ func pasteAccount(l l10n.Localizer, kind int, text string) (string, bool) {
 	if rt == nil {
 		return tx(l, xDetailUnavailable), false
 	}
-	if kind == 1 {
+	if kind == accountKindGrok {
 		return rt.grokPasteText(l, text)
+	}
+	if kind == accountKindClaude {
+		return rt.claudePasteText(context.Background(), l, text)
 	}
 	return rt.pasteCodex(l, text)
 }
@@ -627,7 +818,7 @@ func saveAccountMeta(l l10n.Localizer, kind int, mode, id, alias, note string) s
 	if rt == nil {
 		return tx(l, xDetailUnavailable)
 	}
-	if kind == 1 {
+	if kind == accountKindGrok {
 		return rt.setGrokAlias(l, id, alias)
 	}
 	if mode == "note" {

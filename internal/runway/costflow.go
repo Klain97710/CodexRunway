@@ -358,8 +358,15 @@ func (s *Service) refreshCostNow(ctx context.Context, policy usage.RefreshPolicy
 	if err != nil {
 		return
 	}
-	q, err := s.src.FetchQuota(ctx, apiAuth(auth))
-	if err != nil {
+	// The cycle comes from the quota on hand; the quota interface is only
+	// asked when there is none yet.
+	s.mu.Lock()
+	cached := s.quota
+	s.mu.Unlock()
+	var q codexapi.QuotaSnapshot
+	if cached != nil {
+		q = *cached
+	} else if q, err = s.src.FetchQuota(ctx, apiAuth(auth)); err != nil {
 		if !stopped(ctx, err) {
 			s.fail(&auth, gen, err, func() {
 				text := s.errTextLocked(err)
@@ -372,8 +379,7 @@ func (s *Service) refreshCostNow(ctx context.Context, policy usage.RefreshPolicy
 			})
 		}
 		return
-	}
-	if !s.apply(auth, gen, func() { s.quota, s.quotaErr, s.statusFail = &q, "", false }) {
+	} else if !s.apply(auth, gen, func() { s.quota, s.quotaErr, s.statusFail = &q, "", false }) {
 		return
 	}
 	s.scanCostAndHeatmap(ctx, q, auth, gen, policy, true, false)

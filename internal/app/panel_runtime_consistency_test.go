@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"github.com/licoy/quosparr/internal/personal"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -11,6 +10,7 @@ import (
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/codexapi"
 	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
@@ -24,7 +24,7 @@ func TestPanelRuntimeRejectsCompletedDetailAfterSameAccountReapply(t *testing.T)
 	auth := codex.APIKeyAuth("synthetic-account-reapply")
 	var switched atomic.Bool
 	index := codex.AccountIndex{ActiveAccountID: "ada", Accounts: []codex.ManagedAccount{{ID: "ada", DisplayName: "Synthetic account"}}}
-	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Sources: runway.Sources{
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}, Preferences: p, Sources: runway.Sources{
 		LoadIndex:     func() (codex.AccountIndex, error) { return index, nil },
 		LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) { return auth, nil },
 		SwitchAccount: func(context.Context, string) (codex.SwitchResult, error) {
@@ -108,7 +108,7 @@ func TestPanelRuntimeRefreshUpdatesOpenCostDetail(t *testing.T) {
 	var quotaSignal sync.Once
 	auth := codex.APIKeyAuth("synthetic-refresh")
 	now := time.Now()
-	svc := runway.New(runway.Options{Features: personal.Features{Grok: true}, Preferences: p, Now: func() time.Time { return now }, Sources: runway.Sources{
+	svc := runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}, Preferences: p, Now: func() time.Time { return now }, Sources: runway.Sources{
 		LoadIndex:     func() (codex.AccountIndex, error) { return codex.AccountIndex{ActiveAccountID: "ada"}, nil },
 		LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) { return auth, nil },
 		FetchQuota: func(context.Context, codexapi.Auth) (codexapi.QuotaSnapshot, error) {
@@ -149,6 +149,7 @@ func TestPanelRuntimeRefreshUpdatesOpenCostDetail(t *testing.T) {
 		t.Fatal("initial cost did not render")
 	}
 	tokens.Store(222)
+	svc.SetPanelOpen(true)     // Only the open panel's refresh rescans its cost.
 	a.PanelActions().Refresh() // A background/runtime refresh while the detail is open.
 	select {
 	case <-quotaStarted:

@@ -29,7 +29,7 @@ func TestSettingsOtherControlEventLatency(t *testing.T) {
 		{"panel background", (*settingsUI).appearanceGroup, text(l10n.KeyMainPanelBackground), func(u *settingsUI) string { return u.text(panelBackgroundKey(store.PanelBackgroundOpaque)) }},
 		{"panel height", (*settingsUI).appearanceGroup, func(u *settingsUI) string { return tx(u.L(), xPanelHeight) }, nil},
 		{"statusbar style", (*settingsUI).appearanceGroup, text(l10n.KeyStatusBarStyle), func(u *settingsUI) string { return u.text(statusBarStyleKey(store.StatusBarStyleRings)) }},
-		{"statusbar provider scope", (*settingsUI).appearanceGroup, text(l10n.KeyStatusBarProviderScope), func(u *settingsUI) string { return u.text(providerScopeKey(store.ProviderScopeBoth)) }},
+		{"statusbar provider scope", (*settingsUI).appearanceGroup, text(l10n.KeyStatusBarProviderScope), nil},
 		{"statusbar battery scope", (*settingsUI).appearanceGroup, text(l10n.KeyStatusBarBatteryScope), func(u *settingsUI) string { return u.text(batteryScopeKey(store.BatteryScopeBoth)) }},
 		{"statusbar battery detail", (*settingsUI).appearanceGroup, text(l10n.KeyStatusBarBatteryDetailStyle), func(u *settingsUI) string { return u.text(batteryDetailKey(store.BatteryDetailRemainingPercent)) }},
 		{"restore module order", (*settingsUI).modulesGroup, text(l10n.KeyRestoreDefaultOrder), nil},
@@ -81,6 +81,11 @@ func TestSettingsOtherControlEventLatency(t *testing.T) {
 				} else {
 					tt.Key(0, ui.KeySpace)
 				}
+				if check.name == "statusbar provider scope" {
+					// "Custom" is also the theme-color swatch, so pick it by key.
+					tt.Key(0, ui.KeyDown)
+					tt.Key(0, ui.KeyEnter)
+				}
 				if check.choice != nil {
 					if err := tt.Click(check.choice(u)); err != nil {
 						t.Fatal(err)
@@ -89,13 +94,54 @@ func TestSettingsOtherControlEventLatency(t *testing.T) {
 				elapsed = time.Since(start)
 			}
 			t.Logf("event=%s", elapsed)
-			if elapsed > 100*time.Millisecond || reflect.DeepEqual(before, e.s.Prefs()) {
-				t.Fatal("control event was slow or did not change actual preferences")
+			// A language change reshapes the whole page in the new language.
+			if elapsed > latencyBudget(100*time.Millisecond) {
+				t.Fatal("control event was slow")
+			}
+			if reflect.DeepEqual(before, e.s.Prefs()) {
+				t.Fatal("control event did not change actual preferences")
 			}
 			e.settle()
 			if !reflect.DeepEqual(e.stored(), e.s.Prefs()) {
 				t.Fatal("control choice was not saved")
 			}
 		})
+	}
+}
+
+// The provider check boxes bind a per-frame value, so a click must be read
+// through Changed in the same pass or it is lost.
+func TestStatusBarProviderChecksToggle(t *testing.T) {
+	e := newEnv(t, nil)
+	if err := e.s.Load(); err != nil {
+		t.Fatal(err)
+	}
+	e.s.sys.StatusBarStyles = true
+	e.s.prefs.StatusBarProviderScope = store.ProviderScopeCustom
+	e.s.prefs.StatusBarProviders = []store.Provider{store.ProviderCodex}
+	u := newSettingsUI(e.s, SettingsOptions{})
+	tt := ui.NewTester(func(c *ui.Context) {
+		settingsGroup(c, "", "", nil, func(row rowFunc) {
+			u.statusBarRows(c, row, e.s.Prefs(), false, true, "")
+		})
+	}, settingsWidth, settingsHeight)
+	tt.SetPreferences(ui.Preferences{ReduceMotion: true})
+	if err := tt.Click(u.text(l10n.KeyProviderClaude)); err != nil {
+		t.Fatal(err)
+	}
+	if got := e.s.Prefs().StatusBarSelection(); !reflect.DeepEqual(got, []store.Provider{store.ProviderCodex, store.ProviderClaude}) {
+		t.Fatalf("after Claude = %v", got)
+	}
+	tt.Frame()
+	// A third provider is not offered while two are chosen.
+	_ = tt.Click(u.text(l10n.KeyProviderGrok))
+	if got := e.s.Prefs().StatusBarSelection(); len(got) != 2 {
+		t.Fatalf("third pick = %v", got)
+	}
+	if err := tt.Click(u.text(l10n.KeyProviderCodex)); err != nil {
+		t.Fatal(err)
+	}
+	if got := e.s.Prefs().StatusBarSelection(); !reflect.DeepEqual(got, []store.Provider{store.ProviderClaude}) {
+		t.Fatalf("after Codex off = %v", got)
 	}
 }

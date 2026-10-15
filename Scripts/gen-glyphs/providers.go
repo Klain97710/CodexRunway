@@ -15,9 +15,9 @@ import (
 const lobeVersion = "1.95.1"
 const lobeIntegrity = "Hw7EPPgVnC4NZLXBfTNJG6hyQgqECfUPC11VVXodPSr1aebKcFxDZlSpxhWwYNdCc6bhxps/x5TtXoPmfKH2ag=="
 
-var providerFiles = []string{"codex-color.svg", "grok.svg"}
+var providerFiles = []string{"codex-color.svg", "codex.svg", "grok.svg", "claude-color.svg", "claude.svg"}
 
-// writeProviders copies only the two provider SVGs, unchanged, from the pinned
+// writeProviders copies the provider SVGs, unchanged, from the pinned
 // official LobeHub package; building the app uses the embedded local files.
 func writeProviders(root string) error {
 	archive := filepath.Join(os.TempDir(), "quosparr-icons", "lobehub-icons-static-svg-"+lobeVersion+".tgz")

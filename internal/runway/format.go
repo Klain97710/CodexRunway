@@ -240,6 +240,33 @@ func ResetShortLabel(date, now time.Time, loc *time.Location) string {
 	return fmt.Sprintf("%d/%d", int(d.Month()), d.Day())
 }
 
+// ResetExactTime is the local time of a quota reset: "HH:mm" on now's day,
+// else the short month and day before it ("Oct 20 14:30", "10月20日 14:30"),
+// with the year when it is not now's.
+func ResetExactTime(date, now time.Time, lang l10n.Language, loc *time.Location) string {
+	loc = locOrLocal(loc)
+	d, n := date.In(loc), now.In(loc)
+	clock := d.Format("15:04")
+	switch {
+	case sameDay(d, n):
+		return clock
+	case d.Year() != n.Year():
+		return monthDayYear(d, lang) + " " + clock
+	}
+	var day string
+	switch lang {
+	case l10n.SimplifiedChinese, l10n.TraditionalChinese, l10n.Japanese:
+		day = fmt.Sprintf("%d月%d日", int(d.Month()), d.Day())
+	case l10n.Korean:
+		day = fmt.Sprintf("%d월 %d일", int(d.Month()), d.Day())
+	case l10n.Russian, l10n.French:
+		day = fmt.Sprintf("%d %s", d.Day(), MonthTitle(int(d.Month()), lang))
+	default:
+		day = fmt.Sprintf("%s %d", MonthTitle(int(d.Month()), lang), d.Day())
+	}
+	return day + " " + clock
+}
+
 func sameDay(a, b time.Time) bool {
 	ay, am, ad := a.Date()
 	by, bm, bd := b.Date()

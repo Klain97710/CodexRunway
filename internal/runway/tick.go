@@ -4,7 +4,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/licoy/quosparr/internal/export"
 	"github.com/licoy/quosparr/internal/store"
 	"github.com/licoy/quosparr/internal/usage"
 )
@@ -22,7 +21,9 @@ func (s *Service) Tick(now time.Time) {
 	}
 	hasWidgets := s.widgetReqs != 0 && s.opts.WidgetSink != nil
 	refreshWidgets := hasWidgets && s.widgetSchedule.IsDue(now)
-	idle := !s.allBusy && !s.anyBusyLocked()
+	// Section refreshes never hold the schedule back; only a full refresh
+	// already running does.
+	idle := !s.allBusy
 	start := false
 	if reset := s.nextDueResetLocked(s.lastReset, now); !reset.IsZero() && idle {
 		s.lastReset = reset
@@ -31,9 +32,7 @@ func (s *Service) Tick(now time.Time) {
 		start = true
 	}
 	resetTodayDue := false
-	if s.opts.ResetToday != nil &&
-		(s.prefs.SelectedProvider == store.ProviderCodex || s.widgetReqs.Has(export.RequireResetToday)) &&
-		(s.prefs.ShowsRateLimitResetToday || s.widgetReqs.Has(export.RequireResetToday)) {
+	if s.opts.ResetToday != nil && s.resetTodayWantedLocked() {
 		interval := time.Duration(s.prefs.RateLimitResetTodayRefreshIntervalSeconds) * time.Second
 		last := s.opts.ResetToday.LastFetch()
 		resetTodayDue = last.IsZero() || now.Sub(last) >= interval
@@ -81,15 +80,29 @@ func (s *Service) NextDueQuotaReset(after, now time.Time) time.Time {
 }
 
 func (s *Service) nextDueResetLocked(after, now time.Time) time.Time {
-	if s.prefs.SelectedProvider == store.ProviderGrok {
-		if s.opts.Grok == nil {
-			return time.Time{}
+	if s.prefs.SelectedProvider == store.ProviderGrok || s.prefs.SelectedProvider == store.ProviderClaude {
+		var meters []Meter
+		if s.prefs.SelectedProvider == store.ProviderGrok {
+			if s.opts.Grok == nil {
+				return time.Time{}
+			}
+			meters = s.opts.Grok.State(now).Meters
+		} else {
+			if s.opts.Claude == nil {
+				return time.Time{}
+			}
+			meters = s.opts.Claude.State(now).Meters
 		}
-		meters := s.opts.Grok.State(now).Meters
 		if len(meters) == 0 {
 			return time.Time{}
 		}
 		r := meters[0].ResetsAt
+		for _, m := range meters {
+			if m.WindowMinutes == FiveHourMinutes && m.HasReset() {
+				r = m.ResetsAt
+				break
+			}
+		}
 		if r.IsZero() || !r.After(after) || now.Sub(r) < time.Second {
 			return time.Time{}
 		}

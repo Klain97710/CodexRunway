@@ -46,9 +46,8 @@ func TestPrivacyDisplayCardOrderAndTranslatedLayout(t *testing.T) {
 			tt := ui.NewTester(u.view, width, settingsHeight)
 			appearance, ok := tt.Find(u.L().Text(l10n.KeyDisplayAppearanceSection))
 			privacy, privacyOK := tt.Find(tx(u.L(), xPrivacyDisplaySection))
-			modules, modulesOK := tt.Find(u.L().Text(l10n.KeyMainPanelModules))
-			if !ok || !privacyOK || !modulesOK || appearance.Y >= privacy.Y || privacy.Y >= modules.Y {
-				t.Fatalf("language %s privacy card order is wrong: %+v %+v %+v", language, appearance, privacy, modules)
+			if !ok || !privacyOK || appearance.Y >= privacy.Y {
+				t.Fatalf("language %s privacy card order is wrong: %+v %+v", language, appearance, privacy)
 			}
 			for _, text := range tt.Texts() {
 				r, _ := tt.Find(text)
@@ -87,10 +86,16 @@ func TestDisplayPrivacySwitchUpdatesBothProviderPanels(t *testing.T) {
 		snap := panelFixture()
 		snap.Grok.Accounts = snap.Accounts
 		snap.Grok.Accounts.Display.DisplayName = "Ada Lovelace"
+		snap.Claude.Accounts = snap.Accounts
+		snap.Claude.Accounts.Display.DisplayName = "Ada Lovelace"
+		snap.Claude.Accounts.Display.Email = "ada@example.com"
 		a, panel := newPanel(t, func(p *store.Preferences) { p.SelectedProvider = provider }, snap, PanelActions{})
 		label := a.L().Text(l10n.KeyAccounts)
 		if provider == store.ProviderGrok {
 			label = a.L().Text(l10n.KeyGrokAccountsTitle)
+		}
+		if provider == store.ProviderClaude {
+			label = "Ada Lovelace"
 		}
 		if !panel.HasText("Ada Lovelace") {
 			t.Fatal("main identity missing")

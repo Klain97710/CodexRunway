@@ -126,3 +126,28 @@ func testPanelResizeFinalMovement(t *testing.T, moveBeforeRelease bool) {
 	}
 	a.settings.Flush()
 }
+
+func TestPanelResizeTopEdgeGrowsUpward(t *testing.T) {
+	a, tt := newPanel(t, nil, panelFixture(), PanelActions{})
+	tt.SetSize(panelWidth, int(store.DefaultMainPanelHeight))
+	a.panelResize.top = true
+	tt.Frame()
+	r, ok := tt.Find("panel-resize-handle")
+	if !ok {
+		t.Fatal("main panel has no top resize handle")
+	}
+	if r.Y != 0 {
+		t.Fatalf("top handle at y=%v, want 0", r.Y)
+	}
+	x, y := r.X+r.W/2, r.Y+r.H/2
+	tt.Press(x, y)
+	tt.Move(x, y-60)
+	tt.Release(x, y-100)
+	if got := a.settings.Prefs().MainPanelHeight; got != store.DefaultMainPanelHeight+100 {
+		t.Fatalf("height %v, want %v", got, store.DefaultMainPanelHeight+100)
+	}
+	if !a.panelResize.top {
+		t.Fatal("drag dropped the top edge")
+	}
+	a.settings.Flush()
+}

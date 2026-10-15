@@ -4,6 +4,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/licoy/quosparr/internal/claude"
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/grok"
 )
@@ -146,6 +147,8 @@ var (
 	steelXBasic   = steelSpec{rgb3{0.18, 0.42, 0.78}, rgb3{0.48, 0.68, 0.98}, rgb3{0.10, 0.28, 0.58}, rgb3{0.08, 0.22, 0.48}, rgb3{0.75, 0.88, 1.0}}
 	steelXPremium = steelSpec{rgb3{0.42, 0.22, 0.72}, rgb3{0.72, 0.52, 0.95}, rgb3{0.28, 0.12, 0.52}, rgb3{0.24, 0.10, 0.42}, rgb3{0.90, 0.80, 1.0}}
 	steelXPlus    = steelSpec{rgb3{0.62, 0.16, 0.42}, rgb3{0.92, 0.42, 0.68}, rgb3{0.42, 0.08, 0.28}, rgb3{0.38, 0.06, 0.22}, rgb3{1.0, 0.78, 0.90}}
+	// steelCoral is the terracotta of the Claude Pro plan.
+	steelCoral = steelSpec{rgb3{0.80, 0.42, 0.30}, rgb3{0.96, 0.68, 0.54}, rgb3{0.58, 0.26, 0.16}, rgb3{0.42, 0.16, 0.08}, rgb3{1.0, 0.86, 0.78}}
 )
 
 func (s steelSpec) look(light bool) tierLook {
@@ -166,6 +169,8 @@ func codexTierLook(t *ui.Theme, tier codex.Tier) tierLook {
 		return platinumLook(light)
 	case codex.TierBusiness:
 		return steelBusiness.look(light)
+	case codex.TierBusinessPremium:
+		return goldLook(light)
 	case codex.TierTeam:
 		return steelTeam.look(light)
 	case codex.TierEnterprise:
@@ -198,6 +203,25 @@ func grokTierLook(t *ui.Theme, tier grok.TierKind) tierLook {
 		return steelXPlus.look(light)
 	case grok.TierAPIKey:
 		return steelAPI.look(light)
+	}
+	return plainLook(t)
+}
+
+// claudeTierLook follows the other providers: Max 5x is gold like Pro 100,
+// Max 20x black gold like Pro 200, and Pro has the Claude terracotta.
+func claudeTierLook(t *ui.Theme, tier claude.TierKind) tierLook {
+	light := !t.Dark
+	switch tier {
+	case claude.TierPro:
+		return steelCoral.look(light)
+	case claude.TierMax, claude.TierMax5x:
+		return goldLook(light)
+	case claude.TierMax20x:
+		return blackGoldLook(light)
+	case claude.TierTeam:
+		return steelTeam.look(light)
+	case claude.TierEnterprise:
+		return steelEnt.look(light)
 	}
 	return plainLook(t)
 }

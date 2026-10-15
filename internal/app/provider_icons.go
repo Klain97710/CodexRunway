@@ -11,12 +11,25 @@ import (
 //go:embed assets/providers/codex-color.svg
 var codexProviderSVG []byte
 
+//go:embed assets/providers/codex.svg
+var codexMonoProviderSVG []byte
+
+//go:embed assets/providers/claude.svg
+var claudeMonoProviderSVG []byte
+
 //go:embed assets/providers/grok.svg
 var grokProviderSVG []byte
 
+//go:embed assets/providers/claude-color.svg
+var claudeProviderSVG []byte
+
 var (
-	codexProviderIcon = ui.MustParseSVG(codexProviderSVG)
-	grokProviderIcon  = ui.MustParseSVG(grokProviderSVG)
+	codexProviderIcon  = ui.MustParseSVG(codexProviderSVG)
+	grokProviderIcon   = ui.MustParseSVG(grokProviderSVG)
+	claudeProviderIcon = ui.MustParseSVG(claudeProviderSVG)
+
+	codexMonoProviderIcon  = ui.MustParseSVG(codexMonoProviderSVG)
+	claudeMonoProviderIcon = ui.MustParseSVG(claudeMonoProviderSVG)
 )
 
 // ProviderIcon preserves the official logo's colors; monochrome SVGs inherit
@@ -27,8 +40,22 @@ func ProviderIcon(c *ui.Context, provider store.Provider, size float32) ui.Eleme
 		return ui.Image(c, codexProviderIcon).Size(size, size)
 	case store.ProviderGrok:
 		return ui.Image(c, grokProviderIcon).Size(size, size)
+	case store.ProviderClaude:
+		return ui.Image(c, claudeProviderIcon).Size(size, size)
 	default:
 		return ui.Icon(c, icPlug).Size(size, size).TextColor(c.Theme().TextMuted)
+	}
+}
+
+// ProviderMonoIcon is the monochrome logo, drawn in the text color.
+func ProviderMonoIcon(c *ui.Context, provider store.Provider, size float32) ui.Element {
+	switch provider {
+	case store.ProviderCodex:
+		return ui.Image(c, codexMonoProviderIcon).Size(size, size)
+	case store.ProviderClaude:
+		return ui.Image(c, claudeMonoProviderIcon).Size(size, size)
+	default:
+		return ProviderIcon(c, provider, size)
 	}
 }
 
@@ -36,19 +63,23 @@ func ProviderIcon(c *ui.Context, provider store.Provider, size float32) ui.Eleme
 // the provider logo preceding each caller-localized label. With no labels it
 // shows only icons, retaining the localized brand names for accessibility.
 func ProviderTabs(c *ui.Context, selected *int, disabled bool, labels ...string) bool {
+	return providerTabsOf(c, store.Providers(), selected, disabled, labels...)
+}
+
+// providerTabsOf is ProviderTabs over a subset of the providers, which the
+// labels and the selected index follow.
+func providerTabsOf(c *ui.Context, providers []store.Provider, selected *int, disabled bool, labels ...string) bool {
 	t := c.Theme()
-	providers := store.Providers()
 	if len(labels) == 0 {
-		labels = []string{"", ""}
+		labels = make([]string, len(providers))
 	}
 	l := l10n.New(l10n.English)
-	names := []string{l.Text(l10n.KeyProviderCodex), l.Text(l10n.KeyProviderGrok)}
 	seg := ui.SegmentedBase(c, selected, len(labels))
 	seg.Track.Padding(3).Gap(2).Radius(7).Background(t.Text.Alpha(0.06)).Children(func() {
 		for i, label := range labels {
 			name := label
-			if name == "" && i < len(names) {
-				name = names[i]
+			if name == "" && i < len(providers) {
+				name = l.Text(providerKey(providers[i]))
 			}
 			s := seg.Segment(i).Padding(5, 7).Gap(5).Radius(5).Disabled(disabled).Label(name).Tooltip(name)
 			col := t.TextMuted

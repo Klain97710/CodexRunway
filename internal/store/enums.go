@@ -10,12 +10,13 @@ type Provider string
 
 // Provider values.
 const (
-	ProviderCodex Provider = "codex"
-	ProviderGrok  Provider = "grok"
+	ProviderCodex  Provider = "codex"
+	ProviderClaude Provider = "claude"
+	ProviderGrok   Provider = "grok"
 )
 
-// Providers returns every valid Provider.
-func Providers() []Provider { return []Provider{ProviderCodex, ProviderGrok} }
+// Providers returns every valid Provider, in display order.
+func Providers() []Provider { return []Provider{ProviderCodex, ProviderClaude, ProviderGrok} }
 
 // Valid reports whether v is a known value.
 func (v Provider) Valid() bool { return slices.Contains(Providers(), v) }
@@ -164,13 +165,15 @@ type StatusBarProviderScope string
 const (
 	// ProviderScopeSelected follows the main panel's selected provider.
 	ProviderScopeSelected StatusBarProviderScope = "selected"
-	// ProviderScopeBoth shows Codex and Grok together.
+	// ProviderScopeBoth is the legacy value for Codex and Grok together.
 	ProviderScopeBoth StatusBarProviderScope = "both"
+	// ProviderScopeCustom uses StatusBarProviders, one or two providers.
+	ProviderScopeCustom StatusBarProviderScope = "custom"
 )
 
 // StatusBarProviderScopes returns every valid StatusBarProviderScope.
 func StatusBarProviderScopes() []StatusBarProviderScope {
-	return []StatusBarProviderScope{ProviderScopeSelected, ProviderScopeBoth}
+	return []StatusBarProviderScope{ProviderScopeSelected, ProviderScopeBoth, ProviderScopeCustom}
 }
 
 // Valid reports whether v is a known value.
@@ -213,6 +216,32 @@ func ChartStyles() []ChartStyle {
 // Valid reports whether v is a known value.
 func (v ChartStyle) Valid() bool { return slices.Contains(ChartStyles(), v) }
 
+// ResetTimeFormat is how the quota rows show the next reset. Only the Go app
+// knows it, so the relative countdown is the empty value and is not written.
+type ResetTimeFormat string
+
+// ResetTimeFormat values.
+const (
+	ResetTimeRelative ResetTimeFormat = ""
+	ResetTimeExact    ResetTimeFormat = "exact"
+)
+
+// ResetTimeFormats returns every valid ResetTimeFormat.
+func ResetTimeFormats() []ResetTimeFormat {
+	return []ResetTimeFormat{ResetTimeRelative, ResetTimeExact}
+}
+
+// Valid reports whether v is a known value.
+func (v ResetTimeFormat) Valid() bool { return slices.Contains(ResetTimeFormats(), v) }
+
+// Toggled is the other format.
+func (v ResetTimeFormat) Toggled() ResetTimeFormat {
+	if v == ResetTimeExact {
+		return ResetTimeRelative
+	}
+	return ResetTimeExact
+}
+
 // Module is a section of the main panel.
 type Module string
 
@@ -220,6 +249,7 @@ type Module string
 const (
 	ModuleQuota               Module = "quota"
 	ModuleTokenUsage          Module = "tokenUsage"
+	ModuleSpeedAnalysis       Module = "speedAnalysis"
 	ModuleRateLimitResetToday Module = "rateLimitResetToday"
 	ModuleQuotaEstimate       Module = "quotaEstimate"
 	ModuleResetCredits        Module = "resetCredits"
@@ -231,7 +261,7 @@ const (
 // Modules returns every Module in the default panel order.
 func Modules() []Module {
 	return []Module{
-		ModuleQuota, ModuleTokenUsage, ModuleRateLimitResetToday, ModuleQuotaEstimate,
+		ModuleQuota, ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate,
 		ModuleResetCredits, ModuleAPICost, ModuleSessionRepair, ModuleRecentSessions,
 	}
 }

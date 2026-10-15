@@ -525,8 +525,9 @@ func TestCeilSecond(t *testing.T) {
 // Contract.
 
 func TestDeepLinksMatchSwift(t *testing.T) {
+	// The frozen Swift fixture only lists the original three scopes.
 	var lines []string
-	for _, p := range ProviderScopes() {
+	for _, p := range []ProviderScope{ScopeCodex, ScopeGrok, ScopeBoth} {
 		for _, s := range Sections() {
 			lines = append(lines, DeepLink{p, s}.URL())
 		}
@@ -591,7 +592,10 @@ func TestLayoutPolicy(t *testing.T) {
 	if _, ok := QuotaLimit(FamilyLarge); ok {
 		t.Fatal("large has no limit")
 	}
-	if !reflect.DeepEqual(ProviderScope("both").Providers(), []Provider{ProviderCodex, ProviderGrok}) {
+	if !reflect.DeepEqual(ProviderScope("both").Providers(), []Provider{ProviderCodex, ProviderGrok}) ||
+		!reflect.DeepEqual(ScopeClaude.Providers(), []Provider{ProviderClaude}) ||
+		!reflect.DeepEqual(ScopeCodexClaude.Providers(), []Provider{ProviderCodex, ProviderClaude}) ||
+		!reflect.DeepEqual(ScopeGrokClaude.Providers(), []Provider{ProviderGrok, ProviderClaude}) {
 		t.Fatal("providers")
 	}
 	if string(KindOverview) != "com.github.codex-runway.widget.overview" || len(Kinds()) != 4 {

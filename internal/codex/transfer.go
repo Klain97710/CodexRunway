@@ -30,11 +30,14 @@ type Provider string
 
 // Providers a pack can carry. Only Codex packs are imported by this package.
 const (
-	ProviderCodex Provider = "codex"
-	ProviderGrok  Provider = "grok"
+	ProviderCodex  Provider = "codex"
+	ProviderGrok   Provider = "grok"
+	ProviderClaude Provider = "claude"
 )
 
-func (p Provider) valid() bool { return p == ProviderCodex || p == ProviderGrok }
+func (p Provider) valid() bool {
+	return p == ProviderCodex || p == ProviderGrok || p == ProviderClaude
+}
 
 // Transfer errors. None of them carries credential text.
 var (

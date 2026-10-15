@@ -11,17 +11,20 @@ type SubscriptionTier string
 // Subscription tiers. Official wire values stay prolite / pro / promax; the
 // display names are Pro 100 / 200 / 500.
 const (
-	TierFree       SubscriptionTier = "free"
-	TierPlus       SubscriptionTier = "plus"
-	TierPro100     SubscriptionTier = "pro100"
-	TierPro200     SubscriptionTier = "pro200"
-	TierPro500     SubscriptionTier = "pro500"
-	TierBusiness   SubscriptionTier = "business"
-	TierTeam       SubscriptionTier = "team"
-	TierEnterprise SubscriptionTier = "enterprise"
-	TierEdu        SubscriptionTier = "edu"
-	TierAPI        SubscriptionTier = "api"
-	TierUnknown    SubscriptionTier = "unknown"
+	TierFree     SubscriptionTier = "free"
+	TierPlus     SubscriptionTier = "plus"
+	TierPro100   SubscriptionTier = "pro100"
+	TierPro200   SubscriptionTier = "pro200"
+	TierPro500   SubscriptionTier = "pro500"
+	TierBusiness SubscriptionTier = "business"
+	// TierBusinessPremium is the self-serve Business plan with Pro 100
+	// limits (self_serve_business_prolite).
+	TierBusinessPremium SubscriptionTier = "business_premium"
+	TierTeam            SubscriptionTier = "team"
+	TierEnterprise      SubscriptionTier = "enterprise"
+	TierEdu             SubscriptionTier = "edu"
+	TierAPI             SubscriptionTier = "api"
+	TierUnknown         SubscriptionTier = "unknown"
 )
 
 var (
@@ -55,6 +58,8 @@ func ResolveTier(planType, fallback string) SubscriptionTier {
 		return TierPro100
 	case pro200PlanTypes[raw]:
 		return TierPro200
+	case strings.Contains(raw, "business") && (strings.Contains(raw, "prolite") || strings.Contains(raw, "pro-lite") || strings.Contains(raw, "premium")):
+		return TierBusinessPremium
 	case strings.Contains(raw, "enterprise"):
 		return TierEnterprise
 	case strings.Contains(raw, "business"):
@@ -80,7 +85,7 @@ func ResolveTier(planType, fallback string) SubscriptionTier {
 // future date.
 func (t SubscriptionTier) ProjectsBillingCycle() bool {
 	switch t {
-	case TierPlus, TierPro100, TierPro200, TierPro500, TierBusiness, TierTeam, TierEnterprise, TierEdu:
+	case TierPlus, TierPro100, TierPro200, TierPro500, TierBusiness, TierBusinessPremium, TierTeam, TierEnterprise, TierEdu:
 		return true
 	}
 	return false

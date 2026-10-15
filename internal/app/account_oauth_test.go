@@ -50,7 +50,7 @@ func TestAccountWindowCloseCancelsLoginAndClearsBusy(t *testing.T) {
 		e.q.drain()
 		time.Sleep(time.Millisecond)
 	}
-	if f.busy || f.cancel != nil || f.status != u.L().Text(l10n.KeyAccountsOAuthCancelled) {
+	if f.busy || f.cancel != nil || f.status != "" || u.noticeOpen {
 		t.Fatal("window close left account task running")
 	}
 }

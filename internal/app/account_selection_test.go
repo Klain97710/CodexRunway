@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"github.com/licoy/quosparr/internal/personal"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,6 +11,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/runway"
 )
 
@@ -52,7 +52,7 @@ func TestAccountBrowserLoginEntryAndCancelControl(t *testing.T) {
 	_ = e.s.Load()
 	u := newSettingsUI(e.s, SettingsOptions{})
 	f := accountFormOf(u)
-	rt := &liveApp{svc: runway.New(runway.Options{Features: personal.Features{Grok: true}})}
+	rt := &liveApp{svc: runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}})}
 	tt := ui.NewTester(func(c *ui.Context) {
 		applyTheme(c)
 		ui.Column(c).Fill().Padding(20).Gap(8).Children(func() { renderCodexAccounts(c, u, f, rt) })
@@ -160,9 +160,9 @@ func TestSwitchRestartOnlyAfterSuccessfulSwitchAndPreciseIdentity(t *testing.T) 
 	if err := switchAndRestartCodex(func() error { return nil }, func() error { calls++; return errors.New("failed") }); !errors.Is(err, errRestartCodex) || calls != 1 {
 		t.Fatal("restart error hidden")
 	}
-	fake := restartableCodex{bundleID: "com.openai.codex", path: "/fake/Codex.app", terminate: func() bool { calls++; return true }, stopped: func() bool { return true }}
-	unrelated := restartableCodex{bundleID: "com.example.editor", name: "Editor", terminate: func() bool { t.Fatal("unrelated app terminated"); return false }}
-	if err := runCodexRestart([]restartableCodex{unrelated, fake}, "", func(path string) error {
+	fake := runningApp{bundleID: "com.openai.codex", path: "/fake/Codex.app", terminate: func() bool { calls++; return true }, stopped: func() bool { return true }}
+	unrelated := runningApp{bundleID: "com.example.editor", name: "Editor", terminate: func() bool { t.Fatal("unrelated app terminated"); return false }}
+	if err := runCodexRestart([]runningApp{unrelated, fake}, "", func(path string) error {
 		if path != "/fake/Codex.app" {
 			t.Fatal("wrong launch path")
 		}
@@ -171,7 +171,7 @@ func TestSwitchRestartOnlyAfterSuccessfulSwitchAndPreciseIdentity(t *testing.T) 
 		t.Fatal(err)
 	}
 	fake.terminate = func() bool { return false }
-	if err := runCodexRestart([]restartableCodex{fake}, "", func(string) error { t.Fatal("opened app after rejected termination"); return nil }); !errors.Is(err, errRestartCodex) {
+	if err := runCodexRestart([]runningApp{fake}, "", func(string) error { t.Fatal("opened app after rejected termination"); return nil }); !errors.Is(err, errRestartCodex) {
 		t.Fatal("termination failure hidden")
 	}
 }

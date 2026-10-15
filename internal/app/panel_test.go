@@ -1,7 +1,6 @@
 package app
 
 import (
-	"github.com/licoy/quosparr/internal/personal"
 	"strings"
 	"testing"
 	"time"
@@ -10,13 +9,14 @@ import (
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/grok"
 	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/personal"
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/store"
 )
 
 func newPanel(t *testing.T, mutate func(*store.Preferences), snap runway.Snapshot, acts PanelActions) (*App, *ui.Tester) {
 	t.Helper()
-	s := NewSettings(store.New(store.NewMemoryDomain(), nil), System{Features: personal.Features{Grok: true}}, nil)
+	s := NewSettings(store.New(store.NewMemoryDomain(), nil), System{Features: personal.Features{Grok: true, Claude: true}}, nil)
 	s.prefs = store.DefaultPreferences()
 	s.prefs.Language = store.LanguageEnglish
 	if mutate != nil {
@@ -29,7 +29,9 @@ func newPanel(t *testing.T, mutate func(*store.Preferences), snap runway.Snapsho
 	a.snap = snap
 	a.snapMu.Unlock()
 	a.SetPanelActions(acts)
-	return a, ui.NewTester(a.panelView, panelWidth, 860)
+	// Tall enough that every module of the default panel is on screen, so a
+	// click on a card row never lands on the footer below the fold.
+	return a, ui.NewTester(a.panelView, panelWidth, 1000)
 }
 
 func panelFixture() runway.Snapshot {

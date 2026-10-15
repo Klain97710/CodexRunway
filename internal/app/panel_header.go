@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/licoy/quosparr/internal/claude"
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/grok"
 	"github.com/licoy/quosparr/internal/l10n"
@@ -11,21 +12,30 @@ import (
 	"github.com/licoy/quosparr/internal/store"
 )
 
-// panelHeader is the fixed header of the main page: title and provider menu,
-// the four header buttons, the identity row and the subscription chip.
+// panelHeader is the fixed header of the main page: the title, the four
+// header buttons, the provider strip, the identity row and the subscription chip.
 func panelHeader(c *ui.Context, a *App, l l10n.Localizer, prefs store.Preferences, snap runway.Snapshot, acts PanelActions) {
 	grokView := prefs.SelectedProvider == store.ProviderGrok
 	ui.Column(c).Padding(14, 16, 10, 16).Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-			ui.Text(c, "CodexRunway").FontSize(fsTitle3).FontWeight(600).SingleLine()
-			if a.settings.System().Features.Grok {
-				providerMenu(c, a, l, prefs.SelectedProvider, acts.SelectProvider)
-			}
+			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+				// Center on the cap height rather than the line box, which reserves
+				// room for descenders below the glyphs.
+				ui.Image(c, appIconBitmap()).Size(20, 20).Margin(2, 0, 0, 0)
+				ui.Text(c, "CodexRunway").FontSize(fsTitle3).FontWeight(600).SingleLine()
+			})
 			ui.Spacer(c).Grow(1)
 			panelHeaderButtons(c, a, l, prefs, acts, panelBusy(snap, grokView))
 		})
+		if providers := prefs.PanelSelection(); len(providers) > 1 {
+			providerStrip(c, a, l, snap, providers, prefs.SelectedProvider, acts.SelectProvider)
+		}
 		if grokView {
 			grokIdentityRow(c, a, l, prefs, snap)
+			return
+		}
+		if prefs.SelectedProvider == store.ProviderClaude {
+			claudeIdentityRow(c, a, l, prefs, snap)
 			return
 		}
 		codexIdentityRow(c, a, l, prefs, snap)
@@ -39,35 +49,49 @@ func panelBusy(snap runway.Snapshot, grokView bool) bool {
 	if grokView && snap.Grok.Refreshing {
 		return true
 	}
+	if snap.Provider == store.ProviderClaude && snap.Claude.Refreshing {
+		return true
+	}
 	return snap.Refresh.Refreshing()
 }
 
-// providerMenu is the compact dropdown next to the title (a menu-style
-// picker). With no SelectProvider action it stays disabled.
-func providerMenu(c *ui.Context, a *App, l l10n.Localizer, cur store.Provider, selectFn func(store.Provider)) {
+// providerStrip splits the width evenly among the shown providers, and is
+// left out when only one is shown: each tab is the
+// logo and name over the remaining share of the account's shortest quota
+// window. The selected tab sits on a gray fill in full color; the others are
+// monochrome and gray. With no SelectProvider action the tabs stay disabled.
+func providerStrip(c *ui.Context, a *App, l l10n.Localizer, snap runway.Snapshot, providers []store.Provider, cur store.Provider, selectFn func(store.Provider)) {
 	t := c.Theme()
-	name := l.Text(l10n.KeyProviderCodex)
-	if cur == store.ProviderGrok {
-		name = l.Text(l10n.KeyProviderGrok)
-	}
-	b := ui.ButtonBase(c).Label(name).Tooltip(l.Text(l10n.KeyProviderCodex)+" / "+l.Text(l10n.KeyProviderGrok)).
-		Disabled(selectFn == nil).Padding(0, 9, 0, 12).Gap(8).Height(24).Radius(radiusRow).AlignItems(ui.Center).Cursor(ui.CursorPointer)
-	fill := mono(t, 0.07, 0.11)
-	if b.Hovered() {
-		fill = mono(t, 0.10, 0.15)
-	}
-	b.Background(fill)
-	b.Children(func() {
-		ui.Text(c, name).FontSize(fsBody).SingleLine()
-		chevronUpDown(c, inkSecondary(t))
-	})
-	b.Menu(func(m *ui.Menu) {
-		for _, p := range store.Providers() {
-			label := l.Text(l10n.KeyProviderCodex)
-			if p == store.ProviderGrok {
-				label = l.Text(l10n.KeyProviderGrok)
+	ui.Row(c).Gap(6).Padding(10, 0, 0, 0).Children(func() {
+		for _, p := range providers {
+			name := l.Text(providerKey(p))
+			selected := p == cur
+			tab := ui.ButtonBase(c.Key("provider-tab-"+string(p))).Label(name).Disabled(selectFn == nil).
+				Grow(1).Basis(0).Padding(6, 10, 7, 10).Radius(radiusRow).Cursor(ui.CursorPointer)
+			switch {
+			case selected && tab.Hovered():
+				tab.Background(mono(t, 0.10, 0.15))
+			case selected:
+				tab.Background(mono(t, 0.07, 0.11))
+			case tab.Hovered():
+				tab.Background(hoverNeutral(t))
 			}
-			if m.Item(label).Checked(p == cur).Chosen() && selectFn != nil && p != cur {
+			tab.Children(func() {
+				ui.Column(c).Grow(1).Gap(6).AlignItems(ui.Center).Children(func() {
+					ui.Row(c).Gap(5).AlignItems(ui.Center).Children(func() {
+						if selected {
+							ProviderIcon(c, p, 16).TextColor(t.Text)
+							ui.Text(c, name).FontSize(fsCallout).FontWeight(600).SingleLine()
+							return
+						}
+						ProviderMonoIcon(c, p, 16).TextColor(inkTertiary(t))
+						ui.Text(c, name).FontSize(fsCallout).TextColor(inkTertiary(t)).SingleLine()
+					})
+					meter, ok := runway.ShortestWindowMeter(providerMeters(snap, p))
+					stripBar(c, meter, ok, selected)
+				})
+			})
+			if tab.Clicked() && selectFn != nil && !selected {
 				a.panelState.detail = ""
 				selectFn(p)
 			}
@@ -75,14 +99,33 @@ func providerMenu(c *ui.Context, a *App, l l10n.Localizer, cur store.Provider, s
 	})
 }
 
-// chevronUpDown is the two small chevrons of a pop-up button.
-func chevronUpDown(c *ui.Context, col ui.Color) {
-	ui.Box(c).Size(8, 12).Draw(func(p *ui.Painter, r ui.Rect) {
-		cx, cy := r.X+r.W/2, r.Y+r.H/2
-		var arrows ui.Path
-		arrows.MoveTo(cx-3, cy-1.5).LineTo(cx, cy-4.5).LineTo(cx+3, cy-1.5)
-		arrows.MoveTo(cx-3, cy+1.5).LineTo(cx, cy+4.5).LineTo(cx+3, cy+1.5)
-		p.StrokePath(&arrows, 1.4, col)
+func providerMeters(snap runway.Snapshot, p store.Provider) []runway.Meter {
+	switch p {
+	case store.ProviderGrok:
+		return snap.Grok.Meters
+	case store.ProviderClaude:
+		return snap.Claude.Meters
+	default:
+		return snap.Codex.Meters
+	}
+}
+
+// stripBar is the bare quota bar of a provider tab: the remaining share in
+// the health color, gray when not selected, or the empty track while there
+// is no reading.
+func stripBar(c *ui.Context, m runway.Meter, ok, selected bool) {
+	t := c.Theme()
+	fill := mono(t, 0.22, 0.28)
+	if selected {
+		fill = healthFill(t, m.Health)
+	}
+	ui.Box(c).Height(4).AlignSelf(ui.Stretch).Draw(func(p *ui.Painter, r ui.Rect) {
+		p.Fill(r, surfaceSunken(t), r.H/2)
+		if !ok {
+			return
+		}
+		w := max(4, r.W*float32(m.RemainingPercent)/100)
+		p.Fill(ui.Rect{X: r.X, Y: r.Y, W: min(w, r.W), H: r.H}, fill, r.H/2)
 	})
 }
 
@@ -109,8 +152,7 @@ func panelHeaderButtons(c *ui.Context, a *App, l l10n.Localizer, prefs store.Pre
 	})
 }
 
-// refreshEverything is the header refresh: all sections, plus the open
-// cost query or reaction when a page that shows them is open.
+// refreshEverything is the header refresh: all sections, plus an open cost query.
 func refreshEverything(a *App, acts PanelActions) {
 	acts.Refresh()
 	if a.panelState.detail == store.ModuleAPICost && a.panelState.cost.query != nil {
@@ -123,6 +165,9 @@ func refreshEverything(a *App, acts PanelActions) {
 func headerIdentity(l l10n.Localizer, prefs store.Preferences, snap runway.Snapshot) string {
 	if prefs.SelectedProvider == store.ProviderGrok {
 		return grokIdentity(l, prefs, snap)
+	}
+	if prefs.SelectedProvider == store.ProviderClaude {
+		return claudeIdentity(l, prefs, snap)
 	}
 	name := snap.Accounts.Display.DisplayName
 	if name == "" {
@@ -188,6 +233,43 @@ func codexIdentityRow(c *ui.Context, a *App, l l10n.Localizer, prefs store.Prefe
 	if row.Clicked() {
 		a.panelState.detail = detailAccounts
 	}
+}
+
+func claudeIdentity(l l10n.Localizer, prefs store.Preferences, snap runway.Snapshot) string {
+	name := snap.Claude.Accounts.Display.DisplayName
+	if name == "" {
+		return l.Text(l10n.KeyClaudeNotLoggedIn)
+	}
+	if prefs.AccountPrivacyModeEnabled {
+		return codex.MaskAccountText(name)
+	}
+	return name
+}
+
+func claudeIdentityRow(c *ui.Context, a *App, l l10n.Localizer, prefs store.Preferences, snap runway.Snapshot) {
+	name := claudeIdentity(l, prefs, snap)
+	t := c.Theme()
+	row := ui.ButtonBase(c).Label(name).Tooltip(name).Padding(3, 6).Gap(6).Radius(radiusRow).AlignItems(ui.Center).Justify(ui.Start).Margin(8, -6, 0, -6).Cursor(ui.CursorPointer)
+	if row.Hovered() {
+		row.Background(hoverNeutral(t))
+	}
+	row.Children(func() {
+		claudePlanBadge(c, l, snap.Claude.Plan)
+		ui.Text(c, name).FontSize(fsCallout).FontWeight(600).SingleLine().Ellipsis("…").MaxWidth(220)
+		identityChevron(c)
+		ui.Spacer(c).Grow(1)
+	})
+	if row.Clicked() {
+		a.panelState.detail = detailAccounts
+	}
+}
+
+func claudePlanBadge(c *ui.Context, l l10n.Localizer, plan string) {
+	if plan == "" {
+		tierBadge(c, plainLook(c.Theme()), l.Text(l10n.KeyProviderClaude))
+		return
+	}
+	tierBadge(c, claudeTierLook(c.Theme(), claude.TierResolve(plan)), plan)
 }
 
 func grokIdentityRow(c *ui.Context, a *App, l l10n.Localizer, prefs store.Preferences, snap runway.Snapshot) {

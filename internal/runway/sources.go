@@ -9,6 +9,7 @@ import (
 	"github.com/licoy/quosparr/internal/codexapi"
 	"github.com/licoy/quosparr/internal/export/swiftjson"
 	"github.com/licoy/quosparr/internal/sessions"
+	"github.com/licoy/quosparr/internal/speed"
 	"github.com/licoy/quosparr/internal/usage"
 )
 
@@ -70,6 +71,9 @@ type Sources struct {
 	DryRunSessions     func(ctx context.Context) (sessions.Report, error)
 	RepairSessions     func(ctx context.Context) (sessions.Report, error)
 	ScanRecentSessions func(ctx context.Context, limit int) (sessions.Summary, error)
+	// ScanSpeed (optional) measures the model speed of the newest local
+	// sessions as of now.
+	ScanSpeed func(ctx context.Context, now time.Time) (speed.Report, error)
 
 	// Account library (optional). SyncOfficial aligns the library with the
 	// official auth.json; LoadIndex reads the account list; SaveAccount
@@ -138,6 +142,13 @@ func NewLiveSources(cfg LiveConfig) Sources {
 		},
 		ScanRecentSessions: func(_ context.Context, limit int) (sessions.Summary, error) {
 			return sessions.Scanner{CodexHome: cfg.CodexHome, Pricer: sessionPricer}.Scan(limit)
+		},
+		ScanSpeed: func(ctx context.Context, now time.Time) (speed.Report, error) {
+			ss, err := sessions.Scanner{CodexHome: cfg.CodexHome}.ScanSpeed(ctx, now)
+			if err != nil {
+				return speed.Report{}, err
+			}
+			return speed.Build(ss, now), nil
 		},
 		SyncOfficial: func(now time.Time) (codex.AccountIndex, error) {
 			idx, _, err := cfg.Store.SyncFromOfficialAuth(now)

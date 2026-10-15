@@ -145,6 +145,66 @@ func readWindowMode(r *reader, key string) WindowMode {
 	return WindowModeAuto
 }
 
+// readThemeColor decodes the Go-only theme color. The Swift app never
+// rejects a key it does not know, so a value of any other form is the brand
+// color, not an error.
+func readThemeColor(r *reader, key string) string {
+	raw, ok := r.take(key)
+	var s string
+	if !ok || json.Unmarshal(raw, &s) != nil {
+		return ""
+	}
+	return NormalizeThemeColor(s)
+}
+
+// readFontFamily decodes the Go-only font family leniently, as
+// readThemeColor: anything but a usable name is the system's font.
+func readFontFamily(r *reader, key string) string {
+	raw, ok := r.take(key)
+	var s string
+	if !ok || json.Unmarshal(raw, &s) != nil {
+		return ""
+	}
+	return NormalizeFontFamily(s)
+}
+
+// readProxyTestURL decodes the Go-only test site leniently: anything but a
+// valid URL is the default.
+func readProxyTestURL(r *reader, key string) string {
+	raw, ok := r.take(key)
+	var s string
+	if !ok || json.Unmarshal(raw, &s) != nil {
+		return ""
+	}
+	return NormalizeProxyTestURL(s)
+}
+
+// readPanelProviders decodes the Go-only panel providers leniently: an
+// unreadable value shows every provider, and unknown names are dropped.
+func readPanelProviders(r *reader, key string) []Provider {
+	raw, ok := r.take(key)
+	var ids []string
+	if !ok || json.Unmarshal(raw, &ids) != nil {
+		return nil
+	}
+	out := make([]Provider, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, Provider(id))
+	}
+	return canonicalProviders(out, len(Providers()))
+}
+
+// readResetTimeFormat decodes the Go-only reset time format leniently, as
+// readThemeColor: anything but a known value is the relative countdown.
+func readResetTimeFormat(r *reader, key string) ResetTimeFormat {
+	raw, ok := r.take(key)
+	var s string
+	if !ok || json.Unmarshal(raw, &s) != nil || !ResetTimeFormat(s).Valid() {
+		return ResetTimeRelative
+	}
+	return ResetTimeFormat(s)
+}
+
 // readModules decodes the module order. Unknown module names are dropped (a
 // newer app may know more modules); a non-array, or a non-string element, is
 // an error.
@@ -166,6 +226,31 @@ func readModules(r *reader, key string, def []Module) []Module {
 		}
 		if m := Module(*id); m.Valid() {
 			out = append(out, m)
+		}
+	}
+	return out
+}
+
+// readProviders decodes a provider list. Unknown names are dropped. A
+// non-array, or a non-string element, is an error. A missing key is nil.
+func readProviders(r *reader, key string) []Provider {
+	raw, ok := r.take(key)
+	if !ok {
+		return nil
+	}
+	var ids []*string
+	if raw[0] != '[' || json.Unmarshal(raw, &ids) != nil {
+		r.fail(key, "expected an array of strings")
+		return nil
+	}
+	out := make([]Provider, 0, len(ids))
+	for _, id := range ids {
+		if id == nil {
+			r.fail(key, "expected an array of strings")
+			return nil
+		}
+		if p := Provider(*id); p.Valid() {
+			out = append(out, p)
 		}
 	}
 	return out
@@ -210,8 +295,8 @@ func truncate(s string, n int) string {
 
 // encodeFields marshals v (a struct with json tags) and adds the unknown keys
 // kept from decoding. Known keys win over extras. The output is compact with
-// sorted keys.
-func encodeFields(v any, extra map[string]json.RawMessage) ([]byte, error) {
+// sorted keys. Each edit may change the known fields before the extras join.
+func encodeFields(v any, extra map[string]json.RawMessage, edits ...func(fields)) ([]byte, error) {
 	known, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
@@ -219,6 +304,9 @@ func encodeFields(v any, extra map[string]json.RawMessage) ([]byte, error) {
 	var m fields
 	if err := json.Unmarshal(known, &m); err != nil {
 		return nil, err
+	}
+	for _, edit := range edits {
+		edit(m)
 	}
 	for k, raw := range extra {
 		if _, ok := m[k]; !ok {

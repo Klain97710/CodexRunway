@@ -35,7 +35,7 @@ func (a *App) grokAccountsPage(c *ui.Context, l l10n.Localizer, prefs store.Pref
 			for _, acc := range grokDisplayOrder(view) {
 				a.grokAccountCard(c, l, prefs, snap, acc, grokCaps(view.Sidebar, acc.ID, view.ActiveID), ac)
 			}
-			accountsNotice(c, []string{view.Message, st.notice}, snap.Grok.LastError)
+			accountsNotice(c, []string{view.Message}, snap.Grok.LastError)
 		})
 	})
 }

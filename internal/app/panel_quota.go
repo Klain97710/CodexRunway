@@ -1,11 +1,13 @@
 package app
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/licoy/quosparr/internal/l10n"
 	"github.com/licoy/quosparr/internal/runway"
+	"github.com/licoy/quosparr/internal/store"
 )
 
 // quotaBarHeight is RunwayProgressBar.barHeight.
@@ -48,30 +50,30 @@ func meterTitle(l l10n.Localizer, m runway.Meter, codex bool) string {
 }
 
 // panelCodexQuota is the quota section: one row per meter.
-func panelCodexQuota(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState) {
+func panelCodexQuota(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState, rs resetSwitch) {
 	refreshing := snap.Refresh.Has(runway.SectionQuota)
 	sectionBlock(c, first, func() {
 		drawSectionHead(c, l, st, sectionSpec{title: l.Text(l10n.KeyQuota), refreshing: refreshing, refresh: sectionRefresh(acts, runway.SectionQuota)})
-		meterRows(c, l, snap.Codex.Meters, refreshing, true)
+		meterRows(c, l, snap.Codex.Meters, refreshing, true, rs)
 	})
 }
 
-func meterRows(c *ui.Context, l l10n.Localizer, meters []runway.Meter, refreshing, codex bool) {
+func meterRows(c *ui.Context, l l10n.Localizer, meters []runway.Meter, refreshing, codex bool, rs resetSwitch) {
 	if len(meters) == 0 {
 		sectionEmpty(c, l, refreshing)
 		return
 	}
 	now := time.Now()
 	ui.Column(c).Gap(12).Children(func() {
-		for _, m := range meters {
-			quotaRow(c, l, m, now, codex)
+		for i, m := range meters {
+			quotaRow(c.Key("quota-"+strconv.Itoa(i)), l, m, now, codex, rs)
 		}
 	})
 }
 
 // quotaRow is QuotaMetersView.quotaRow: title and "N% left", the bar, the
 // burn projection and the reset countdown.
-func quotaRow(c *ui.Context, l l10n.Localizer, m runway.Meter, now time.Time, codex bool) {
+func quotaRow(c *ui.Context, l l10n.Localizer, m runway.Meter, now time.Time, codex bool, rs resetSwitch) {
 	t := c.Theme()
 	ui.Column(c).Gap(6).Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
@@ -86,7 +88,7 @@ func quotaRow(c *ui.Context, l l10n.Localizer, m runway.Meter, now time.Time, co
 				ui.Spacer(c).Grow(1)
 			}
 			if m.HasReset() {
-				dimText(c, resetCountdown(l, m.ResetsAt, now)).FontFeatures("tnum").NoWrap().Shrink(0)
+				resetLine(c, l, "reset", m.ResetsAt, now, rs)
 			}
 		})
 	})
@@ -106,6 +108,61 @@ func projectionText(l l10n.Localizer, m runway.Meter, now time.Time) string {
 
 func resetCountdown(l l10n.Localizer, at, now time.Time) string {
 	return l.Text(l10n.KeyNextResetIn) + quotaDuration(l, at.Sub(now))
+}
+
+// resetSwitch is the reset time format of the quota rows and the action that
+// flips it; without the action the reset is plain text.
+type resetSwitch struct {
+	format store.ResetTimeFormat
+	toggle func()
+}
+
+func (s *panelState) resetSwitch(f store.ResetTimeFormat) resetSwitch {
+	rs := resetSwitch{format: f}
+	if set := s.setResetTimeFormat; set != nil {
+		rs.toggle = func() { set(f.Toggled()) }
+	}
+	return rs
+}
+
+// resetText is "Next reset: " and the countdown or the local reset time.
+func resetText(l l10n.Localizer, at, now time.Time, f store.ResetTimeFormat) string {
+	if f == store.ResetTimeExact {
+		return l.Text(l10n.KeyNextResetIn) + runway.ResetExactTime(at, now, l.Language(), nil)
+	}
+	return resetCountdown(l, at, now)
+}
+
+func resetTimeFormatName(l l10n.Localizer, f store.ResetTimeFormat) string {
+	if f == store.ResetTimeExact {
+		return tx(l, xResetTimeExact)
+	}
+	return tx(l, xResetTimeRelative)
+}
+
+// resetLine is the reset of a quota row. With a toggle the whole line, a
+// swap glyph at its end, switches the format and its tooltip shows the
+// other one.
+func resetLine(c *ui.Context, l l10n.Localizer, key string, at, now time.Time, rs resetSwitch) {
+	text := resetText(l, at, now, rs.format)
+	if rs.toggle == nil {
+		dimText(c, text).FontFeatures("tnum").NoWrap().Shrink(0)
+		return
+	}
+	t := c.Theme()
+	b := ui.ButtonBase(c.Key(key)).Label(text).Tooltip(resetText(l, at, now, rs.format.Toggled())).
+		Gap(4).AlignItems(ui.Center).Shrink(0).Cursor(ui.CursorPointer)
+	ink := inkSecondary(t)
+	if b.Hovered() {
+		ink = t.Text
+	}
+	b.Children(func() {
+		ui.Text(c, text).FontSize(fsCaption).TextColor(ink).FontFeatures("tnum").NoWrap()
+		ui.Icon(c, icSwitch).Size(10, 10).TextColor(ink)
+	})
+	if b.Clicked() {
+		rs.toggle()
+	}
 }
 
 // quotaDuration is DurationFormatter.localized, with seconds.

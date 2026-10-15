@@ -12,11 +12,27 @@ import (
 
 var errRestartCodex = errors.New("Codex restart failed")
 
-type restartableCodex struct {
+// runningApp is a running application that can be asked to quit.
+type runningApp struct {
 	bundleID, name, path string
 	terminate            func() bool
 	stopped              func() bool
 	release              func()
+}
+
+// stopApp asks app to quit and waits up to limit for it to finish.
+func stopApp(app runningApp, limit time.Duration) bool {
+	if !app.terminate() {
+		return false
+	}
+	deadline := time.Now().Add(limit)
+	for !app.stopped() {
+		if time.Now().After(deadline) {
+			return false
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	return true
 }
 
 func isCodexDesktop(bundleID, name string) bool {
@@ -25,7 +41,7 @@ func isCodexDesktop(bundleID, name string) bool {
 
 // runCodexRestart is also used by tests with fake processes and a fake opener.
 // A termination request must actually finish before the login is relaunched.
-func runCodexRestart(apps []restartableCodex, fallback string, open func(string) error) error {
+func runCodexRestart(apps []runningApp, fallback string, open func(string) error) error {
 	path := fallback
 	for _, app := range apps {
 		if app.release != nil {
@@ -37,15 +53,8 @@ func runCodexRestart(apps []restartableCodex, fallback string, open func(string)
 		if app.path != "" {
 			path = app.path
 		}
-		if !app.terminate() {
+		if !stopApp(app, 3*time.Second) {
 			return errRestartCodex
-		}
-		deadline := time.Now().Add(3 * time.Second)
-		for !app.stopped() {
-			if time.Now().After(deadline) {
-				return errRestartCodex
-			}
-			time.Sleep(25 * time.Millisecond)
 		}
 	}
 	if path == "" {

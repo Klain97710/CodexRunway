@@ -23,7 +23,7 @@ struct RunwayOverviewWidgetView: View {
         let l10n = L10n(language: snapshot.language)
         let providers = entry.provider.providers.compactMap(snapshot.provider)
         return VStack(alignment: .leading, spacing: family == .systemSmall ? 8 : 10) {
-            RunwayWidgetHeader(title: l10n.text(.widgetOverviewTitle), trailing: entry.provider.label)
+            RunwayWidgetHeader(title: l10n.text(.widgetOverviewTitle), trailing: entry.provider.label(l10n: l10n))
             if providers.isEmpty {
                 Text(l10n.text(.widgetNoData)).font(.caption).foregroundStyle(.secondary)
             } else {
@@ -40,7 +40,7 @@ struct RunwayOverviewWidgetView: View {
     @ViewBuilder
     private func providerQuota(_ provider: RunwayWidgetProviderSnapshot, l10n: L10n) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            RunwayProviderLabel(provider: provider.provider, plan: provider.plan)
+            RunwayProviderLabel(provider: provider.provider, plan: provider.plan, l10n: l10n)
             if provider.availability != .available {
                 Text(runwayAvailabilityText(provider.availability, l10n: l10n))
                     .font(.caption).foregroundStyle(.secondary)
@@ -104,7 +104,7 @@ struct RunwayTokenTrendWidgetView: View {
                 if index > 0 { Divider() }
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        RunwayProviderLabel(provider: provider.provider, plan: nil)
+                        RunwayProviderLabel(provider: provider.provider, plan: nil, l10n: l10n)
                         Spacer()
                         Text(source(provider.tokenSource, l10n: l10n))
                             .font(.caption2).foregroundStyle(.secondary)
@@ -160,7 +160,7 @@ struct RunwayMetricWidgetView: View {
             ForEach(Array(providers.enumerated()), id: \.element.provider) { index, provider in
                 if index > 0 { Divider() }
                 HStack(alignment: .firstTextBaseline) {
-                    Text(provider.provider == .codex ? "Codex" : "Grok")
+                    Text(providerName(provider.provider, l10n: l10n))
                         .font(.caption.weight(.semibold))
                     Spacer()
                     VStack(alignment: .trailing, spacing: 1) {

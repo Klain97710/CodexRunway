@@ -1,7 +1,6 @@
 package app
 
 import (
-	"math"
 	"testing"
 
 	"github.com/egoist/mygo/ui"
@@ -48,23 +47,4 @@ func TestTokenHeatmapUsesThemeAccent(t *testing.T) {
 			t.Fatalf("dark=%t heat level color=%v, want %v", dark, got, want)
 		}
 	}
-}
-
-func contrastRatio(a, b ui.Color) float64 {
-	la, lb := relativeLuminance(a), relativeLuminance(b)
-	if la < lb {
-		la, lb = lb, la
-	}
-	return (la + 0.05) / (lb + 0.05)
-}
-
-func relativeLuminance(c ui.Color) float64 {
-	linear := func(v uint8) float64 {
-		n := float64(v) / 255
-		if n <= 0.04045 {
-			return n / 12.92
-		}
-		return math.Pow((n+0.055)/1.055, 2.4)
-	}
-	return 0.2126*linear(c.R) + 0.7152*linear(c.G) + 0.0722*linear(c.B)
 }
