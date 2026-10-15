@@ -84,7 +84,8 @@ func allNonDefault() Preferences {
 		ExportsStatusJSON:                         true,
 		AccountPrivacyModeEnabled:                 true,
 		// The frozen Swift fixture knows no speed analysis switch; it reads as on.
-		ShowsSpeedAnalysis: true,
+		ShowsSpeedAnalysis:  true,
+		ShowsCreditsBalance: true,
 	}
 }
 
@@ -93,7 +94,7 @@ func TestThirtyFourFieldsAllDifferFromDefaults(t *testing.T) {
 	typ := d.Type()
 	count := 0
 	for i := 0; i < typ.NumField(); i++ {
-		if typ.Field(i).Tag.Get("json") == "" || typ.Field(i).Name == "ThemeColor" || typ.Field(i).Name == "FontFamily" || typ.Field(i).Name == "QuotaResetTimeFormat" || typ.Field(i).Name == "ProxyTestURL" || typ.Field(i).Name == "ShowsSpeedAnalysis" || typ.Field(i).Name == "StatusBarProviders" || typ.Field(i).Name == "FloatingWindow" || typ.Field(i).Name == "PanelProviders" {
+		if typ.Field(i).Tag.Get("json") == "" || typ.Field(i).Name == "ThemeColor" || typ.Field(i).Name == "FontFamily" || typ.Field(i).Name == "QuotaResetTimeFormat" || typ.Field(i).Name == "ProxyTestURL" || typ.Field(i).Name == "ShowsSpeedAnalysis" || typ.Field(i).Name == "ShowsCreditsBalance" || typ.Field(i).Name == "StatusBarProviders" || typ.Field(i).Name == "FloatingWindow" || typ.Field(i).Name == "PanelProviders" {
 			continue // the unexported extra map, and the keys only Go writes
 		}
 		count++
@@ -914,3 +915,29 @@ func TestSpeedModuleOrderDefaultsAreOmittedWhereverTheyFall(t *testing.T) {
 		t.Errorf("order %v round-tripped to %v", p.MainPanelModuleOrder, got)
 	}
 }
+
+func TestShowsCreditsBalanceGoOnlyAndDefaults(t *testing.T) {
+	p := DefaultPreferences()
+	if !p.ShowsCreditsBalance {
+		t.Fatal("expected ShowsCreditsBalance to be true by default")
+	}
+	enc, err := EncodePreferences(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(enc), "showsCreditsBalance") {
+		t.Errorf("showsCreditsBalance must be omitted when true: %s", enc)
+	}
+	p.ShowsCreditsBalance = false
+	enc, err = EncodePreferences(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(enc), `"showsCreditsBalance":false`) {
+		t.Errorf("showsCreditsBalance must be written when false: %s", enc)
+	}
+	if got := mustDecode(t, string(enc)); got.ShowsCreditsBalance {
+		t.Errorf("decoded ShowsCreditsBalance is %v, want false", got.ShowsCreditsBalance)
+	}
+}
+

@@ -9,6 +9,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 	"github.com/licoy/quosparr/internal/codex"
+	"github.com/licoy/quosparr/internal/codexapi"
 	"github.com/licoy/quosparr/internal/estimate"
 	"github.com/licoy/quosparr/internal/export/swiftjson"
 	"github.com/licoy/quosparr/internal/l10n"
@@ -148,6 +149,47 @@ func TestPanelParityCurrentSubscriptionVisibleWithOrWithoutSidebar(t *testing.T)
 				}
 			})
 		}
+	}
+}
+
+func TestPanelParityCreditsBalanceBesideSubscription(t *testing.T) {
+	snap := panelFixture()
+	expiry := time.Date(2026, 11, 7, 12, 0, 0, 0, time.Local)
+	balance := 42.5
+	snap.Accounts.Display = codex.AccountDisplay{
+		Authenticated: true, DisplayName: "ada@example.com", Tier: codex.TierPlus,
+		SubscriptionExpiresAt: &expiry,
+	}
+	snap.Codex.Quota = &codexapi.QuotaSnapshot{CreditsBalance: &balance}
+	a, tt := newPanel(t, func(p *store.Preferences) {
+		p.Language = store.LanguageSimplifiedChinese
+	}, snap, PanelActions{})
+	if !hasExact(tt, a.L().Text(l10n.KeyCreditsBalance)) || !hasExact(tt, "42.50") {
+		t.Fatalf("credits balance chip missing; texts %q", tt.Texts())
+	}
+	if !hasExact(tt, "2026/11/7") {
+		t.Fatalf("subscription chip missing beside credits; texts %q", tt.Texts())
+	}
+}
+
+func TestPanelParityCreditsBalanceHiddenWhenDisabled(t *testing.T) {
+	snap := panelFixture()
+	expiry := time.Date(2026, 11, 7, 12, 0, 0, 0, time.Local)
+	balance := 42.5
+	snap.Accounts.Display = codex.AccountDisplay{
+		Authenticated: true, DisplayName: "ada@example.com", Tier: codex.TierPlus,
+		SubscriptionExpiresAt: &expiry,
+	}
+	snap.Codex.Quota = &codexapi.QuotaSnapshot{CreditsBalance: &balance}
+	a, tt := newPanel(t, func(p *store.Preferences) {
+		p.Language = store.LanguageSimplifiedChinese
+		p.ShowsCreditsBalance = false
+	}, snap, PanelActions{})
+	if hasExact(tt, a.L().Text(l10n.KeyCreditsBalance)) || hasExact(tt, "42.50") {
+		t.Fatalf("credits balance chip should be hidden; texts %q", tt.Texts())
+	}
+	if !hasExact(tt, "2026/11/7") {
+		t.Fatalf("subscription chip should still be visible; texts %q", tt.Texts())
 	}
 }
 

@@ -81,6 +81,7 @@ func readPreferences(r *reader) Preferences {
 	p.QuotaResetTimeFormat = readResetTimeFormat(r, "quotaResetTimeFormat")
 	p.ProxyTestURL = readProxyTestURL(r, "proxyTestURL")
 	p.ShowsSpeedAnalysis = r.bool("showsSpeedAnalysis", p.ShowsSpeedAnalysis)
+	p.ShowsCreditsBalance = r.bool("showsCreditsBalance", p.ShowsCreditsBalance)
 	p.FloatingWindow = readFloatingWindow(r, "floatingWindow")
 	p.PanelProviders = readPanelProviders(r, "panelProviders")
 	return p
@@ -136,6 +137,9 @@ func EncodePreferences(p Preferences) ([]byte, error) {
 func (p Preferences) omitGoOnlyDefaults(m fields) {
 	if p.ShowsSpeedAnalysis {
 		delete(m, "showsSpeedAnalysis")
+	}
+	if p.ShowsCreditsBalance {
+		delete(m, "showsCreditsBalance")
 	}
 	order := wireModuleOrder(p.MainPanelModuleOrder)
 	if len(order) == len(p.MainPanelModuleOrder) {

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -115,6 +116,51 @@ func expiryBadge(c *ui.Context, l l10n.Localizer, expiresAt, now time.Time) {
 			}
 			ui.Text(c, "·").FontSize(fsCaption).FontWeight(600).TextColor(dataInk.Alpha(0.45))
 			ui.Text(c, remaining).FontSize(fsCaption).FontWeight(500).FontFeatures("tnum").TextColor(dataInk).NoWrap().Shrink(0)
+		})
+	})
+}
+
+// codexCreditsBalance returns the ChatGPT credits balance from the Codex
+// quota snapshot when the usage payload exposed one.
+func codexCreditsBalance(snap runway.Snapshot) (float64, bool) {
+	q := snap.Codex.Quota
+	if q == nil || q.CreditsBalance == nil {
+		return 0, false
+	}
+	return *q.CreditsBalance, true
+}
+
+func creditsBalanceLook(t *ui.Theme) expiryLook {
+	light := !t.Dark
+	tint := sys(t, sysBlue)
+	return expiryLook{
+		ring:       pick(light, ui.RGBA(20, 94, 180, 1), tint),
+		foreground: pick(light, ui.RGBA(17, 82, 158, 1), tint),
+		fill:       tint.Alpha(pick[float32](light, 0.14, 0.26)),
+		stroke:     tint.Alpha(pick[float32](light, 0.32, 0.42)),
+	}
+}
+
+func creditsBalanceAmount(balance float64) string {
+	return fmt.Sprintf("%.2f", balance)
+}
+
+// creditsBalanceBadge mirrors expiryBadge: a tinted label segment and a
+// neutral amount segment. Blue keeps it distinct from the green subscription
+// chip while staying in the same account-status row.
+func creditsBalanceBadge(c *ui.Context, l l10n.Localizer, balance float64) {
+	t := c.Theme()
+	look := creditsBalanceLook(t)
+	amount := creditsBalanceAmount(balance)
+	dataInk := pick(!t.Dark, inkSecondary(t), ui.RGBA(255, 255, 255, 0.78))
+	ui.Row(c).Shrink(0).Radius(radiusPlate).Clip().Border(1, look.stroke).Children(func() {
+		ui.Row(c).Shrink(0).Padding(3, 7).Gap(5).AlignItems(ui.Center).Background(look.fill).Children(func() {
+			ui.Icon(c, icCoins).Size(10, 10).TextColor(look.foreground)
+			ui.Text(c, l.Text(l10n.KeyCreditsBalance)).FontSize(fsCaption).FontWeight(600).TextColor(look.foreground).NoWrap().Shrink(0)
+		})
+		ui.Box(c).Width(1).Background(look.stroke.Alpha(0.5))
+		ui.Row(c).Shrink(0).Padding(3, 7).Gap(4).AlignItems(ui.Center).Background(surfaceSunken(t)).Children(func() {
+			ui.Text(c, amount).FontSize(fsCaption).FontWeight(500).FontFeatures("tnum").TextColor(dataInk).NoWrap().Shrink(0)
 		})
 	})
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/licoy/quosparr/internal/export"
 	"github.com/licoy/quosparr/internal/export/swiftjson"
 	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/platform"
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/speed"
 	"github.com/licoy/quosparr/internal/store"
@@ -454,6 +455,7 @@ func claudeCLIVersion(configDir string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, exe, "--version")
+	platform.HideConsoleWindow(cmd)
 	cmd.Env = append(os.Environ(), "CLAUDE_CONFIG_DIR="+configDir)
 	out, err := cmd.Output()
 	if err != nil {

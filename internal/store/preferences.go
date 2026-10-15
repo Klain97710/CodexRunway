@@ -106,6 +106,10 @@ type Preferences struct {
 	// ShowsSpeedAnalysis is Go-only: the speed analysis module, on by default
 	// and written only when turned off.
 	ShowsSpeedAnalysis bool `json:"showsSpeedAnalysis"`
+	// ShowsCreditsBalance is Go-only: display ChatGPT credits balance beside
+	// the subscription badge when available. On by default and written only when
+	// turned off.
+	ShowsCreditsBalance bool `json:"showsCreditsBalance"`
 	// FloatingWindow is Go-only: the desktop floating window, omitted while
 	// it is at its default.
 	FloatingWindow FloatingWindow `json:"floatingWindow,omitzero"`
@@ -148,6 +152,7 @@ func DefaultPreferences() Preferences {
 		ShowsModelSpecificQuotaUsage:              false,
 		ShowsTokenUsageHeatmap:                    true,
 		ShowsSpeedAnalysis:                        true,
+		ShowsCreditsBalance:                       true,
 		TokenUsageChartStyle:                      ChartStyleHeatmap,
 		RateLimitResetTodayRefreshIntervalSeconds: DefaultRateLimitResetTodayRefreshIntervalSeconds,
 		AutomaticallyChecksForUpdates:             true,

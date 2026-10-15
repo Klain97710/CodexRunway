@@ -173,6 +173,7 @@ func TestSettingsEveryFieldHasItsControlSetter(t *testing.T) {
 		{"show session repair", showFlip(store.ModuleSessionRepair), []string{"showsSessionRepairSummary"}},
 		{"show reset today", showFlip(store.ModuleRateLimitResetToday), []string{"showsRateLimitResetToday"}},
 		{"model specific usage", flip(func(p *store.Preferences) *bool { return &p.ShowsModelSpecificQuotaUsage }, (*Settings).SetShowsModelSpecificQuotaUsage), []string{"showsModelSpecificQuotaUsage"}},
+		{"show credits balance", flip(func(p *store.Preferences) *bool { return &p.ShowsCreditsBalance }, (*Settings).SetShowsCreditsBalance), []string{"showsCreditsBalance"}},
 		{"show token usage", showFlip(store.ModuleTokenUsage), []string{"showsTokenUsageHeatmap"}},
 		{"show speed analysis", showFlip(store.ModuleSpeedAnalysis), []string{"showsSpeedAnalysis"}},
 		{"chart style", func(s *Settings) bool { return s.SetTokenUsageChartStyle(store.ChartStyleBar) }, []string{"tokenUsageChartStyle"}},
@@ -187,7 +188,7 @@ func TestSettingsEveryFieldHasItsControlSetter(t *testing.T) {
 		{"export status json", flip(func(p *store.Preferences) *bool { return &p.ExportsStatusJSON }, (*Settings).SetExportsStatusJSON), []string{"exportsStatusJSON"}},
 		{"account privacy", flip(func(p *store.Preferences) *bool { return &p.AccountPrivacyModeEnabled }, (*Settings).SetAccountPrivacyMode), []string{"accountPrivacyModeEnabled"}},
 	}
-	// The 35 stored fields are each reached by exactly one case above, the
+	// The 36 stored fields are each reached by exactly one case above, the
 	// login pair by one.
 	seen := map[string]bool{}
 	for _, c := range cases {
@@ -195,8 +196,8 @@ func TestSettingsEveryFieldHasItsControlSetter(t *testing.T) {
 			seen[f] = true
 		}
 	}
-	if len(seen) != 35 {
-		t.Errorf("cases cover %d preference fields, want 35", len(seen))
+	if len(seen) != 36 {
+		t.Errorf("cases cover %d preference fields, want 36", len(seen))
 	}
 
 	for _, c := range cases {

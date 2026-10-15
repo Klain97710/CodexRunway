@@ -473,6 +473,11 @@ func (s *Settings) SetShowsModelSpecificQuotaUsage(on bool) bool {
 	return s.Update(func(p *store.Preferences) { p.ShowsModelSpecificQuotaUsage = on })
 }
 
+// SetShowsCreditsBalance toggles displaying the ChatGPT credits balance.
+func (s *Settings) SetShowsCreditsBalance(on bool) bool {
+	return s.Update(func(p *store.Preferences) { p.ShowsCreditsBalance = on })
+}
+
 // moduleShown returns the visibility switch of a main panel module.
 func moduleShown(p *store.Preferences, m store.Module) *bool {
 	switch m {
