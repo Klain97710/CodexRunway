@@ -28,7 +28,7 @@ func blueSegmented(c *ui.Context, selected *int, disabled bool, labels ...string
 			s.Children(func() { ui.Text(c, label).FontSize(fsCallout).FontWeight(500).TextColor(ink).SingleLine() })
 		}
 	})
-	// Querying Changed applies the click now, while selected still points at
-	// the caller's variable.
+	// mygo applies the click as the track's children are built, so selected
+	// already holds it; Changed reports whether it moved.
 	return seg.Track.Changed()
 }

@@ -141,8 +141,7 @@ func TestLoadingIndicatorAnimates(t *testing.T) {
 	}
 	before := bytes.Clone(tt.Image().Pix)
 	for range 4 {
-		time.Sleep(90 * time.Millisecond)
-		tt.Frame()
+		tt.Advance(90 * time.Millisecond)
 		if !bytes.Equal(before, tt.Image().Pix) {
 			return
 		}

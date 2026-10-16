@@ -310,8 +310,8 @@ func PillTabs(c *ui.Context, selected *int, disabled bool, labels ...string) boo
 			s.Children(func() { ui.Text(c, l).FontSize(13).FontWeight(500).TextColor(col).SingleLine() })
 		}
 	})
-	// Querying Changed applies the click now, while selected still points at
-	// the caller's variable; otherwise mygo applies it after the frame.
+	// mygo applies the click as the track's children are built, so selected
+	// already holds it; Changed reports whether it moved.
 	return seg.Track.Changed()
 }
 

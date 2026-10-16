@@ -300,8 +300,7 @@ func TestPanelParityGrokChartUsesLocalCalendar(t *testing.T) {
 				}
 				t.Logf("tooltip hit box: %+v", r)
 				tt.Move(r.X+r.W/2, r.Y+r.H/2)
-				time.Sleep(650 * time.Millisecond)
-				tt.Frame()
+				tt.Advance(650 * time.Millisecond)
 				if !tt.HasText("900") {
 					t.Fatal("local day tooltip lost its token count")
 				}
@@ -319,8 +318,7 @@ func TestPanelParityGrokTooltipHidesOfficialSource(t *testing.T) {
 		t.Fatal("fixture day missing")
 	}
 	tt.Move(r.X+r.W/2, r.Y+r.H/2)
-	time.Sleep(650 * time.Millisecond)
-	tt.Frame()
+	tt.Advance(650 * time.Millisecond)
 	joined := strings.Join(tt.Texts(), "\n")
 	if !strings.Contains(joined, "2026-10-12\n") {
 		t.Fatalf("tooltip did not open; texts %q", tt.Texts())
