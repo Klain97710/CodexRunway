@@ -62,6 +62,7 @@ func TestPanelRuntimeGrokRangeChangeDoesNotRelabelOldCost(t *testing.T) {
 	}()
 	a.settings.SetAPICostRange(store.CostRangeThisMonth)
 	rt.preferenceWork.idle.Wait()
+	waitFor(t, func() bool { return svc.Snapshot().Grok.Refreshing })
 	pending := svc.Snapshot()
 	a.snapMu.Lock()
 	a.snap = pending
@@ -73,7 +74,7 @@ func TestPanelRuntimeGrokRangeChangeDoesNotRelabelOldCost(t *testing.T) {
 	if len(pending.Grok.Heatmap.Local) == 0 || len(pending.Grok.RecentSessions) == 0 {
 		t.Fatal("range change cleared unrelated local data")
 	}
-	if !tt.HasText(a.L().Text(l10n.KeyNotLoaded)) {
+	if !tt.HasText(tx(a.L(), xPanelLoading)) || tt.HasText(a.L().Text(l10n.KeyNotLoaded)) {
 		t.Fatal("cost did not show the waiting state for the new range")
 	}
 	g.scanMu.Unlock()

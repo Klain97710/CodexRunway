@@ -106,12 +106,34 @@ func sectionRefresh(acts PanelActions, sec runway.Section) func() {
 	return func() { fn(sec) }
 }
 
-// sectionEmpty is the "Calculating..." / "Not loaded" line of a section
-// without data.
+// sectionRefreshing includes the wait for a full refresh to reach a module.
+// Single-section Codex work must not mark another provider as refreshing.
+func sectionRefreshing(snap runway.Snapshot, section runway.Section) bool {
+	if snap.Refresh.All {
+		return true
+	}
+	switch snap.Provider {
+	case store.ProviderGrok:
+		return snap.Grok.Refreshing
+	case store.ProviderClaude:
+		return snap.Claude.Refreshing
+	default:
+		return snap.Refresh.Has(section)
+	}
+}
+
+// sectionEmpty shows a progress indicator while loading, then the idle text.
 func sectionEmpty(c *ui.Context, l l10n.Localizer, refreshing bool) {
-	key := l10n.KeyNotLoaded
+	sectionEmptyKey(c, l, refreshing, l10n.KeyNotLoaded)
+}
+
+func sectionEmptyKey(c *ui.Context, l l10n.Localizer, refreshing bool, key l10n.Key) {
 	if refreshing {
-		key = l10n.KeyCalculating
+		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+			ui.Spinner(c).Size(14, 14).Label(tx(l, xPanelLoading))
+			calloutDim(c, tx(l, xPanelLoading))
+		})
+		return
 	}
 	calloutDim(c, l.Text(key))
 }

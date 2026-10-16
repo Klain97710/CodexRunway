@@ -52,7 +52,7 @@ func meterTitle(l l10n.Localizer, m runway.Meter, codex bool) string {
 // panelCodexQuota is the quota section: one row per meter and, with
 // showCredits, a nonzero ChatGPT credits balance as the last row.
 func panelCodexQuota(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState, rs resetSwitch, private, showCredits bool) {
-	refreshing := snap.Refresh.Has(runway.SectionQuota)
+	refreshing := sectionRefreshing(snap, runway.SectionQuota)
 	sectionBlock(c, first, func() {
 		drawSectionHead(c, l, st, sectionSpec{title: l.Text(l10n.KeyQuota), refreshing: refreshing, refresh: sectionRefresh(acts, runway.SectionQuota)})
 		switch v := snap.Codex; {

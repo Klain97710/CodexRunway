@@ -35,7 +35,7 @@ func estPercent(v float64) string {
 // this week used, the data age and a row to the details page.
 func panelEstimate(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState) {
 	v := snap.Codex
-	busy := snap.Refresh.Has(runway.SectionQuotaEstimate)
+	busy := sectionRefreshing(snap, runway.SectionQuotaEstimate)
 	title := l.Text(l10n.KeyQuotaEstimate)
 	sectionBlock(c, first, func() {
 		drawSectionHead(c, l, st, sectionSpec{
@@ -124,13 +124,12 @@ func estimateChange(t *ui.Theme, l l10n.Localizer, s estimate.Snapshot) (string,
 // panelCredits is the reset credits summary.
 func panelCredits(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState) {
 	sum := snap.Codex.ResetCreditSummary
-	busy := snap.Refresh.Has(runway.SectionResetCredits) || (snap.Provider == store.ProviderGrok && snap.Grok.Refreshing) ||
-		(snap.Provider == store.ProviderClaude && snap.Claude.Refreshing)
+	busy := sectionRefreshing(snap, runway.SectionResetCredits)
 	sectionBlock(c, first, func() {
 		drawSectionHead(c, l, st, sectionSpec{
 			title: l.Text(l10n.KeyResetCredits), refreshing: busy, refresh: sectionRefresh(acts, runway.SectionResetCredits),
 		})
-		if sum == nil {
+		if sum == nil || busy && snap.Provider == store.ProviderClaude && snap.Claude.UpdatedAt.IsZero() && snap.Claude.ResetCredits == nil {
 			sectionEmpty(c, l, busy)
 			return
 		}
@@ -173,21 +172,18 @@ func creditsExpiryRow(c *ui.Context, l l10n.Localizer, sum runway.ResetCreditSum
 // panelCost is the API cost summary.
 func panelCost(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState) {
 	v := snap.Codex
-	busy := snap.Refresh.Has(runway.SectionAPICost) || (snap.Provider == store.ProviderGrok && snap.Grok.Refreshing)
+	busy := sectionRefreshing(snap, runway.SectionAPICost)
 	t := c.Theme()
 	sectionBlock(c, first, func() {
 		drawSectionHead(c, l, st, sectionSpec{
 			title: l.Text(l10n.KeyApiCost), refreshing: busy, refresh: sectionRefresh(acts, runway.SectionAPICost),
 		})
-		text := v.CostText
-		if text == "" {
-			text = l.Text(l10n.KeyNotLoaded)
-		}
-		if busy && v.CostSubtitle == "" {
-			text = l.Text(l10n.KeyCalculating)
-		}
 		ui.Column(c).Gap(3).Children(func() {
-			ui.Text(c, text).FontSize(fsCallout).TextColor(inkSecondary(t))
+			if busy && v.DisplayedCost == nil && len(v.CostLines) == 0 || v.CostText == "" {
+				sectionEmpty(c, l, busy)
+			} else {
+				ui.Text(c, v.CostText).FontSize(fsCallout).TextColor(inkSecondary(t))
+			}
 			if v.CostSubtitle != "" {
 				ui.Text(c, v.CostSubtitle).FontSize(fsCaption).TextColor(inkTertiary(t))
 			}
@@ -201,17 +197,17 @@ func panelCost(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts Panel
 // panelRepair is the session repair summary with its confirm popover.
 func panelRepair(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState) {
 	v := snap.Codex
-	busy := snap.Refresh.Has(runway.SectionSessionRepair)
+	busy := sectionRefreshing(snap, runway.SectionSessionRepair)
 	t := c.Theme()
 	sectionBlock(c, first, func() {
 		drawSectionHead(c, l, st, sectionSpec{
 			title: l.Text(l10n.KeySessionRepair), refreshing: busy, refresh: sectionRefresh(acts, runway.SectionSessionRepair),
 		})
-		text := v.SessionText
-		if busy && len(v.SessionLines) == 0 {
-			text = l.Text(l10n.KeyCalculating)
+		if busy && v.SessionReport == nil && len(v.SessionLines) == 0 {
+			sectionEmpty(c, l, true)
+		} else {
+			ui.Text(c, v.SessionText).FontSize(fsCaption).TextColor(inkSecondary(t))
 		}
-		ui.Text(c, text).FontSize(fsCaption).TextColor(inkSecondary(t))
 		repairRow(c, l, acts, st)
 	})
 }
@@ -247,14 +243,14 @@ func repairRow(c *ui.Context, l l10n.Localizer, acts PanelActions, st *panelStat
 
 // panelRecent is the recent sessions card: at most five rows with a state dot.
 func panelRecent(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, grok bool, acts PanelActions, first *bool, st *panelState) {
-	busy := snap.Refresh.Has(runway.SectionRecentSessions)
+	busy := sectionRefreshing(snap, runway.SectionRecentSessions)
 	items := snap.Codex.RecentSessions
 	refresh := sectionRefresh(acts, runway.SectionRecentSessions)
 	if grok && snap.Provider == store.ProviderClaude {
-		busy, items = snap.Claude.Refreshing, snap.Claude.RecentSessions
+		items = snap.Claude.RecentSessions
 		refresh = sectionRefresh(acts, runway.SectionAPICost)
 	} else if grok {
-		busy, items = snap.Grok.Refreshing, snap.Grok.RecentSessions
+		items = snap.Grok.RecentSessions
 		refresh = sectionRefresh(acts, runway.SectionAPICost)
 	}
 	sectionBlock(c, first, func() {

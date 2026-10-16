@@ -12,7 +12,7 @@ import (
 // per-model weekly windows. Extra usage keeps the raw numbers and currency.
 func panelClaudeQuota(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState, rs resetSwitch, private bool) {
 	g := snap.Claude
-	refreshing := g.Refreshing || snap.Refresh.Has(runway.SectionQuota)
+	refreshing := sectionRefreshing(snap, runway.SectionQuota)
 	spec := sectionSpec{title: l.Text(l10n.KeyProviderClaude), refreshing: refreshing, refresh: sectionRefresh(acts, runway.SectionQuota)}
 	sectionBlock(c, first, func() {
 		drawSectionHead(c, l, st, spec)

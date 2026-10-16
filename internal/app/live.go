@@ -638,6 +638,7 @@ type grokBridge struct {
 	mu         sync.Mutex
 	onChange   func()
 	state      runway.GrokState
+	refreshes  int
 	lc         l10n.Localizer
 	prefs      store.Preferences
 	local      *grok.SessionUsageSummary
@@ -668,6 +669,8 @@ func (g *grokBridge) State(now time.Time) runway.GrokState {
 }
 
 func (g *grokBridge) Refresh(ctx context.Context) error {
+	g.changeRefreshing(1)
+	defer g.changeRefreshing(-1)
 	g.refreshMu.Lock()
 	defer g.refreshMu.Unlock()
 	if ctx.Err() != nil {
@@ -682,6 +685,8 @@ func (g *grokBridge) Refresh(ctx context.Context) error {
 
 // RefreshLocal rescans the local Grok sessions without touching the quota.
 func (g *grokBridge) RefreshLocal(ctx context.Context) error {
+	g.changeRefreshing(1)
+	defer g.changeRefreshing(-1)
 	g.scanMu.Lock()
 	defer g.scanMu.Unlock()
 	if ctx.Err() != nil {
@@ -730,6 +735,7 @@ func (g *grokBridge) reload(notify bool) {
 	g.mu.Unlock()
 	next := buildGrokState(mod, lc)
 	g.mu.Lock()
+	next.Refreshing = g.refreshes > 0
 	g.relabelLocked(&next)
 	applyGrokLocal(&next, g.local)
 	if g.prefs.ShowsSpeedAnalysis {

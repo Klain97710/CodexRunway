@@ -21,6 +21,7 @@ const (
 	xProvider                  textKey = "provider"
 	xProviderDescription       textKey = "providerDescription"
 	xPanelHeight               textKey = "panelHeight"
+	xPanelLoading              textKey = "panelLoading"
 	xPanelHeightHint           textKey = "panelHeightDescription"
 	xMacOnly                   textKey = "settingMacOnly"
 	xWidgetMac14               textKey = "settingWidgetMac14"
@@ -106,6 +107,7 @@ const (
 // English, Simplified Chinese, Traditional Chinese, Korean, Japanese,
 // Russian, French.
 var extraTexts = map[textKey][7]string{
+	xPanelLoading: {"Loading…", "加载中…", "載入中…", "불러오는 중…", "読み込み中…", "Загрузка…", "Chargement…"},
 	xThemeColor: {
 		"Theme color", "主题颜色", "主題顏色", "테마 색상", "テーマカラー", "Цвет темы", "Couleur du thème",
 	},

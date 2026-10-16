@@ -27,6 +27,7 @@ type claudeBridge struct {
 	mu         sync.Mutex
 	onChange   func()
 	state      runway.ClaudeState
+	refreshes  int
 	lc         l10n.Localizer
 	prefs      store.Preferences
 	local      *claude.SessionUsageSummary
@@ -63,6 +64,8 @@ func (g *claudeBridge) State(now time.Time) runway.ClaudeState {
 }
 
 func (g *claudeBridge) Refresh(ctx context.Context, force bool) error {
+	g.changeRefreshing(1)
+	defer g.changeRefreshing(-1)
 	g.refreshMu.Lock()
 	defer g.refreshMu.Unlock()
 	if ctx.Err() != nil {
@@ -82,6 +85,8 @@ func (g *claudeBridge) Refresh(ctx context.Context, force bool) error {
 
 // RefreshLocal rescans the local Claude sessions without touching the usage.
 func (g *claudeBridge) RefreshLocal(ctx context.Context) error {
+	g.changeRefreshing(1)
+	defer g.changeRefreshing(-1)
 	g.scanMu.Lock()
 	defer g.scanMu.Unlock()
 	if ctx.Err() != nil {
@@ -130,6 +135,7 @@ func (g *claudeBridge) reload(notify bool) {
 	g.mu.Unlock()
 	next := buildClaudeState(mod, lc, gateway)
 	g.mu.Lock()
+	next.Refreshing = g.refreshes > 0
 	g.relabelLocked(&next)
 	applyClaudeLocal(&next, g.local)
 	if g.prefs.ShowsSpeedAnalysis {

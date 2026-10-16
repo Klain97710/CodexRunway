@@ -159,7 +159,7 @@ func TestPanelSpeedLoadingErrorAndEmptyStates(t *testing.T) {
 		snap := speedSnapshot(nil)
 		snap.Refresh.Sections = []runway.Section{runway.SectionSpeed}
 		_, tt := speedPanel(t, nil, snap, PanelActions{})
-		if !hasExact(tt, l.Text(l10n.KeyCalculating)) {
+		if !hasExact(tt, tx(l, xPanelLoading)) {
 			t.Fatalf("texts %q", tt.Texts())
 		}
 	})
@@ -167,7 +167,7 @@ func TestPanelSpeedLoadingErrorAndEmptyStates(t *testing.T) {
 		snap := speedSnapshot(nil)
 		snap.Grok = runway.GrokState{Refreshing: true}
 		_, tt := speedPanel(t, func(p *store.Preferences) { p.SelectedProvider = store.ProviderGrok }, snap, PanelActions{})
-		if !hasExact(tt, l.Text(l10n.KeyCalculating)) {
+		if !hasExact(tt, tx(l, xPanelLoading)) {
 			t.Fatalf("texts %q", tt.Texts())
 		}
 	})
