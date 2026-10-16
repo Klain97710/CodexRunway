@@ -281,6 +281,8 @@ const (
 	KeyOutputTokens                                        Key = "outputTokens"
 	KeyOutputShort                                         Key = "outputShort"
 	KeyOpenGithub                                          Key = "openGithub"
+	KeyWebsite                                             Key = "website"
+	KeyOpenWebsite                                         Key = "openWebsite"
 	KeyTokenComposition                                    Key = "tokenComposition"
 	KeyFeedbackIssue                                       Key = "feedbackIssue"
 	KeyFailed                                              Key = "failed"
@@ -923,6 +925,8 @@ var allKeys = []Key{
 	KeyOutputTokens,
 	KeyOutputShort,
 	KeyOpenGithub,
+	KeyWebsite,
+	KeyOpenWebsite,
 	KeyTokenComposition,
 	KeyFeedbackIssue,
 	KeyFailed,
@@ -1567,6 +1571,8 @@ var tables = map[Language]map[Key]string{
 		KeyOutputTokens:                          "Output tokens",
 		KeyOutputShort:                           "out",
 		KeyOpenGithub:                            "Open GitHub",
+		KeyWebsite:                               "Website",
+		KeyOpenWebsite:                           "Open Website",
 		KeyTokenComposition:                      "Token composition",
 		KeyFeedbackIssue:                         "Feedback",
 		KeyHistoricalUsage:                       "Historical usage",
@@ -2207,6 +2213,8 @@ var tables = map[Language]map[Key]string{
 		KeyOutputTokens:                          "输出 tokens",
 		KeyOutputShort:                           "输出",
 		KeyOpenGithub:                            "打开 GitHub",
+		KeyWebsite:                               "官网",
+		KeyOpenWebsite:                           "打开官网",
 		KeyTokenComposition:                      "Tokens 组成",
 		KeyFeedbackIssue:                         "反馈建议",
 		KeyHistoricalUsage:                       "历史记录",
@@ -2842,6 +2850,8 @@ var tables = map[Language]map[Key]string{
 		KeyOutputTokens:                          "輸出 tokens",
 		KeyOutputShort:                           "輸出",
 		KeyOpenGithub:                            "開啟 GitHub",
+		KeyWebsite:                               "官網",
+		KeyOpenWebsite:                           "開啟官網",
 		KeyTokenComposition:                      "Tokens 組成",
 		KeyFeedbackIssue:                         "反饋建議",
 		KeyHistoricalUsage:                       "歷史記錄",
@@ -3482,6 +3492,8 @@ var tables = map[Language]map[Key]string{
 		KeyOutputTokens:                          "출력 토큰",
 		KeyOutputShort:                           "out",
 		KeyOpenGithub:                            "GitHub 열기",
+		KeyWebsite:                               "웹사이트",
+		KeyOpenWebsite:                           "웹사이트 열기",
 		KeyTokenComposition:                      "토큰 구성",
 		KeyFeedbackIssue:                         "피드백",
 		KeyHistoricalUsage:                       "과거 사용량",
@@ -4122,6 +4134,8 @@ var tables = map[Language]map[Key]string{
 		KeyOutputTokens:                          "出力トークン",
 		KeyOutputShort:                           "out",
 		KeyOpenGithub:                            "GitHub を開く",
+		KeyWebsite:                               "公式サイト",
+		KeyOpenWebsite:                           "公式サイトを開く",
 		KeyTokenComposition:                      "トークン内訳",
 		KeyFeedbackIssue:                         "フィードバック",
 		KeyHistoricalUsage:                       "過去の使用量",
@@ -4762,6 +4776,8 @@ var tables = map[Language]map[Key]string{
 		KeyOutputTokens:                          "Выходные токены",
 		KeyOutputShort:                           "out",
 		KeyOpenGithub:                            "Открыть GitHub",
+		KeyWebsite:                               "Сайт",
+		KeyOpenWebsite:                           "Открыть сайт",
 		KeyTokenComposition:                      "Состав токенов",
 		KeyFeedbackIssue:                         "Отзыв",
 		KeyHistoricalUsage:                       "Историческое использование",
@@ -5402,6 +5418,8 @@ var tables = map[Language]map[Key]string{
 		KeyOutputTokens:                          "Jetons de sortie",
 		KeyOutputShort:                           "out",
 		KeyOpenGithub:                            "Ouvrir GitHub",
+		KeyWebsite:                               "Site web",
+		KeyOpenWebsite:                           "Ouvrir le site",
 		KeyTokenComposition:                      "Composition des jetons",
 		KeyFeedbackIssue:                         "Commentaires",
 		KeyHistoricalUsage:                       "Usage historique",

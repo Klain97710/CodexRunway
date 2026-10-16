@@ -94,6 +94,7 @@ func appIconBitmap() *ui.Bitmap {
 }
 
 const (
+	websiteURL  = "https://quosparr.com"
 	githubURL   = "https://github.com/Licoy/Quosparr"
 	feedbackURL = "https://github.com/Licoy/Quosparr/issues/new"
 
@@ -616,6 +617,11 @@ func (u *settingsUI) aboutPage(c *ui.Context) {
 		})
 	})
 	settingsGroup(c, "", "", nil, func(row rowFunc) {
+		row(l.Text(l10n.KeyWebsite), "quosparr.com", func() {
+			if PillButton(c, nil, l.Text(l10n.KeyOpenWebsite), false).Clicked() {
+				c.OpenURL(websiteURL)
+			}
+		})
 		row("GitHub", "github.com/Licoy/Quosparr", func() {
 			if PillButton(c, nil, l.Text(l10n.KeyOpenGithub), false).Clicked() {
 				c.OpenURL(githubURL)
