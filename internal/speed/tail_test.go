@@ -27,6 +27,24 @@ func TestReadTailShortFileIsWhole(t *testing.T) {
 	}
 }
 
+func TestReadTailEmptyRegularFile(t *testing.T) {
+	data, truncated, err := ReadTail(writeTemp(t, ""), 100)
+	if err != nil || truncated || len(data) != 0 {
+		t.Fatalf("data = %q, truncated = %v, err = %v", data, truncated, err)
+	}
+}
+
+func TestReadTailRejectsNonRegularFiles(t *testing.T) {
+	for name, path := range map[string]string{"directory": t.TempDir(), "device": os.DevNull} {
+		t.Run(name, func(t *testing.T) {
+			data, truncated, err := ReadTail(path, 100)
+			if err == nil || os.IsNotExist(err) || len(data) != 0 || truncated {
+				t.Fatalf("invalid log must fail explicitly: data = %q, truncated = %v, err = %v", data, truncated, err)
+			}
+		})
+	}
+}
+
 func TestReadTailDropsTheCutLine(t *testing.T) {
 	path := writeTemp(t, "first line\nsecond\nthird\n")
 	data, truncated, err := ReadTail(path, 10) // starts inside "second"
