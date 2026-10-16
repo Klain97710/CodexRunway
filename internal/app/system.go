@@ -6,7 +6,6 @@ import (
 
 	"github.com/egoist/mygo"
 	"github.com/licoy/quosparr/internal/l10n"
-	"github.com/licoy/quosparr/internal/platform"
 	"github.com/licoy/quosparr/internal/store"
 )
 
@@ -61,7 +60,7 @@ func DefaultSystem() System {
 		LoginAsync:         async,
 		PreferredLanguages: l10n.SystemPreferredLanguages,
 		SetAppearance:      setMygoAppearance,
-		FontFamilies:       platform.FontFamilies,
+		FontFamilies:       installedFontFamilies,
 		StatusBarStyles:    mac,
 		PanelBackground:    mac,
 		Widgets:            mac && macOSAtLeast(14),
