@@ -19,7 +19,7 @@ func creditsDetail(c *ui.Context, l l10n.Localizer, v runway.CodexView) {
 	}
 	ui.Column(c).Gap(16).Children(func() {
 		pageSummaryRow(c, l.Text(l10n.KeyResetCredits),
-			l.Text(l10n.KeyLastUpdated)+" "+runway.ResetCreditUpdatedAt(sum.UpdatedAt, l.Language(), nil),
+			l.Text(l10n.KeyLastUpdated)+" "+runway.CreditUpdatedText(sum.UpdatedAt, l.Language(), nil),
 			strconv.Itoa(sum.AvailableCount)+"/"+strconv.Itoa(sum.TotalCount))
 		creditStats(c, l, *sum)
 		creditRisk(c, l, *sum)

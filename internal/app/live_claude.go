@@ -48,10 +48,15 @@ func newClaudeBridge(mod *claude.Module, prefs store.Preferences, langs []string
 	return b
 }
 
-func (g *claudeBridge) State(time.Time) runway.ClaudeState {
+func (g *claudeBridge) State(now time.Time) runway.ClaudeState {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	st := g.state
+	if snap, ok := st.Detail.(*claude.UsageSnapshot); ok && snap.ResetGrants != nil && snap.ResetGrants.Shown() {
+		c := snap.ResetGrants.CodexSnapshot(now, st.UpdatedAt)
+		sum := runway.SummarizeCredits(c)
+		st.ResetCredits, st.ResetCreditSummary = &c, &sum
+	}
 	st.Widget = claudeWidget(st)
 	return st
 }
@@ -431,6 +436,10 @@ func claudeWidget(st runway.ClaudeState) *export.ProviderSnapshot {
 		if err == nil {
 			p.APIEquivalentCostUSD = &d
 		}
+	}
+	if st.ResetCreditSummary != nil {
+		r := export.NewResetCredits(st.ResetCreditSummary.AvailableCount, st.ResetCreditSummary.ExpiringCount)
+		p.ResetCredits = &r
 	}
 	out := export.NewProviderSnapshot(p)
 	return &out

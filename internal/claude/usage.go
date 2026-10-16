@@ -85,9 +85,11 @@ func (e ExtraUsage) FormatAmount(n *RawNumber) string {
 // fall back to the flat keys; if neither contains a valid window, parsing
 // returns ErrUsageParse.
 type UsageSnapshot struct {
-	Windows   []UsageWindow
-	Extra     *ExtraUsage
-	FetchedAt time.Time
+	Windows []UsageWindow
+	Extra   *ExtraUsage
+	// ResetGrants is the reset grant block, nil when absent or malformed.
+	ResetGrants *ResetGrantStatus
+	FetchedAt   time.Time
 }
 
 // ParseUsageSnapshot accepts the limits array (or object) and the flat
@@ -100,7 +102,7 @@ func ParseUsageSnapshot(raw []byte) (UsageSnapshot, error) {
 	if err := dec.Decode(&root); err != nil || root == nil {
 		return UsageSnapshot{}, ErrUsageParse
 	}
-	snap := UsageSnapshot{Extra: parseExtra(root["extra_usage"])}
+	snap := UsageSnapshot{Extra: parseExtra(root["extra_usage"]), ResetGrants: parseResetGrants(root["cedar_ember"])}
 	if limits, ok := root["limits"]; ok && limits != nil {
 		windows := parseLimits(limits)
 		if len(windows) == 0 && !emptyLimits(limits) {
@@ -172,7 +174,7 @@ func parseFlat(root map[string]any) []UsageWindow {
 
 func skipFlatKey(key string) bool {
 	switch strings.ToLower(key) {
-	case "extra_usage", "limits", "error", "type", "message":
+	case "extra_usage", "limits", "cedar_ember", "error", "type", "message":
 		return true
 	default:
 		return false

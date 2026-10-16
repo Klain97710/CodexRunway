@@ -112,7 +112,7 @@ const (
 )
 
 // ClaudeState is the Claude view used by the status bar, widget and panel.
-// It has no reset-credits fields. ExtraUsage is the raw used/limit text.
+// ExtraUsage is the raw used/limit text.
 type ClaudeState struct {
 	Availability   ClaudeAvailability
 	Accounts       AccountsView
@@ -136,6 +136,10 @@ type ClaudeState struct {
 	// API is set when the current account is an API relay account; Plan is
 	// then "API" and Meters holds the balance meter when the relay reports one.
 	API *ClaudeAPIView
+	// ResetCredits are the reset grants as reset credits, nil when the
+	// account takes no part in the reset grant program.
+	ResetCredits       *codexapi.ResetCreditsSnapshot
+	ResetCreditSummary *ResetCreditSummary
 }
 
 // ClaudeAPIView is what the panel shows of a current API relay account. It

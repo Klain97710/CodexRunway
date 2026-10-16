@@ -27,7 +27,8 @@ const (
 
 // UsageClient calls the Claude Code OAuth usage and profile endpoints.
 // Requests go through netx unless HTTP is set (tests). TLS is not disabled.
-// The URL has no skip_spend query. Version is the claude CLI version used in
+// The URL asks for the reset grant block but has no skip_spend query, which
+// would drop the extra usage spend. Version is the claude CLI version used in
 // the User-Agent claude-cli/<version> (external, cli). An empty version is
 // sent as 2.1.299.
 type UsageClient struct {
@@ -50,9 +51,9 @@ func (c *UsageClient) FetchProfile(ctx context.Context, accessToken string) ([]b
 
 func (c *UsageClient) usageURL() string {
 	if c != nil && c.Endpoint != "" {
-		return c.Endpoint
+		return c.Endpoint + "?" + resetGrantQuery
 	}
-	return usageEndpoint
+	return usageEndpoint + "?" + resetGrantQuery
 }
 
 func (c *UsageClient) profileURL() string {

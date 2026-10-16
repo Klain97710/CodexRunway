@@ -29,7 +29,7 @@ func panelBody(c *ui.Context, l l10n.Localizer, prefs store.Preferences, snap ru
 	local := grok || claude
 	first := true
 	for _, m := range store.NormalizeModuleOrder(prefs.MainPanelModuleOrder) {
-		if local && m == store.ModuleResetCredits && !(grok && snap.Grok.ResetCreditSummary != nil) {
+		if local && m == store.ModuleResetCredits && snap.Codex.ResetCreditSummary == nil {
 			continue
 		}
 		if panelModuleOn(m, prefs, local) {

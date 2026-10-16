@@ -124,7 +124,8 @@ func estimateChange(t *ui.Theme, l l10n.Localizer, s estimate.Snapshot) (string,
 // panelCredits is the reset credits summary.
 func panelCredits(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState) {
 	sum := snap.Codex.ResetCreditSummary
-	busy := snap.Refresh.Has(runway.SectionResetCredits) || (snap.Provider == store.ProviderGrok && snap.Grok.Refreshing)
+	busy := snap.Refresh.Has(runway.SectionResetCredits) || (snap.Provider == store.ProviderGrok && snap.Grok.Refreshing) ||
+		(snap.Provider == store.ProviderClaude && snap.Claude.Refreshing)
 	sectionBlock(c, first, func() {
 		drawSectionHead(c, l, st, sectionSpec{
 			title: l.Text(l10n.KeyResetCredits), refreshing: busy, refresh: sectionRefresh(acts, runway.SectionResetCredits),

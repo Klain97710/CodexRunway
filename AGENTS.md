@@ -85,7 +85,7 @@ Quosparr v1 面向 macOS、Windows、Linux，主程序使用 Go + mygo/ui 原生
 
 - v1 已正式发布（`v1.0.0`、`v1.0.1`），现有截图展示 v1 在 macOS 与 Windows 上的界面
 - 首次无偏好配置的启动显示设置并保存默认偏好，已有配置或从旧版迁移的用户普通启动时仅驻留菜单栏；主动点击设置或显式传入 `--settings` 才再次打开设置，日常 Dev 重启不附加该参数
-- Codex 支持配额窗口、订阅到期、reset credits、周额度推算与历史对比，Grok 展示官方 CLI chat-proxy 额度及 Build / Imagine / Chat 拆分、周期、预付余额和按需使用情况，Claude 展示 Claude Code 订阅用量的 5 小时、7 天、按模型周额度和额外用量
+- Codex 支持配额窗口、订阅到期、reset credits、周额度推算与历史对比，Grok 展示官方 CLI chat-proxy 额度及 Build / Imagine / Chat 拆分、周期、预付余额和按需使用情况，Claude 展示 Claude Code 订阅用量的 5 小时、7 天、按模型周额度和额外用量，以及与 Codex 共用展示的重置次数
 - Codex 与 Claude Code 另支持 API 账号（Base URL + API Key，可从站点获取模型列表；Claude 可分别映射 Opus / Sonnet / Haiku / Fable 模型），在多账号中添加、编辑与切换，并在账号列表、主面板、状态栏、悬浮窗与 Widget 显示中转站余额（new-api 类令牌额度或 OpenAI 兼容账单接口，站点不提供时明确说明，不估算）；Codex 无 Base URL 时为官方 OpenAI API Key
 - 三个供应商均保留账号管理、本地 Token 用量图表、API 等价成本与最近会话，图表支持热力图、折线图和柱状图；Codex 另有会话索引修复与公开重置动态。状态栏和 Widget 最多同时显示两个供应商，旧值 `both` 仍是 Codex + Grok；三端另有可选的置顶桌面悬浮窗（偏好对象 `floatingWindow` 仅 Go 版写入，默认省略），样式独立于状态栏，提供胶囊、卡片、圆环、电池四种，最多显示三个供应商，可调不透明度、锁定位置与是否显示在全屏应用上方；Windows 后端不支持透明内容，卡片铺满窗口并由 DWM 圆角，全屏检测为 2 秒轮询，Linux Wayland 下置顶与定位由合成器决定，三端真机交互仍待验收
 - 主应用支持浅色、深色、跟随系统，以及英文、简体中文、繁体中文、韩文、日文、俄文、法文；显示字体可选“默认”（系统字体）或本机已安装字体族，作用于主面板与设置窗口，偏好键 `fontFamily` 仅 Go 版写入，菜单栏图标保持系统字体
@@ -156,7 +156,7 @@ V1_DEVELOPMENT_PACKAGE=1 bash Scripts/package-v1-app.sh
 - 图表“官方统计（多端）”属于当前账号，可能延迟或修订；“本机日志（全部本机会话）”可能跨账号，不能视为包含关系或相减；Codex 两种按日统计均按 UTC 日界比较
 - Codex 内置 API 价格表版本为 `openai-builtin-2026-09-27`，在线官方价格表采用 `openai-docs-` 版本，未知模型不报告精确费用；订阅额度推算使用 `credits-usd-2026-08-26`，1000 Credits 约对应 40 美元，属于非官方推算
 - Grok 额度只使用官方 CLI chat-proxy `/v1/billing?format=credits`，不读取浏览器 Cookie、不从本地日志伪造额度、不混入 API 账单；API 等价成本使用本地 `turn_completed` 用量和 `xai-builtin-2026-09-27`，区分输入、缓存、输出及长上下文价格，`costUsdTicks` 不作为 API 等价成本
-- Claude 订阅用量来自非公开的 OAuth usage 端点，界面写作 “Claude Code 订阅用量”，不写成官方额度接口。API 等价成本使用本地会话日志和 `anthropic-builtin-2026-10-14`，按 message id 去重，缓存写入分 5 分钟与 1 小时，Fast 档单独计价，未知模型不给精确费用。日界用本地时区。Claude 日志没有首 token 时间，速率按端到端耗时计算
+- Claude 订阅用量来自非公开的 OAuth usage 端点，界面写作 “Claude Code 订阅用量”，不写成官方额度接口。重置次数取自同一请求附带 `cedar_ember=1` 返回的 `cedar_ember` 块（不加 `skip_spend`，以保留额外用量），只读展示、不代为使用；账号未参与、API 账号或该块缺失、格式异常时面板仍显示该模块并计为 0，Widget 只在有该块时携带重置次数。API 等价成本使用本地会话日志和 `anthropic-builtin-2026-10-14`，按 message id 去重，缓存写入分 5 分钟与 1 小时，Fast 档单独计价，未知模型不给精确费用。日界用本地时区。Claude 日志没有首 token 时间，速率按端到端耗时计算
 
 ### 提交与推送边界
 
