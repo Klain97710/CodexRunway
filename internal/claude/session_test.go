@@ -264,6 +264,134 @@ func TestSpeedSamplesCarryTier(t *testing.T) {
 	}
 }
 
+func TestSpeedDuplicateKeepsOriginalRequestTime(t *testing.T) {
+	home := t.TempDir()
+	config := filepath.Join(home, "cfg")
+	dir := filepath.Join(config, "projects", "demo")
+	mustMkdir(t, dir)
+	base := time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC)
+	writeJSONL(t, filepath.Join(dir, "speed.jsonl"),
+		`{"type":"user","sessionId":"s","timestamp":"2026-10-16T00:00:00Z"}`,
+		`{"type":"assistant","sessionId":"s","timestamp":"2026-10-16T00:00:10Z","message":{"id":"msg_same","model":"claude-opus-4-8","usage":{"output_tokens":100},"content":[{"type":"tool_use"}]}}`,
+		`{"type":"tool_result","sessionId":"s","timestamp":"2026-10-16T00:00:11Z"}`,
+		`{"type":"assistant","sessionId":"s","timestamp":"2026-10-16T00:00:12Z","message":{"id":"msg_same","model":"claude-opus-4-8","usage":{"output_tokens":100},"content":[{"type":"tool_use"}]}}`,
+	)
+	sessions, err := (SessionScanner{ConfigDir: config, Home: home}).SpeedSessions(context.Background(), base.Add(time.Hour))
+	if err != nil || len(sessions) != 1 || len(sessions[0].Samples) != 1 {
+		t.Fatalf("scan err=%v sessions=%+v", err, sessions)
+	}
+	sample := sessions[0].Samples[0]
+	if !sample.At.Equal(base) || sample.Decode != 12*time.Second {
+		t.Fatalf("sample %+v", sample)
+	}
+}
+
+func TestSpeedDuplicateDoesNotBorrowLaterParent(t *testing.T) {
+	home := t.TempDir()
+	config := filepath.Join(home, "cfg")
+	dir := filepath.Join(config, "projects", "demo")
+	mustMkdir(t, dir)
+	base := time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC)
+	writeJSONL(t, filepath.Join(dir, "speed.jsonl"),
+		`{"type":"assistant","sessionId":"s","timestamp":"2026-10-16T00:00:10Z","message":{"id":"msg_same","model":"claude-opus-4-8","usage":{"output_tokens":100}}}`,
+		`{"type":"tool_result","sessionId":"s","timestamp":"2026-10-16T00:00:11Z"}`,
+		`{"type":"assistant","sessionId":"s","timestamp":"2026-10-16T00:00:12Z","message":{"id":"msg_same","model":"claude-opus-4-8","usage":{"output_tokens":200}}}`,
+	)
+	sessions, err := (SessionScanner{ConfigDir: config, Home: home}).SpeedSessions(context.Background(), base.Add(time.Hour))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sessions) != 0 {
+		t.Fatalf("later tool result fabricated a request start: %+v", sessions)
+	}
+}
+
+func TestSpeedDedupKeepsEarliestKnownParentAcrossMergeOrder(t *testing.T) {
+	base := time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC)
+	records := []usageRecord{
+		{at: base.Add(10 * time.Second), hasTime: true, firstAt: base.Add(10 * time.Second), hasFirst: true, parent: base, hasParent: true, parts: TokenParts{Output: 100}, toolUse: true},
+		{at: base.Add(12 * time.Second), hasTime: true, firstAt: base.Add(12 * time.Second), hasFirst: true, parent: base.Add(11 * time.Second), hasParent: true, parts: TokenParts{Output: 200}},
+		{at: base.Add(13 * time.Second), hasTime: true, firstAt: base.Add(13 * time.Second), hasFirst: true, parts: TokenParts{Output: 300}},
+	}
+	for _, order := range [][]int{{0, 1, 2}, {2, 1, 0}} {
+		sink := newScanSink("")
+		for _, i := range order {
+			part := newScanSink("")
+			part.keepKey("message", records[i])
+			sink.merge(part)
+		}
+		got := sink.kept["message"]
+		if got.parts.Output != 300 || !got.at.Equal(base.Add(13*time.Second)) || !got.toolUse {
+			t.Fatalf("order %v changed usage selection: %+v", order, got)
+		}
+		if !got.hasParent || !got.parent.Equal(base) {
+			t.Fatalf("order %v parent %+v", order, got)
+		}
+	}
+	for _, order := range [][]int{{0, 1}, {1, 0}} {
+		withoutParent := []usageRecord{
+			{firstAt: base.Add(10 * time.Second), hasFirst: true, parts: TokenParts{Output: 100}},
+			{firstAt: base.Add(12 * time.Second), hasFirst: true, parent: base.Add(11 * time.Second), hasParent: true, parts: TokenParts{Output: 200}},
+		}
+		sink := newScanSink("")
+		for _, i := range order {
+			part := newScanSink("")
+			part.keepKey("message", withoutParent[i])
+			sink.merge(part)
+		}
+		if sink.kept["message"].hasParent {
+			t.Fatalf("order %v borrowed the later parent", order)
+		}
+	}
+
+	sink := newScanSink("")
+	sink.keepKey("unknown", usageRecord{parts: TokenParts{Output: 1}})
+	sink.keepKey("unknown", usageRecord{parts: TokenParts{Output: 2}})
+	if sink.kept["unknown"].hasParent {
+		t.Fatal("missing parent must stay missing")
+	}
+}
+
+func TestSpeedScanPropagatesSessionFileReadError(t *testing.T) {
+	home := t.TempDir()
+	path := filepath.Join(home, "cfg", "projects", "demo", "speed.jsonl")
+	mustMkdir(t, filepath.Dir(path))
+	writeJSONL(t, path, `{"type":"assistant","sessionId":"s","timestamp":"2026-10-16T00:00:01Z","message":{"id":"m","model":"claude-opus-4-8","usage":{"output_tokens":1}}}`)
+	if err := os.Chmod(path, 0); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(path, 0o600)
+	if f, err := os.Open(path); err == nil {
+		f.Close()
+		t.Skip("filesystem does not enforce unreadable file permissions")
+	}
+	cache := &SessionCache{}
+	_, err := (SessionScanner{ConfigDir: filepath.Join(home, "cfg"), Home: home, Cache: cache}).ScanSpeed(context.Background(), time.Date(2026, 10, 16, 1, 0, 0, 0, time.UTC))
+	if err == nil {
+		t.Fatal("unreadable session file must fail the scan")
+	}
+	if len(cache.files) != 0 {
+		t.Fatalf("failed parse cached %d files", len(cache.files))
+	}
+}
+
+func TestSpeedScanPropagatesProjectsWalkError(t *testing.T) {
+	home := t.TempDir()
+	dir := filepath.Join(home, "cfg", "projects", "locked")
+	mustMkdir(t, dir)
+	writeJSONL(t, filepath.Join(dir, "speed.jsonl"), `{}`)
+	if err := os.Chmod(dir, 0); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(dir, 0o700)
+	if _, err := os.ReadDir(dir); err == nil {
+		t.Skip("filesystem does not enforce unreadable directory permissions")
+	}
+	if _, err := (SessionScanner{ConfigDir: filepath.Join(home, "cfg"), Home: home}).ScanSpeed(context.Background(), time.Date(2026, 10, 16, 1, 0, 0, 0, time.UTC)); err == nil {
+		t.Fatal("projects walk error must fail the scan")
+	}
+}
+
 func itemByID(t *testing.T, res SessionUsageSummary, id string) SessionItem {
 	t.Helper()
 	for _, item := range res.RecentItems {
