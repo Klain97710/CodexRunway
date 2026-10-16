@@ -56,14 +56,19 @@ func accentButton(c *ui.Context, icon *ui.SVG, title string, disabled bool) ui.E
 // privacyButton is AccountPrivacyModeButton: the eye of the header and the
 // accounts toolbar. Privacy on shows the slashed eye in the accent color.
 func privacyButton(c *ui.Context, l l10n.Localizer, on bool, w, h, radius float32) ui.Element {
+	return toggleIconButton(c, pick(on, icEyeOff, icEye), l.Text(l10n.KeyAccountPrivacyMode), on, w, h, radius)
+}
+
+// toggleIconButton is an icon switch: on shows the icon in the accent color
+// on a neutral wash.
+func toggleIconButton(c *ui.Context, icon *ui.SVG, title string, on bool, w, h, radius float32) ui.Element {
 	t := c.Theme()
-	title := l.Text(l10n.KeyAccountPrivacyMode)
 	b := ui.ButtonBase(c).Label(title).Tooltip(title).Size(w, h).Radius(radius).AlignItems(ui.Center).Justify(ui.Center).Cursor(ui.CursorPointer)
 	hovered := b.Hovered()
-	icon, ink := icEye, inkSecondary(t)
+	ink := inkSecondary(t)
 	switch {
 	case on:
-		icon, ink = icEyeOff, brandInk(t, t.Accent)
+		ink = brandInk(t, t.Accent)
 	case hovered:
 		ink = t.Text
 	}
