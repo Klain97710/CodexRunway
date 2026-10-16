@@ -56,8 +56,10 @@ type GrokState struct {
 	Cost           *usage.Summary
 	Heatmap        HeatmapData
 	RecentSessions []sessions.Item
-	// Speed is the model speed of the recent Grok sessions, nil until read.
+	// Speed is the model speed of the recent Grok sessions, nil until read;
+	// SpeedError is the error of its last scan.
 	Speed              *speed.Report
+	SpeedError         string
 	ResetCredits       *codexapi.ResetCreditsSnapshot
 	ResetCreditSummary *ResetCreditSummary
 }
@@ -127,7 +129,10 @@ type ClaudeState struct {
 	Cost           *usage.Summary
 	Heatmap        HeatmapData
 	RecentSessions []sessions.Item
-	Speed          *speed.Report
+	// Speed is the model speed of recent Claude sessions; SpeedError is the
+	// error of its last scan.
+	Speed      *speed.Report
+	SpeedError string
 	// ExtraUsage is the unconverted extra-usage line, "" when absent.
 	ExtraUsage string
 	// Gateway is set when settings.json names a gateway env key and a

@@ -201,9 +201,21 @@ func TestEnablingSpeedWhileGrokIsSelectedRescansGrok(t *testing.T) {
 func TestGrokSpeedPassesThroughTheSnapshot(t *testing.T) {
 	f := newFake(t)
 	r := speedReport(t0)
-	g := &fakeGrok{state: GrokState{Speed: &r}}
+	g := &fakeGrok{state: GrokState{Speed: &r, SpeedError: "grok sessions unreadable"}}
 	s, _ := newService(t, f, func(o *Options) { o.Grok = g; o.Preferences.SelectedProvider = store.ProviderGrok })
-	if got := refreshAll(t, s).Grok.Speed; got == nil || got.Empty() {
-		t.Fatalf("grok speed = %+v", got)
+	got := refreshAll(t, s).Grok
+	if got.Speed == nil || got.Speed.Empty() || got.SpeedError != g.state.SpeedError {
+		t.Fatalf("grok speed = %+v, error %q", got.Speed, got.SpeedError)
+	}
+}
+
+func TestClaudeSpeedPassesThroughTheSnapshot(t *testing.T) {
+	f := newFake(t)
+	r := speedReport(t0)
+	c := &fakeClaude{state: ClaudeState{Speed: &r, SpeedError: "claude sessions unreadable"}}
+	s, _ := newService(t, f, func(o *Options) { o.Claude = c; o.Preferences.SelectedProvider = store.ProviderClaude })
+	got := refreshAll(t, s).Claude
+	if got.Speed == nil || got.Speed.Empty() || got.SpeedError != c.state.SpeedError {
+		t.Fatalf("claude speed = %+v, error %q", got.Speed, got.SpeedError)
 	}
 }

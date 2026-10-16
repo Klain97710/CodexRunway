@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/licoy/quosparr/internal/export"
@@ -35,34 +36,36 @@ func (g *grokBridge) scanLocal(ctx context.Context) error {
 	}
 	scanner := grok.SessionScanner{GrokHome: g.mod.Store.OfficialHome(), Location: time.Local}
 	local, err := scanner.Scan(ctx, opts)
-	report := scanGrokSpeed(ctx, scanner, p, opts.Now)
+	report, speedErr := scanGrokSpeed(ctx, scanner, p, opts.Now)
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if gen != g.generation || ctx.Err() != nil {
 		return ctx.Err()
 	}
 	g.localErr = err
-	g.speed = report
 	if err == nil {
 		g.local = &local
 		g.localRange = p.APICostSummaryRange
 	}
-	return err
+	g.speedErr = speedErr
+	if speedErr == nil {
+		g.speed = report
+	}
+	return errors.Join(err, speedErr)
 }
 
-// scanGrokSpeed is the model speed report of the newest Grok sessions, nil when
-// the module is hidden. A failed scan is no report rather than a panel error:
-// the other local data does not depend on it.
-func scanGrokSpeed(ctx context.Context, scanner grok.SessionScanner, p store.Preferences, now time.Time) *speed.Report {
+// scanGrokSpeed is the model speed report of the newest Grok sessions, nil
+// without an error when the module is hidden.
+func scanGrokSpeed(ctx context.Context, scanner grok.SessionScanner, p store.Preferences, now time.Time) (*speed.Report, error) {
 	if !p.ShowsSpeedAnalysis {
-		return nil
+		return nil, nil
 	}
 	list, err := scanner.ScanSpeed(ctx, now)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	report := speed.Build(list, now)
-	return &report
+	return &report, nil
 }
 
 func grokCostWindow(r store.CostRange, detail any, now time.Time) usage.Window {

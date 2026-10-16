@@ -23,7 +23,7 @@ func providerView(l l10n.Localizer, snap runway.Snapshot, displayRange store.Cos
 		return snap.Codex
 	}
 	g := snap.Grok
-	v := runway.CodexView{Meters: g.Meters, Heatmap: g.Heatmap, DisplayedCost: g.Cost, DisplayedRange: displayRange, Cost: g.Cost, ResetCredits: g.ResetCredits, ResetCreditSummary: g.ResetCreditSummary, RecentSessions: g.RecentSessions, Speed: g.Speed}
+	v := runway.CodexView{Meters: g.Meters, Heatmap: g.Heatmap, DisplayedCost: g.Cost, DisplayedRange: displayRange, Cost: g.Cost, ResetCredits: g.ResetCredits, ResetCreditSummary: g.ResetCreditSummary, RecentSessions: g.RecentSessions, Speed: g.Speed, SpeedError: g.SpeedError}
 	if g.Cost != nil {
 		d := runway.DisplayCost(l, *g.Cost, displayRange, "", time.Now())
 		v.CostText, v.CostSubtitle, v.CostLines = d.Text, d.Subtitle, d.Lines
@@ -35,7 +35,7 @@ func providerView(l l10n.Localizer, snap runway.Snapshot, displayRange store.Cos
 }
 
 func claudeAsCodexView(l l10n.Localizer, g runway.ClaudeState, displayRange store.CostRange) runway.CodexView {
-	v := runway.CodexView{Meters: g.Meters, Heatmap: g.Heatmap, DisplayedCost: g.Cost, DisplayedRange: displayRange, Cost: g.Cost, ResetCredits: g.ResetCredits, ResetCreditSummary: g.ResetCreditSummary, RecentSessions: g.RecentSessions, Speed: withoutTTFT(g.Speed)}
+	v := runway.CodexView{Meters: g.Meters, Heatmap: g.Heatmap, DisplayedCost: g.Cost, DisplayedRange: displayRange, Cost: g.Cost, ResetCredits: g.ResetCredits, ResetCreditSummary: g.ResetCreditSummary, RecentSessions: g.RecentSessions, Speed: withoutTTFT(g.Speed), SpeedError: g.SpeedError}
 	if g.Cost != nil {
 		d := runway.DisplayCost(l, *g.Cost, displayRange, "", time.Now())
 		v.CostText, v.CostSubtitle, v.CostLines = d.Text, d.Subtitle, d.Lines

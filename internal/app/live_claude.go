@@ -33,6 +33,7 @@ type claudeBridge struct {
 	localRange store.CostRange
 	localErr   error
 	speed      *speed.Report
+	speedErr   error
 	generation uint64
 	gateway    bool
 	refreshMu  sync.Mutex
@@ -109,6 +110,7 @@ func (g *claudeBridge) setPreferences(p store.Preferences, langs []string) {
 	}
 	if speedChanged && !p.ShowsSpeedAnalysis {
 		g.speed = nil
+		g.speedErr = nil
 	}
 	if rangeChanged {
 		g.state.Cost = nil
@@ -148,6 +150,7 @@ func (g *claudeBridge) reload(notify bool) {
 }
 
 func (g *claudeBridge) relabelLocked(st *runway.ClaudeState) {
+	st.SpeedError = ""
 	if st.API != nil {
 		relabelClaudeAPI(g.lc, st)
 	} else {
@@ -159,6 +162,9 @@ func (g *claudeBridge) relabelLocked(st *runway.ClaudeState) {
 	}
 	if g.localErr != nil {
 		st.LastError = g.lc.Text(l10n.KeyStatusError) + ": " + g.localErr.Error()
+	}
+	if g.prefs.ShowsSpeedAnalysis && g.speedErr != nil {
+		st.SpeedError = g.speedErr.Error()
 	}
 }
 

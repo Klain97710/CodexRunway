@@ -644,6 +644,7 @@ type grokBridge struct {
 	localRange store.CostRange
 	localErr   error
 	speed      *speed.Report
+	speedErr   error
 	generation uint64
 	refreshMu  sync.Mutex
 	scanMu     sync.Mutex
@@ -709,6 +710,7 @@ func (g *grokBridge) setPreferences(p store.Preferences, langs []string) {
 	}
 	if speedChanged && !p.ShowsSpeedAnalysis {
 		g.speed = nil
+		g.speedErr = nil
 	}
 	if rangeChanged {
 		g.state.Cost = nil
@@ -751,11 +753,15 @@ func (g *grokBridge) reload(notify bool) {
 // before the language changed; preferences themselves never reread the index.
 func (g *grokBridge) relabelLocked(st *runway.GrokState) {
 	st.LastError = grokErrorText(g.lc, st.Availability)
+	st.SpeedError = ""
 	if snap, ok := st.Detail.(*grok.BillingSnapshot); ok {
 		st.Meters = grokMeters(g.lc, *snap, st.UpdatedAt)
 	}
 	if g.localErr != nil {
 		st.LastError = g.lc.Text(l10n.KeyStatusError) + ": " + g.localErr.Error()
+	}
+	if g.prefs.ShowsSpeedAnalysis && g.speedErr != nil {
+		st.SpeedError = g.speedErr.Error()
 	}
 }
 
