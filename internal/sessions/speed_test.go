@@ -231,6 +231,7 @@ func TestScanSpeedFileReadsOnlyTheTail(t *testing.T) {
 	// An old turn, then more than the tail limit of filler, then a new turn.
 	l.taskStarted(0)
 	l.turnContext(0, "old", "")
+	l.settings(0, "priority")
 	l.item(2, "Reasoning", 1)
 	l.record(3, 10)
 	filler := fmt.Sprintf(`{"type":"event_msg","payload":{"type":"exec_command_output_delta","chunk":%q}}`+"\n", strings.Repeat("x", 1<<20))
@@ -239,12 +240,35 @@ func TestScanSpeedFileReadsOnlyTheTail(t *testing.T) {
 	}
 	l.taskStarted(100)
 	l.turnContext(100, "new", "high")
+	l.settings(100, "default")
 	l.item(102, "Reasoning", 101)
 	l.record(103, 20)
 
 	samples := scanOneFile(t, l)
-	if len(samples) != 1 || samples[0].Model != "new" {
+	if len(samples) != 1 || samples[0].Model != "new" || samples[0].Effort != "high" || samples[0].Tier != speed.TierStandard {
 		t.Fatalf("samples = %+v", samples)
+	}
+}
+
+func TestScanSpeedFileRestoresContextBeforeTail(t *testing.T) {
+	l := &speedLog{base: time.Date(2026, 10, 16, 0, 0, 0, 0, time.UTC)}
+	l.taskStarted(0)
+	l.turnContext(0, "gpt-old", "low")
+	l.settings(0, "default")
+	l.turnContext(1, "gpt-test", "high")
+	l.settings(1, "priority")
+	filler := fmt.Sprintf(`{"type":"event_msg","payload":{"type":"exec_command_output_delta","chunk":%q}}`+"\n", strings.Repeat("x", speed.TailBytes+1))
+	l.sb.WriteString(filler)
+	l.toolOutput(100, "function_call_output")
+	l.item(102, "Reasoning", 101)
+	l.record(103, 100)
+
+	samples := scanOneFile(t, l)
+	if len(samples) != 1 {
+		t.Fatalf("samples = %+v", samples)
+	}
+	if got := samples[0]; got.Model != "gpt-test" || got.Effort != "high" || got.Tier != speed.TierFast {
+		t.Fatalf("restored context = %+v", got)
 	}
 }
 
