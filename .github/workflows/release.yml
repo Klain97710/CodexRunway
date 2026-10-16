@@ -36,14 +36,9 @@ jobs:
           # The in-app update window shows only the changelog, not install hints
           cp release-notes.md update-notes.md
           if ! grep -q '[^[:space:]]' release-notes.md; then
-            printf 'macOS builds for Apple Silicon and Intel.\n' > release-notes.md
+            printf 'Builds for macOS, Windows and Linux.\n' > release-notes.md
           fi
-          cat >> release-notes.md <<'EOF'
-
-          These builds are ad-hoc signed and not notarized. Prefer the .dmg download for manual install; if macOS blocks the app, use right-click Open or Privacy & Security > Open Anyway.
-          Desktop widgets are included and require macOS 14 or later.
-          EOF
-          printf '\nWindows installers support per-user updates; Linux archives support user-directory installs and Debian packages use the system package manager.\n' >> release-notes.md
+          # Per-OS download links are appended in v1-release from the final assets
       - uses: actions/upload-artifact@v7
         with:
           name: release-notes
@@ -274,6 +269,8 @@ jobs:
           go run ./Scripts/release-assets notes -config "$RUNNER_TEMP/v1-release-config/mygo.json" -dir dist-v1 -notes update-notes.md
           python3 Scripts/release-checksums.py write dist-v1
           bash Scripts/verify-v1-release.sh "$PWD/dist-v1" "$RUNNER_TEMP/v1-release-config/mygo.json"
+      - name: Append per-OS download links to release notes
+        run: bash Scripts/release-download-notes.sh dist-v1 "$GITHUB_REF_NAME" "$GITHUB_REPOSITORY" >> release-notes.md
       # Distribution preparation is paused together with public publication
       # - name: Prepare Homebrew Cask
       #   if: needs.v1-preflight.outputs.channel == 'stable'
