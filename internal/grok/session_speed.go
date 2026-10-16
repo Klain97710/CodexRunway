@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"sort"
 	"time"
@@ -16,7 +17,7 @@ import (
 // ScanSpeed reads the model speed samples of the newest speed.SessionLimit
 // sessions updated within speed.Window before now, newest first. Only the end
 // of each log is read; a missing sessions directory is an empty result, an
-// unreadable log skips its session.
+// unreadable log fails the scan.
 func (s SessionScanner) ScanSpeed(ctx context.Context, now time.Time) ([]speed.Session, error) {
 	summaries, err := s.listSummaries(ctx, speed.SessionLimit)
 	if err != nil {
@@ -24,7 +25,6 @@ func (s SessionScanner) ScanSpeed(ctx context.Context, now time.Time) ([]speed.S
 	}
 	cutoff := now.Add(-speed.Window)
 	var result []speed.Session
-	var firstErr error
 	for _, sum := range summaries {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -37,18 +37,12 @@ func (s SessionScanner) ScanSpeed(ctx context.Context, now time.Time) ([]speed.S
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
 			}
-			if firstErr == nil {
-				firstErr = err
-			}
-			continue
+			return nil, err
 		}
 		result = append(result, speed.Session{
 			ID: sum.id, Title: sum.title, ProjectName: sum.projectName,
 			UpdatedAt: sum.updatedAt, Samples: samples,
 		})
-	}
-	if len(result) == 0 && firstErr != nil {
-		return nil, firstErr
 	}
 	sort.SliceStable(result, func(i, j int) bool { return result[i].UpdatedAt.After(result[j].UpdatedAt) })
 	return result[:min(len(result), speed.SessionLimit)], nil
@@ -61,7 +55,17 @@ func scanSessionSpeed(ctx context.Context, sum sessionSummaryFile) ([]speed.Samp
 	if sum.model != nil {
 		model = *sum.model
 	}
-	events, eventsCut, err := readSpeedLog(filepath.Join(sum.directory, "events.jsonl"))
+	eventsPath := filepath.Join(sum.directory, "events.jsonl")
+	updatesPath := filepath.Join(sum.directory, "updates.jsonl")
+	beforeEvents, err := speedLogStateAt(eventsPath)
+	if err != nil {
+		return nil, err
+	}
+	beforeUpdates, err := speedLogStateAt(updatesPath)
+	if err != nil {
+		return nil, err
+	}
+	events, _, err := readSpeedLog(eventsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +73,7 @@ func scanSessionSpeed(ctx context.Context, sum sessionSummaryFile) ([]speed.Samp
 	if err := speed.EachLine(ctx, events, cur.line); err != nil {
 		return nil, err
 	}
-	updates, updatesCut, err := readSpeedLog(filepath.Join(sum.directory, "updates.jsonl"))
+	updates, _, err := readSpeedLog(updatesPath)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +82,39 @@ func scanSessionSpeed(ctx context.Context, sum sessionSummaryFile) ([]speed.Samp
 		return nil, err
 	}
 	samples := cur.samples
-	return append(samples, outputSamples(cur.ended, done.turns, eventsCut || updatesCut, sum.effort)...), nil
+	afterEvents, err := speedLogStateAt(eventsPath)
+	if err != nil {
+		return nil, err
+	}
+	afterUpdates, err := speedLogStateAt(updatesPath)
+	if err != nil {
+		return nil, err
+	}
+	if beforeEvents != afterEvents || beforeUpdates != afterUpdates {
+		return samples, nil
+	}
+	turns := cur.ended
+	if cur.cur != nil {
+		turns = append(turns, *cur.cur)
+	}
+	return append(samples, outputSamples(turns, done.turns, sum.effort)...), nil
+}
+
+type speedLogState struct {
+	exists   bool
+	size     int64
+	modified int64
+}
+
+func speedLogStateAt(path string) (speedLogState, error) {
+	info, err := os.Stat(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return speedLogState{}, nil
+	}
+	if err != nil {
+		return speedLogState{}, err
+	}
+	return speedLogState{exists: true, size: info.Size(), modified: info.ModTime().UnixNano()}, nil
 }
 
 // readSpeedLog is the tail of a session log; a log that does not exist yet
@@ -109,9 +145,10 @@ type speedEvent struct {
 
 // speedTurn is a turn that started and ended in the log.
 type speedTurn struct {
-	at    time.Time
-	model string
-	ttfts []time.Duration
+	at      time.Time
+	endedAt time.Time
+	model   string
+	ttfts   []time.Duration
 }
 
 // speedEvents follows the turns of events.jsonl. A model call is the wait from
@@ -147,6 +184,7 @@ func (e *speedEvents) line(line []byte) {
 	case ev.Type == "first_token":
 		e.firstToken(at)
 	case ev.Type == "turn_ended" && e.cur != nil:
+		e.cur.endedAt = at
 		e.ended = append(e.ended, *e.cur)
 		e.cur = nil
 	}
@@ -191,6 +229,7 @@ var speedMarkTurnCompleted = []byte(`"sessionUpdate":"turn_completed"`)
 
 // speedCompletion is the usage of one turn_completed record.
 type speedCompletion struct {
+	at        time.Time
 	hasUsage  bool
 	output    int64
 	apiMillis int64
@@ -198,7 +237,8 @@ type speedCompletion struct {
 }
 
 type speedUpdateLine struct {
-	Params struct {
+	Timestamp int64 `json:"timestamp"`
+	Params    struct {
 		Update struct {
 			SessionUpdate string `json:"sessionUpdate"`
 			Usage         *struct {
@@ -220,57 +260,21 @@ func (c *speedCompletions) line(line []byte) {
 	if json.Unmarshal(line, &l) != nil || l.Params.Update.SessionUpdate != "turn_completed" {
 		return
 	}
+	at := time.Time{}
+	if l.Timestamp > 0 {
+		at = time.Unix(l.Timestamp, 0)
+	}
 	u := l.Params.Update.Usage
 	if u == nil {
-		c.turns = append(c.turns, speedCompletion{})
+		c.turns = append(c.turns, speedCompletion{at: at})
 		return
 	}
+	calls := int64(u.ModelCalls)
+	if u.ModelCalls != float64(calls) {
+		calls = 0
+	}
 	c.turns = append(c.turns, speedCompletion{
-		hasUsage: true, output: int64(u.OutputTokens), apiMillis: int64(u.APIDurationMs), calls: int64(u.ModelCalls),
+		at: at, hasUsage: true, output: int64(u.OutputTokens),
+		apiMillis: int64(u.APIDurationMs), calls: calls,
 	})
-}
-
-// ---- pairing ----
-
-// outputSamples pairs the ended turns of events.jsonl with the turn_completed
-// records of updates.jsonl, which share no id: the Nth of one is the Nth of
-// the other. Unequal counts pair only when a log was cut at its start, from
-// the end; otherwise the logs disagree and no output sample is made.
-func outputSamples(turns []speedTurn, done []speedCompletion, cut bool, effort string) []speed.Sample {
-	if len(turns) != len(done) {
-		if !cut {
-			return nil
-		}
-		n := min(len(turns), len(done))
-		turns, done = turns[len(turns)-n:], done[len(done)-n:]
-	}
-	var out []speed.Sample
-	for i, turn := range turns {
-		if s, ok := outputSample(turn, done[i], effort); ok {
-			out = append(out, s)
-		}
-	}
-	return out
-}
-
-// outputSample is the streaming part of one turn: the API time minus the waits
-// for the first token. A call that logged no first_token is charged the
-// turn's average wait, so that wait does not count as streaming.
-func outputSample(turn speedTurn, done speedCompletion, effort string) (speed.Sample, bool) {
-	if !done.hasUsage || done.output <= 0 || len(turn.ttfts) == 0 || turn.model == "" {
-		return speed.Sample{}, false
-	}
-	var waits time.Duration
-	for _, w := range turn.ttfts {
-		waits += w
-	}
-	calls := max(done.calls, int64(len(turn.ttfts)))
-	waits = waits / time.Duration(len(turn.ttfts)) * time.Duration(calls)
-	decode := time.Duration(done.apiMillis)*time.Millisecond - waits
-	if decode <= 0 {
-		return speed.Sample{}, false
-	}
-	return speed.Sample{
-		At: turn.at, Model: turn.model, Effort: effort, OutputTokens: done.output, Decode: decode,
-	}, true
 }

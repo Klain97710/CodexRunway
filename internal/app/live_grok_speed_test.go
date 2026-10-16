@@ -35,7 +35,7 @@ func writeGrokSpeedSession(t *testing.T, home string, now time.Time) {
 		`{"ts":%q,"type":"first_token"}`+"\n"+
 		`{"ts":%q,"type":"turn_ended"}`+"\n",
 		ts(0), ts(1), ts(2), ts(10), ts(13), ts(20))
-	updates := `{"params":{"update":{"sessionUpdate":"turn_completed","usage":{"inputTokens":100,"outputTokens":400,"apiDurationMs":14000,"modelCalls":2}}}}` + "\n"
+	updates := fmt.Sprintf(`{"timestamp":%d,"params":{"update":{"sessionUpdate":"turn_completed","usage":{"inputTokens":100,"outputTokens":400,"apiDurationMs":14000,"modelCalls":2}}}}`+"\n", now.Add(-10*time.Second).Unix())
 	summary := fmt.Sprintf(`{"info":{"id":"speed-one","cwd":"/synthetic"},"generated_title":"Synthetic","current_model_id":"grok-synthetic","reasoning_effort":"high","last_active_at":%q}`,
 		now.UTC().Format(time.RFC3339))
 	for name, content := range map[string]string{"summary.json": summary, "events.jsonl": events, "updates.jsonl": updates} {
