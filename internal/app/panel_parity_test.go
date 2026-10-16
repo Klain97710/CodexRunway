@@ -3,6 +3,7 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -152,7 +153,7 @@ func TestPanelParityCurrentSubscriptionVisibleWithOrWithoutSidebar(t *testing.T)
 	}
 }
 
-func TestPanelParityCreditsBalanceBesideSubscription(t *testing.T) {
+func TestPanelParityCreditsBalanceClosesQuotaSection(t *testing.T) {
 	snap := panelFixture()
 	expiry := time.Date(2026, 11, 7, 12, 0, 0, 0, time.Local)
 	balance := 42.5
@@ -164,11 +165,18 @@ func TestPanelParityCreditsBalanceBesideSubscription(t *testing.T) {
 	a, tt := newPanel(t, func(p *store.Preferences) {
 		p.Language = store.LanguageSimplifiedChinese
 	}, snap, PanelActions{})
-	if !hasExact(tt, a.L().Text(l10n.KeyCreditsBalance)) || !hasExact(tt, "42.50") {
-		t.Fatalf("credits balance chip missing; texts %q", tt.Texts())
+	l := a.L()
+	texts := tt.Texts()
+	label := slices.Index(texts, l.Text(l10n.KeyCreditsBalance))
+	amount := slices.Index(texts, "42.50")
+	expiryAt := slices.Index(texts, "2026/11/7")
+	quota := slices.Index(texts, l.Text(l10n.KeyQuota))
+	meter := slices.Index(texts, l10n.Format("%d%% %s", 70, l.Text(l10n.KeyLeft)))
+	if label < 0 || amount < 0 || expiryAt < 0 || quota < 0 || meter < 0 {
+		t.Fatalf("credits, subscription or quota text missing; texts %q", texts)
 	}
-	if !hasExact(tt, "2026/11/7") {
-		t.Fatalf("subscription chip missing beside credits; texts %q", tt.Texts())
+	if !(expiryAt < quota && meter < label && label < amount) {
+		t.Fatalf("credits balance should follow the last quota meter, not the subscription chip; texts %q", texts)
 	}
 }
 

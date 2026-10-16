@@ -106,8 +106,8 @@ type Preferences struct {
 	// ShowsSpeedAnalysis is Go-only: the speed analysis module, on by default
 	// and written only when turned off.
 	ShowsSpeedAnalysis bool `json:"showsSpeedAnalysis"`
-	// ShowsCreditsBalance is Go-only: display ChatGPT credits balance beside
-	// the subscription badge when available. On by default and written only when
+	// ShowsCreditsBalance is Go-only: display ChatGPT credits balance as the
+	// last row of the Codex quota section when available. On by default and written only when
 	// turned off.
 	ShowsCreditsBalance bool `json:"showsCreditsBalance"`
 	// FloatingWindow is Go-only: the desktop floating window, omitted while

@@ -39,18 +39,8 @@ func panelHeader(c *ui.Context, a *App, l l10n.Localizer, prefs store.Preference
 			return
 		}
 		codexIdentityRow(c, a, l, prefs, snap)
-		exp := snap.Accounts.Display.SubscriptionExpiresAt
-		balance, hasBalance := codexCreditsBalance(snap)
-		showCredits := prefs.ShowsCreditsBalance && hasBalance
-		if exp != nil || showCredits {
-			ui.Row(c).Padding(6, 0, 0, 0).Gap(6).Wrap().Children(func() {
-				if exp != nil {
-					expiryBadge(c, l, *exp, time.Now())
-				}
-				if showCredits {
-					creditsBalanceBadge(c, l, balance)
-				}
-			})
+		if exp := snap.Accounts.Display.SubscriptionExpiresAt; exp != nil {
+			ui.Row(c).Padding(6, 0, 0, 0).Children(func() { expiryBadge(c, l, *exp, time.Now()) })
 		}
 	})
 }
