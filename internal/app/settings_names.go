@@ -130,7 +130,7 @@ func windowModeKey(v store.WindowMode) l10n.Key {
 // moduleInfo is how the settings show a main panel module.
 type moduleInfo struct {
 	title, subtitle l10n.Key
-	// both is true for modules that apply to Codex and Grok.
+	// both is true for modules that apply to Codex, Claude and Grok.
 	both bool
 	icon *ui.SVG
 	// config: the module has settings of its own; configWhenHidden keeps
