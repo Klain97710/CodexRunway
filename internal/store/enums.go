@@ -256,13 +256,14 @@ const (
 	ModuleAPICost             Module = "apiCost"
 	ModuleSessionRepair       Module = "sessionRepair"
 	ModuleRecentSessions      Module = "recentSessions"
+	ModuleSkills              Module = "skills"
 )
 
 // Modules returns every Module in the default panel order.
 func Modules() []Module {
 	return []Module{
 		ModuleQuota, ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate,
-		ModuleResetCredits, ModuleAPICost, ModuleSessionRepair, ModuleRecentSessions,
+		ModuleResetCredits, ModuleAPICost, ModuleSessionRepair, ModuleRecentSessions, ModuleSkills,
 	}
 }
 

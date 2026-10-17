@@ -62,7 +62,7 @@ func allNonDefault() Preferences {
 		WidgetRefreshIntervalSeconds:              600,
 		APICostSummaryRange:                       CostRangeThisMonth,
 		MainPanelHeight:                           700.5,
-		MainPanelModuleOrder:                      []Module{ModuleSessionRepair, ModuleRecentSessions, ModuleQuota, ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost},
+		MainPanelModuleOrder:                      []Module{ModuleSessionRepair, ModuleRecentSessions, ModuleQuota, ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost, ModuleSkills},
 		ShowsQuotaSummary:                         false,
 		ShowsResetCreditsSummary:                  false,
 		ShowsQuotaEstimateSummary:                 false,
@@ -86,6 +86,7 @@ func allNonDefault() Preferences {
 		// The frozen Swift fixture knows no speed analysis switch; it reads as on.
 		ShowsSpeedAnalysis:  true,
 		ShowsCreditsBalance: true,
+		ShowsSkills:         true,
 	}
 }
 
@@ -94,7 +95,7 @@ func TestThirtyFourFieldsAllDifferFromDefaults(t *testing.T) {
 	typ := d.Type()
 	count := 0
 	for i := 0; i < typ.NumField(); i++ {
-		if typ.Field(i).Tag.Get("json") == "" || typ.Field(i).Name == "ThemeColor" || typ.Field(i).Name == "FontFamily" || typ.Field(i).Name == "QuotaResetTimeFormat" || typ.Field(i).Name == "ProxyTestURL" || typ.Field(i).Name == "ShowsSpeedAnalysis" || typ.Field(i).Name == "ShowsCreditsBalance" || typ.Field(i).Name == "StatusBarProviders" || typ.Field(i).Name == "FloatingWindow" || typ.Field(i).Name == "PanelProviders" {
+		if typ.Field(i).Tag.Get("json") == "" || typ.Field(i).Name == "ThemeColor" || typ.Field(i).Name == "FontFamily" || typ.Field(i).Name == "QuotaResetTimeFormat" || typ.Field(i).Name == "ProxyTestURL" || typ.Field(i).Name == "ShowsSpeedAnalysis" || typ.Field(i).Name == "ShowsCreditsBalance" || typ.Field(i).Name == "ShowsSkills" || typ.Field(i).Name == "StatusBarProviders" || typ.Field(i).Name == "FloatingWindow" || typ.Field(i).Name == "PanelProviders" {
 			continue // the unexported extra map, and the keys only Go writes
 		}
 		count++
@@ -263,7 +264,7 @@ func TestEnumRawValuesMatchSwift(t *testing.T) {
 		"providerScope": {conv(StatusBarProviderScopes()), strs("selected", "both", "custom")},
 		"costRange":     {conv(CostRanges()), strs("today", "current", "previous", "thisMonth")},
 		"chart":         {conv(ChartStyles()), strs("heatmap", "line", "bar")},
-		"modules":       {conv(Modules()), strs("quota", "tokenUsage", "speedAnalysis", "rateLimitResetToday", "quotaEstimate", "resetCredits", "apiCost", "sessionRepair", "recentSessions")},
+		"modules":       {conv(Modules()), strs("quota", "tokenUsage", "speedAnalysis", "rateLimitResetToday", "quotaEstimate", "resetCredits", "apiCost", "sessionRepair", "recentSessions", "skills")},
 		"windowMode":    {conv(WindowModes()), strs("auto", "rollingWeek")},
 		"proxyMode":     {conv(ProxyModes()), strs("system", "http", "socks5")},
 	} {
@@ -423,11 +424,11 @@ func TestModuleOrderNormalization(t *testing.T) {
 		{"empty array", `{"mainPanelModuleOrder":[]}`, d},
 		{"null", `{"mainPanelModuleOrder":null}`, d},
 		{"Swift test: duplicates, unknown, missing", `{"mainPanelModuleOrder":["apiCost","unknown-future-module","quota","apiCost"]}`,
-			[]Module{ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost, ModuleQuota, ModuleSessionRepair, ModuleRecentSessions}},
+			[]Module{ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost, ModuleQuota, ModuleSessionRepair, ModuleRecentSessions, ModuleSkills}},
 		{"user order kept, missing appended before neighbours", `{"mainPanelModuleOrder":["recentSessions","apiCost"]}`,
-			[]Module{ModuleSessionRepair, ModuleRecentSessions, ModuleQuota, ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost}},
+			[]Module{ModuleSessionRepair, ModuleRecentSessions, ModuleQuota, ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost, ModuleSkills}},
 		{"reversed is kept", `{"mainPanelModuleOrder":["recentSessions","sessionRepair","apiCost","resetCredits","quotaEstimate","rateLimitResetToday","tokenUsage","quota"]}`,
-			[]Module{ModuleRecentSessions, ModuleSessionRepair, ModuleAPICost, ModuleResetCredits, ModuleQuotaEstimate, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleTokenUsage, ModuleQuota}},
+			[]Module{ModuleRecentSessions, ModuleSessionRepair, ModuleAPICost, ModuleResetCredits, ModuleQuotaEstimate, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleTokenUsage, ModuleQuota, ModuleSkills}},
 		{"new module inserted before its default neighbour (quotaEstimate before resetCredits)",
 			`{"mainPanelModuleOrder":["quota","tokenUsage","rateLimitResetToday","resetCredits","apiCost","sessionRepair","recentSessions"]}`, d},
 		{"all unknown", `{"mainPanelModuleOrder":["a","b"]}`, d},
@@ -475,7 +476,7 @@ func TestNormalizeModuleOrderProperties(t *testing.T) {
 func TestMoveAndResetModuleOrder(t *testing.T) {
 	p := DefaultPreferences()
 	p.MoveMainPanelModule(ModuleAPICost, -1)
-	want := []Module{ModuleQuota, ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleAPICost, ModuleResetCredits, ModuleSessionRepair, ModuleRecentSessions}
+	want := []Module{ModuleQuota, ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleAPICost, ModuleResetCredits, ModuleSessionRepair, ModuleRecentSessions, ModuleSkills}
 	if !slices.Equal(p.MainPanelModuleOrder, want) {
 		t.Errorf("after move: %v", p.MainPanelModuleOrder)
 	}
@@ -867,7 +868,7 @@ func TestSpeedModuleOrderWire(t *testing.T) {
 	// writing leaves it out again, so the document is the one that was read.
 	const swiftOrder = `["sessionRepair","recentSessions","quota","tokenUsage","rateLimitResetToday","quotaEstimate","resetCredits","apiCost"]`
 	p := mustDecode(t, `{"mainPanelModuleOrder":`+swiftOrder+`}`)
-	want := []Module{ModuleSessionRepair, ModuleRecentSessions, ModuleQuota, ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost}
+	want := []Module{ModuleSessionRepair, ModuleRecentSessions, ModuleQuota, ModuleTokenUsage, ModuleSpeedAnalysis, ModuleRateLimitResetToday, ModuleQuotaEstimate, ModuleResetCredits, ModuleAPICost, ModuleSkills}
 	if !slices.Equal(p.MainPanelModuleOrder, want) {
 		t.Fatalf("read order = %v", p.MainPanelModuleOrder)
 	}
@@ -896,7 +897,7 @@ func TestSpeedModuleOrderMovedByTheUserRoundTrips(t *testing.T) {
 		if !strings.Contains(string(enc), `"speedAnalysis"`) {
 			t.Errorf("order %v lost the moved module: %s", order, enc)
 		}
-		if got := mustDecode(t, string(enc)).MainPanelModuleOrder; !slices.Equal(got, order) {
+		if got := mustDecode(t, string(enc)).MainPanelModuleOrder; !slices.Equal(got, NormalizeModuleOrder(order)) {
 			t.Errorf("order %v round-tripped to %v", order, got)
 		}
 	}

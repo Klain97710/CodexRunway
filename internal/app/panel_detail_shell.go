@@ -20,6 +20,8 @@ func detailTitle(l l10n.Localizer, m store.Module) string {
 		return l.Text(l10n.KeyQuotaEstimate)
 	case store.ModuleSpeedAnalysis:
 		return tx(l, xSpeedTitle)
+	case store.ModuleSkills:
+		return tx(l, xSkillsTitle)
 	}
 	return ""
 }
@@ -35,7 +37,7 @@ func (a *App) closeDetail() {
 // hairline and the page body. Unknown pages fall back to the main page.
 func (a *App) panelDetailPage(c *ui.Context, l l10n.Localizer, prefs store.Preferences, snap runway.Snapshot, acts PanelActions) {
 	switch a.panelState.detail {
-	case detailAccounts, store.ModuleResetCredits, store.ModuleAPICost, store.ModuleQuotaEstimate, store.ModuleSpeedAnalysis:
+	case detailAccounts, store.ModuleResetCredits, store.ModuleAPICost, store.ModuleQuotaEstimate, store.ModuleSpeedAnalysis, store.ModuleSkills:
 	default:
 		a.panelState.detail = ""
 		a.panelMainPage(c, l, prefs, snap, acts)
@@ -48,13 +50,15 @@ func (a *App) panelDetailPage(c *ui.Context, l l10n.Localizer, prefs store.Prefe
 	})
 }
 
-// panelDetailBody is the page under the header. The accounts and API cost
+// panelDetailBody is the page under the header. The accounts, skills and API cost
 // pages keep their toolbar fixed and scroll only their list.
 func (a *App) panelDetailBody(c *ui.Context, l l10n.Localizer, prefs store.Preferences, snap runway.Snapshot, acts PanelActions) {
 	snap.Provider = prefs.SelectedProvider
 	switch m := a.panelState.detail; m {
 	case detailAccounts:
 		a.accountsPage(c, l, prefs, snap, acts)
+	case store.ModuleSkills:
+		a.skillsPage(c, l, prefs, acts)
 	case store.ModuleAPICost:
 		a.costDetailPage(c, l, prefs, snap, providerView(l, snap, prefs.APICostSummaryRange), acts)
 	default:
@@ -70,6 +74,10 @@ func (a *App) panelDetailBody(c *ui.Context, l l10n.Localizer, prefs store.Prefe
 func detailHeader(c *ui.Context, a *App, l l10n.Localizer) {
 	ui.Row(c).Padding(14, 16, 10, 16).Gap(8).AlignItems(ui.Center).Children(func() {
 		if detailBackButton(c, l.Text(l10n.KeyBack)).Clicked() {
+			if s := &a.panelState.skills; a.panelState.detail == store.ModuleSkills && s.open != "" {
+				s.closeItem() // a skill page goes back to the list
+				return
+			}
 			a.closeDetail()
 			return
 		}

@@ -64,6 +64,9 @@ var glyphs = map[string]string{
 	"icTerminal": "terminal-box-line",
 	"icPlug":     "plug-line",
 	"icToolbox":  "tools-line",
+	"icSkill":    "magic-line",
+	"icSearch":   "search-line",
+	"icLink":     "links-line",
 }
 
 func main() {

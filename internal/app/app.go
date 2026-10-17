@@ -40,6 +40,8 @@ type PanelActions struct {
 	RepairSessions func()
 	// Accounts are the multi-account page controls.
 	Accounts AccountActions
+	// Skills are the skills page controls.
+	Skills SkillActions
 }
 
 // Options configures App.

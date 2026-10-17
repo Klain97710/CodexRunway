@@ -139,10 +139,14 @@ type moduleInfo struct {
 }
 
 // moduleTexts is the title and description a module has in the settings.
-// The speed analysis texts are Go-only, so its moduleInfo keys are empty.
+// The speed analysis and skills texts are Go-only, so their moduleInfo keys
+// are empty.
 func moduleTexts(l l10n.Localizer, m store.Module) (title, subtitle string) {
-	if m == store.ModuleSpeedAnalysis {
+	switch m {
+	case store.ModuleSpeedAnalysis:
 		return tx(l, xSpeedTitle), tx(l, xSpeedModuleDescription)
+	case store.ModuleSkills:
+		return tx(l, xSkillsTitle), tx(l, xSkillsModuleDescription)
 	}
 	info := moduleInfoOf(m)
 	return l.Text(info.title), l.Text(info.subtitle)
@@ -156,6 +160,8 @@ func moduleInfoOf(m store.Module) moduleInfo {
 		return moduleInfo{l10n.KeyTokenUsageHeatmap, l10n.KeyTokenUsageHeatmapDescription, true, icChart, true, false}
 	case store.ModuleSpeedAnalysis:
 		return moduleInfo{"", "", true, icTimerFlash, false, false}
+	case store.ModuleSkills:
+		return moduleInfo{"", "", true, icSkill, false, false}
 	case store.ModuleRateLimitResetToday:
 		return moduleInfo{l10n.KeyRateLimitResetToday, l10n.KeyRateLimitResetTodayDescription, false, icReset, true, false}
 	case store.ModuleQuotaEstimate:

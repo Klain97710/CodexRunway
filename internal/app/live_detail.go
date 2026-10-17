@@ -117,4 +117,5 @@ func installDetailActions(rt *liveApp, a *PanelActions) {
 	a.QueryReaction = client.Fetch
 	a.React = client.Click
 	a.RepairSessions = func() { rt.queuePreferences(livePreferenceRequest{repair: true}) }
+	installSkillActions(rt, &a.Skills)
 }

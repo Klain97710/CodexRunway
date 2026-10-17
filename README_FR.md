@@ -46,6 +46,7 @@ Quosparr est une application native de barre de menus / zone de notification pou
 - Une fenêtre flottante facultative, toujours au premier plan, affiche le quota restant d’au plus trois fournisseurs dans quatre styles : capsule, carte, anneaux ou batterie. Un clic ouvre le panneau, un glisser la déplace et un clic droit affiche plus d’options. L’opacité, le verrouillage de la position et l’affichage au-dessus des apps en plein écran sont réglables.
 - Coût équivalent API et usage de jetons pour aujourd’hui, le cycle actuel, le cycle précédent, ce mois-ci ou une plage personnalisée.
 - Graphique d’usage des jetons depuis le début de l’année, en carte de chaleur, en ligne ou en barres (quotidien / hebdomadaire / cumulé).
+- Page Skills pour les skills globaux de chaque fournisseur : leur origine, leur chargement par la CLI et les autres CLI qui les partagent ; recherche, lecture de `SKILL.md`, ouverture du dossier, activation ou désactivation dans la configuration propre à la CLI (sauvegardée avant écriture), mise à la corbeille du système et repérage des liens cassés ou des noms en double.
 - Apparences claire, sombre et système ; English, 简体中文, 繁體中文, 한국어, 日本語, Русский, Français.
 - Mises à jour intégrées et widgets bureau sur macOS 14+.
 

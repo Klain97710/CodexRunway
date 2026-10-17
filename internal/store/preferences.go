@@ -110,6 +110,9 @@ type Preferences struct {
 	// last row of the Codex quota section when available. On by default and written only when
 	// turned off.
 	ShowsCreditsBalance bool `json:"showsCreditsBalance"`
+	// ShowsSkills is Go-only: the skills module, on by default and written
+	// only when turned off.
+	ShowsSkills bool `json:"showsSkills"`
 	// FloatingWindow is Go-only: the desktop floating window, omitted while
 	// it is at its default.
 	FloatingWindow FloatingWindow `json:"floatingWindow,omitzero"`
@@ -153,6 +156,7 @@ func DefaultPreferences() Preferences {
 		ShowsTokenUsageHeatmap:                    true,
 		ShowsSpeedAnalysis:                        true,
 		ShowsCreditsBalance:                       true,
+		ShowsSkills:                               true,
 		TokenUsageChartStyle:                      ChartStyleHeatmap,
 		RateLimitResetTodayRefreshIntervalSeconds: DefaultRateLimitResetTodayRefreshIntervalSeconds,
 		AutomaticallyChecksForUpdates:             true,

@@ -61,6 +61,8 @@ func panelModuleOn(m store.Module, p store.Preferences, grok bool) bool {
 		return p.ShowsSessionRepairSummary
 	case store.ModuleRecentSessions:
 		return p.ShowsRecentSessions
+	case store.ModuleSkills:
+		return p.ShowsSkills
 	default:
 		return false
 	}
@@ -95,6 +97,8 @@ func panelModule(c *ui.Context, l l10n.Localizer, m store.Module, prefs store.Pr
 		panelRepair(c, l, snap, acts, first, state)
 	case store.ModuleRecentSessions:
 		panelRecent(c, l, snap, grok || claude, acts, first, state)
+	case store.ModuleSkills:
+		panelSkills(c, l, snap, acts, first, state)
 	}
 }
 

@@ -33,6 +33,7 @@ func (a *App) cancelPanelDetails() {
 	}
 	s.cost = panelCostState{generation: s.cost.generation + 1}
 	s.reaction = panelReactionState{generation: s.reaction.generation + 1}
+	s.skills.closeItem() // the scan stays cached; it covers every provider
 }
 
 func (a *App) redrawPanel() {
