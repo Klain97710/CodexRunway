@@ -1,13 +1,10 @@
 package codex
 
 import (
-	"bytes"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -15,6 +12,7 @@ import (
 	"github.com/BurntSushi/toml"
 
 	"github.com/licoy/quosparr/internal/platform"
+	"github.com/licoy/quosparr/internal/tomlstmt"
 )
 
 // ManagedProviderID is the model_providers key (and model_provider value) that
@@ -251,58 +249,20 @@ type textEdit struct {
 }
 
 func applyTextEdits(data []byte, edits []textEdit) []byte {
-	sort.SliceStable(edits, func(i, j int) bool { return edits[i].start < edits[j].start })
-	out := make([]byte, 0, len(data)+256)
-	pos := 0
-	for _, e := range edits {
-		out = append(out, data[pos:e.start]...)
-		out = append(out, e.text...)
-		pos = e.end
+	shared := make([]tomlstmt.Edit, len(edits))
+	for i, edit := range edits {
+		shared[i] = tomlstmt.Edit{Start: edit.start, End: edit.end, Text: edit.text}
 	}
-	return append(out, data[pos:]...)
+	return tomlstmt.ApplyEdits(data, shared)
 }
 
-func detectEOL(data []byte) string {
-	if i := bytes.IndexByte(data, '\n'); i > 0 && data[i-1] == '\r' {
-		return "\r\n"
-	}
-	return "\n"
-}
+func detectEOL(data []byte) string { return tomlstmt.DetectEOL(data) }
 
 func hasNewline(data []byte, it tomlItem) bool {
 	return it.end > it.start && data[it.end-1] == '\n'
 }
 
-func tomlQuote(s string) string {
-	var b strings.Builder
-	b.WriteByte('"')
-	for _, r := range s {
-		switch r {
-		case '"':
-			b.WriteString(`\"`)
-		case '\\':
-			b.WriteString(`\\`)
-		case '\b':
-			b.WriteString(`\b`)
-		case '\t':
-			b.WriteString(`\t`)
-		case '\n':
-			b.WriteString(`\n`)
-		case '\f':
-			b.WriteString(`\f`)
-		case '\r':
-			b.WriteString(`\r`)
-		default:
-			if r < 0x20 || r == 0x7f {
-				fmt.Fprintf(&b, `\u%04X`, r)
-			} else {
-				b.WriteRune(r)
-			}
-		}
-	}
-	b.WriteByte('"')
-	return b.String()
-}
+func tomlQuote(s string) string { return tomlstmt.Quote(s) }
 
 func setTopLevelKeys(data []byte, cfg ProviderConfig) ([]byte, error) {
 	items, layout, err := lexProviderLayout(data)
@@ -395,11 +355,7 @@ func setManagedTable(data []byte, cfg ProviderConfig) ([]byte, error) {
 	return append(out, text...), nil
 }
 
-func endsWithBlankLine(data []byte) bool {
-	body := bytes.TrimSuffix(data, []byte("\n"))
-	line := body[bytes.LastIndexByte(body, '\n')+1:]
-	return len(bytes.TrimSpace(line)) == 0
-}
+func endsWithBlankLine(data []byte) bool { return tomlstmt.EndsWithBlankLine(data) }
 
 func deleteItems(items []tomlItem, from, to int) textEdit {
 	return textEdit{start: items[from].start, end: items[to-1].end}
