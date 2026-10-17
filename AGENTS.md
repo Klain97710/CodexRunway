@@ -87,7 +87,7 @@ Quosparr v1 面向 macOS、Windows、Linux，主程序使用 Go + mygo/ui 原生
 - 首次无偏好配置的启动显示设置并保存默认偏好，已有配置或从旧版迁移的用户普通启动时仅驻留菜单栏；主动点击设置或显式传入 `--settings` 才再次打开设置，日常 Dev 重启不附加该参数
 - Codex 支持配额窗口、订阅到期、reset credits、周额度推算与历史对比，Grok 展示官方 CLI chat-proxy 额度及 Build / Imagine / Chat 拆分、周期、预付余额和按需使用情况，Claude 展示 Claude Code 订阅用量的 5 小时、7 天、按模型周额度和额外用量，以及与 Codex 共用展示的重置次数
 - Codex 与 Claude Code 另支持 API 账号（Base URL + API Key，可从站点获取模型列表；Claude 可分别映射 Opus / Sonnet / Haiku / Fable 模型），在多账号中添加、编辑与切换，并在账号列表、主面板、状态栏、悬浮窗与 Widget 显示中转站余额（new-api 类令牌额度或 OpenAI 兼容账单接口，站点不提供时明确说明，不估算）；Codex 无 Base URL 时为官方 OpenAI API Key
-- 三个供应商均保留账号管理、本地 Token 用量图表、API 等价成本与最近会话，图表支持热力图、折线图和柱状图；Codex 另有会话索引修复与公开重置动态。状态栏和 Widget 最多同时显示两个供应商，旧值 `both` 仍是 Codex + Grok；三端另有可选的置顶桌面悬浮窗（偏好对象 `floatingWindow` 仅 Go 版写入，默认省略），样式独立于状态栏，提供胶囊、卡片、圆环、电池四种，最多显示三个供应商，可调不透明度、锁定位置与是否显示在全屏应用上方；Windows 后端不支持透明内容，卡片铺满窗口并由 DWM 圆角，全屏检测为 2 秒轮询，Linux Wayland 下置顶与定位由合成器决定，三端真机交互仍待验收
+- 三个供应商均保留账号管理、本地 Token 用量图表、API 等价成本与最近会话，图表支持热力图、折线图和柱状图；Codex 另有会话索引修复与公开重置动态。状态栏和 Widget 最多同时显示两个供应商，旧值 `both` 仍是 Codex + Grok；三端另有可选的置顶桌面悬浮窗（偏好对象 `floatingWindow` 仅 Go 版写入，默认省略），样式独立于状态栏，提供胶囊、卡片、圆环、电池四种，最多显示三个供应商，可调不透明度、锁定位置与是否显示在全屏应用上方，并可按前台应用以白名单 / 黑名单显隐（桌面在前台时始终显示，名单来自系统已安装应用或手动选择的文件，前台检测为 250ms 轮询，macOS 用 NSWorkspace、Windows 用前台窗口进程与 AUMID、Linux 仅 X11，Wayland 下不可用）；Windows 后端不支持透明内容，卡片铺满窗口并由 DWM 圆角，全屏检测为 2 秒轮询，Linux Wayland 下置顶与定位由合成器决定，三端真机交互仍待验收
 - 主应用支持浅色、深色、跟随系统，以及英文、简体中文、繁体中文、韩文、日文、俄文、法文；显示字体可选“默认”（系统字体）或本机已安装字体族，作用于主面板与设置窗口，偏好键 `fontFamily` 仅 Go 版写入，菜单栏图标保持系统字体
 - 自动测试和交叉编译不能替代三端安装、桌面与迁移验收，待验收项见 [验收清单](docs/v1-acceptance-checklist.md) 与 [发布说明](docs/v1-release.md)
 

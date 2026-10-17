@@ -128,6 +128,7 @@ type settingsUI struct {
 
 	pickingColor bool
 	customColor  ui.Color
+	floatingApps *floatingAppsDialog
 	// fonts are the installed families, listed once a settings window
 	// shows them, so fonts installed meanwhile show in the next window.
 	fonts       []string

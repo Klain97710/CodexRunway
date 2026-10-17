@@ -15,7 +15,8 @@ func TestFloatingWindowIsGoOnlyAndOmittedByDefault(t *testing.T) {
 		t.Errorf("the default floating window is written: %s", enc)
 	}
 	p := DefaultPreferences()
-	p.FloatingWindow = FloatingWindow{Enabled: true, Style: FloatingStyleRings, Providers: []Provider{ProviderGrok, ProviderCodex}, Opacity: 80, Locked: true, OverFullScreen: true}
+	p.FloatingWindow = FloatingWindow{Enabled: true, Style: FloatingStyleRings, Providers: []Provider{ProviderGrok, ProviderCodex}, Opacity: 80, Locked: true, OverFullScreen: true,
+		AppFilter: FloatingAppFilterBlock, Apps: []FloatingApp{{ID: "com.openai.codex", Name: "Codex", Path: "/Applications/Codex.app"}}}
 	if enc, err = EncodePreferences(p); err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +37,12 @@ func TestFloatingWindowDecodesLeniently(t *testing.T) {
 		`{"opacity":100}`:                 {},
 		`{"opacity":150}`:                 {},
 		`{"providers":["x","claude","claude","codex","grok"]}`: {Providers: []Provider{ProviderCodex, ProviderClaude, ProviderGrok}},
-		`{"providers":[]}`: {},
+		`{"providers":[]}`:      {},
+		`{"appFilter":"maybe"}`: {},
+		`{"appFilter":"allow","apps":[{"id":""},{"id":"a","name":"A"},{"id":"a"},{"id":"b"}]}`: {
+			AppFilter: FloatingAppFilterAllow, Apps: []FloatingApp{{ID: "a", Name: "A"}, {ID: "b"}},
+		},
+		`{"apps":[]}`: {},
 	} {
 		if got := mustDecode(t, `{"floatingWindow":`+raw+`}`).FloatingWindow; !reflect.DeepEqual(got, want) {
 			t.Errorf("floatingWindow %s decoded to %+v, want %+v", raw, got, want)
@@ -56,5 +62,21 @@ func TestFloatingSelectionFollowsThePanel(t *testing.T) {
 	}
 	if got := p.FloatingWindow.OpacityPercent(); got != 100 {
 		t.Errorf("default opacity = %d", got)
+	}
+}
+
+func TestFloatingAppsAreCappedAndCloned(t *testing.T) {
+	var f FloatingWindow
+	for i := range MaxFloatingApps + 5 {
+		f.Apps = append(f.Apps, FloatingApp{ID: string(rune('a'+i%26)) + strings.Repeat("x", i)})
+	}
+	f.normalize()
+	if len(f.Apps) != MaxFloatingApps {
+		t.Errorf("kept %d apps, want %d", len(f.Apps), MaxFloatingApps)
+	}
+	c := f.clone()
+	c.Apps[0].ID = "changed"
+	if f.Apps[0].ID == "changed" || !f.HasApp(f.Apps[1].ID) || f.HasApp("changed") {
+		t.Errorf("clone shares the apps: %v", f.Apps[0])
 	}
 }
