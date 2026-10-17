@@ -63,6 +63,7 @@ func ScanCodex(ctx context.Context, input Env) (Summary, error) {
 	applyCodexConfig(summary.Skills, config)
 	addCodexNameIssues(&summary)
 	sortCodexSkills(summary.Skills)
+	newOriginScanner(env).fill(summary.Skills)
 	finishSummary(&summary)
 	return summary, nil
 }

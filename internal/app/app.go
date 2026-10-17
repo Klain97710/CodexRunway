@@ -7,6 +7,7 @@ import (
 	"errors"
 	"log"
 	"runtime"
+	"slices"
 	"sync"
 	"time"
 
@@ -417,9 +418,9 @@ func (a *App) startBackground() {
 	a.stopBackground = a.opts.Seams.StartBackground(ctx)
 }
 
-// OpenSettingsTab opens the settings window on tab 0..7 (general,
+// OpenSettingsTab opens the settings window on tab 0..8 (general,
 // accounts, appearance & menu, floating window, panel modules,
-// notifications, advanced, about); for dev runs and screenshots.
+// notifications, skills, advanced, about); for dev runs and screenshots.
 func (a *App) OpenSettingsTab(tab int) {
 	a.OpenSettings()
 	if a.setUI != nil && tab >= 0 && tab < len(settingsTabs) {
@@ -438,6 +439,15 @@ func (a *App) openAccountsSettings(kind int) {
 	if f := accountFormOf(a.setUI); !f.busy && f.kind != kind {
 		f.kind, f.mode, f.paste, f.api, f.selection = kind, "", "", apiDraft{}, nil
 	}
+}
+
+// openSkillsSettings opens the skills tab on one CLI's list.
+func (a *App) openSkillsSettings(p store.Provider) {
+	a.OpenSettingsTab(slices.Index(settingsTabs, tabSkills))
+	if a.setUI == nil {
+		return
+	}
+	a.setUI.skillsState().selectProvider(p)
 }
 
 // CaptureSettings returns a PNG of the settings window, for dev runs.
@@ -468,7 +478,11 @@ func (a *App) OpenSettings() {
 	if actions.OpenFolder == nil {
 		actions.OpenFolder = openFolder
 	}
-	a.setUI = newSettingsUI(a.settings, SettingsOptions{Version: a.opts.Version, Actions: actions})
+	a.setUI = newSettingsUI(a.settings, SettingsOptions{
+		Version: a.opts.Version,
+		Actions: actions,
+		Skills:  func() SkillActions { return a.PanelActions().Skills },
+	})
 	a.setWin = mygo.NewWindow(mygo.WindowOptions{
 		StateKey:             "settings",
 		Title:                a.L().Text(l10n.KeySettings),

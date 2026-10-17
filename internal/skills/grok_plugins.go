@@ -17,8 +17,23 @@ type grokPluginRegistry struct {
 }
 
 type grokPluginRepo struct {
-	Path    string                         `json:"path"`
-	Plugins map[string]grokInstalledPlugin `json:"plugins"`
+	Kind        grokPluginKind                 `json:"kind"`
+	InstalledAt string                         `json:"installed_at"`
+	UpdatedAt   string                         `json:"updated_at"`
+	Path        string                         `json:"path"`
+	Marketplace grokPluginMarketplace          `json:"marketplace"`
+	Plugins     map[string]grokInstalledPlugin `json:"plugins"`
+}
+
+type grokPluginKind struct {
+	Type   string `json:"type"`
+	URL    string `json:"url"`
+	GitRef string `json:"git_ref"`
+	Commit string `json:"commit"`
+}
+
+type grokPluginMarketplace struct {
+	SourceDisplayName string `json:"source_display_name"`
 }
 
 type grokInstalledPlugin struct {

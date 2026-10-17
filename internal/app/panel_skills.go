@@ -89,6 +89,9 @@ func (a *App) skillsPage(c *ui.Context, l l10n.Localizer, prefs store.Preference
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 			ui.TextInput(c.Key("skills-search"), &s.search).Placeholder(tx(l, xSkillsSearch)).Grow(1).Basis(0)
 			refreshButton(c, l, s.task.Running || s.work.Running, func() { a.startSkillsQuery(acts) })
+			if accountIconButton(c, icSliders, tx(l, xSkillsManageInSettings), false, false, false).Clicked() {
+				a.openSkillsSettings(prefs.SelectedProvider)
+			}
 		})
 		skillsNotice(c, s)
 		switch {
@@ -343,7 +346,10 @@ func (a *App) removeLinkButton(c *ui.Context, l l10n.Localizer, sum skills.Summa
 		s.confirm, open = id, true
 	}
 	confirmPopover(c, l, b, &open, tx(l, xSkillsRemoveLinkTitle), tx(l, xSkillsRemoveLinkMsg, skillPath(sum, is.Path)), tx(l, xSkillsDelete), nil, func() {
-		a.runSkillWork(acts, tx(l, xSkillsDeleted), xSkillsDeleteFailed, func() error { return del(sum, is.Path) }, nil)
+		a.runSkillWork(acts, xSkillsDeleteFailed, func() (string, error) {
+			system, err := del(sum, is.Path)
+			return skillMovedText(l, system), err
+		}, nil)
 	})
 	if !open && s.confirm == id {
 		s.confirm = ""
@@ -434,7 +440,7 @@ func (a *App) skillSwitch(c *ui.Context, l l10n.Localizer, sk skills.Skill, acts
 			}
 			if ui.Switch(c.Key("skill-enabled"), &s.enabled).Label(tx(l, xSkillsEnabled)).Disabled(set == nil || s.work.Running).Changed() && set != nil {
 				on := s.enabled
-				a.runSkillWork(acts, "", xSkillsToggleFailed, func() error { return set(sk, on) }, nil)
+				a.runSkillWork(acts, xSkillsToggleFailed, func() (string, error) { return "", set(sk, on) }, nil)
 			}
 		})
 		ui.Text(c, skillToggleHint(l, sk.Provider)).FontSize(fsCaption).TextColor(inkSecondary(t))
@@ -570,7 +576,10 @@ func (a *App) skillActions(c *ui.Context, l l10n.Localizer, sum skills.Summary, 
 		}
 		msg := tx(l, xSkillsDeleteMessage, skillPath(sum, sk.Removal.Path))
 		confirmPopover(c, l, b, &open, tx(l, xSkillsDeleteTitle), msg, tx(l, xSkillsDelete), func() { skillDeleteNotes(c, l, sk) }, func() {
-			a.runSkillWork(acts, tx(l, xSkillsDeleted), xSkillsDeleteFailed, func() error { return del(sk, sum.Roots) }, func(err error) {
+			a.runSkillWork(acts, xSkillsDeleteFailed, func() (string, error) {
+				system, err := del(sk, sum.Roots)
+				return skillMovedText(l, system), err
+			}, func(err error) {
 				if err == nil {
 					s.open, s.confirm, s.body = "", "", panelSkillBody{}
 				}

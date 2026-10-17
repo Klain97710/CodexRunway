@@ -17,9 +17,12 @@ type claudeInstalledPlugins struct {
 }
 
 type claudeInstalledPlugin struct {
-	Scope       string `json:"scope"`
-	InstallPath string `json:"installPath"`
-	Version     string `json:"version"`
+	Scope        string `json:"scope"`
+	InstallPath  string `json:"installPath"`
+	Version      string `json:"version"`
+	GitCommitSHA string `json:"gitCommitSha"`
+	InstalledAt  string `json:"installedAt"`
+	LastUpdated  string `json:"lastUpdated"`
 }
 
 func readClaudePluginManifest(path string) (pluginManifest, bool) {

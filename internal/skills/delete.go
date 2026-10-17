@@ -85,38 +85,12 @@ func removalCovers(removal Removal, skill Skill) bool {
 
 // Delete moves a previously scanned user-owned skill to trash.
 func Delete(skill Skill, roots []RootInfo, trash func(path string) error) error {
-	if !skill.Deletable || skill.Scope != ScopeUser || trash == nil {
+	if trash == nil {
 		return ErrNotDeletable
 	}
-	skill.Removal.Path = filepath.Clean(skill.Removal.Path)
-	skill.File = filepath.Clean(skill.File)
-	if !removalCovers(skill.Removal, skill) {
-		return ErrOutsideRoot
-	}
-	info, err := os.Lstat(skill.Removal.Path)
+	skill, err := validateSkillRemoval(skill, roots)
 	if err != nil {
-		return changed(err)
-	}
-	if (info.Mode()&os.ModeSymlink != 0) != skill.Removal.IsLink {
-		return ErrChanged
-	}
-	if !skill.Removal.IsLink {
-		if err := validateRemovalRoot(skill.Removal.Path, roots); err != nil {
-			return err
-		}
-		for _, root := range roots {
-			if root.Scope == ScopeUser && root.Exists && sameResolved(root.Path, skill.Removal.Path) {
-				return ErrOutsideRoot
-			}
-		}
-	}
-	fileInfo, err := os.Stat(skill.File)
-	if err != nil {
-		if !(skill.Removal.IsLink && errors.Is(err, fs.ErrNotExist)) {
-			return changed(err)
-		}
-	} else if !fileInfo.ModTime().Equal(skill.ModTime) {
-		return ErrChanged
+		return err
 	}
 	if err := trash(skill.Removal.Path); err != nil {
 		return fmt.Errorf("skills: move to trash: %w", err)
@@ -124,25 +98,73 @@ func Delete(skill Skill, roots []RootInfo, trash func(path string) error) error 
 	return nil
 }
 
+func validateSkillRemoval(skill Skill, roots []RootInfo) (Skill, error) {
+	if !skill.Deletable || skill.Scope != ScopeUser {
+		return skill, ErrNotDeletable
+	}
+	skill.Removal.Path = filepath.Clean(skill.Removal.Path)
+	skill.File = filepath.Clean(skill.File)
+	if !removalCovers(skill.Removal, skill) {
+		return skill, ErrOutsideRoot
+	}
+	info, err := os.Lstat(skill.Removal.Path)
+	if err != nil {
+		return skill, changed(err)
+	}
+	if (info.Mode()&os.ModeSymlink != 0) != skill.Removal.IsLink {
+		return skill, ErrChanged
+	}
+	if !skill.Removal.IsLink {
+		if err := validateRemovalRoot(skill.Removal.Path, roots); err != nil {
+			return skill, err
+		}
+		for _, root := range roots {
+			if root.Scope == ScopeUser && root.Exists && sameResolved(root.Path, skill.Removal.Path) {
+				return skill, ErrOutsideRoot
+			}
+		}
+	}
+	fileInfo, err := os.Stat(skill.File)
+	if err != nil {
+		if !(skill.Removal.IsLink && errors.Is(err, fs.ErrNotExist)) {
+			return skill, changed(err)
+		}
+	} else if !fileInfo.ModTime().Equal(skill.ModTime) {
+		return skill, ErrChanged
+	}
+	return skill, nil
+}
+
 // DeleteBrokenLink moves a dangling user-root link reported by a scan to trash.
 func DeleteBrokenLink(summary Summary, path string, trash func(path string) error) error {
-	path = filepath.Clean(path)
-	if trash == nil || !slices.ContainsFunc(summary.Issues, func(issue Issue) bool {
-		return issue.Kind == IssueBrokenLink && issue.Removable && filepath.Clean(issue.Path) == filepath.Clean(path)
-	}) {
+	if trash == nil {
 		return ErrNotDeletable
 	}
-	info, err := os.Lstat(path)
-	if err != nil || info.Mode()&os.ModeSymlink == 0 {
-		return changed(err)
-	}
-	if _, err := os.Stat(path); !errors.Is(err, fs.ErrNotExist) {
-		return ErrChanged
+	path, err := validateBrokenLink(summary, path)
+	if err != nil {
+		return err
 	}
 	if err := trash(path); err != nil {
 		return fmt.Errorf("skills: move broken link to trash: %w", err)
 	}
 	return nil
+}
+
+func validateBrokenLink(summary Summary, path string) (string, error) {
+	path = filepath.Clean(path)
+	if !slices.ContainsFunc(summary.Issues, func(issue Issue) bool {
+		return issue.Kind == IssueBrokenLink && issue.Removable && filepath.Clean(issue.Path) == filepath.Clean(path)
+	}) {
+		return path, ErrNotDeletable
+	}
+	info, err := os.Lstat(path)
+	if err != nil || info.Mode()&os.ModeSymlink == 0 {
+		return path, changed(err)
+	}
+	if _, err := os.Stat(path); !errors.Is(err, fs.ErrNotExist) {
+		return path, ErrChanged
+	}
+	return path, nil
 }
 
 func validateRemovalRoot(path string, roots []RootInfo) error {

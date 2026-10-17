@@ -49,6 +49,7 @@ func ScanGrok(ctx context.Context, env Env) (Summary, error) {
 	}
 	applyGrokConfig(env.Home, config, summary.Skills)
 	shadowGrokSkills(summary.Skills)
+	newOriginScanner(env).fill(summary.Skills)
 	finishSummary(&summary)
 	return summary, nil
 }

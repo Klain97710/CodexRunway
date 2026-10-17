@@ -17,11 +17,22 @@ type SkillActions struct {
 	Query      func(context.Context) (map[store.Provider]skills.Summary, error)
 	ReadBody   func(skills.Skill) (body string, truncated bool, err error)
 	SetEnabled func(skills.Skill, bool) error
-	// Delete and DeleteLink move to the system Trash; nothing is erased.
-	Delete     func(skills.Skill, []skills.RootInfo) error
-	DeleteLink func(skills.Summary, string) error
+	// Delete and DeleteLink move to the Quosparr skills trash, or to the
+	// system Trash from another volume (system is true); nothing is erased.
+	Delete     func(skills.Skill, []skills.RootInfo) (system bool, err error)
+	DeleteLink func(skills.Summary, string) (system bool, err error)
 	OpenFolder func(string) error
 	Reveal     func(string)
+	Copy       func(string)
+	// Inspect lists a skill's folder for its page in the settings.
+	Inspect func(context.Context, skills.Skill) (skills.Detail, error)
+	// The trash: restoring renames an entry back, purging and emptying
+	// move entries to the system Trash.
+	TrashDir   string
+	ListTrash  func(context.Context) ([]skills.TrashEntry, error)
+	Restore    func(id string) (skills.TrashEntry, error)
+	Purge      func(id string) error
+	EmptyTrash func() (int, error)
 }
 
 // skillsStale is how old a scan may be before the panel scans again.
@@ -120,10 +131,17 @@ func (a *App) startSkillsQuery(acts PanelActions) {
 }
 
 // runSkillWork runs a change, shows its outcome and scans again.
-func (a *App) runSkillWork(acts PanelActions, ok string, fail textKey, fn func() error, after func(error)) {
+// fn returns the text shown on success.
+func (a *App) runSkillWork(acts PanelActions, fail textKey, fn func() (string, error), after func(error)) {
 	s := &a.panelState.skills
 	l := a.L()
-	runTask(&s.work, func(f func()) { runOnMain(func() { f(); a.redrawPanel() }) }, fn, func(err error) {
+	var ok string
+	run := func() error {
+		var err error
+		ok, err = fn()
+		return err
+	}
+	runTask(&s.work, func(f func()) { runOnMain(func() { f(); a.redrawPanel() }) }, run, func(err error) {
 		switch {
 		case err == nil:
 			s.notice, s.noticeErr = ok, false

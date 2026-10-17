@@ -73,6 +73,7 @@ func applyFrontmatter(skill *Skill, front frontmatter) {
 	skill.Description = front.field("description")
 	skill.ShortDescription = front.metadata["short-description"]
 	skill.Fields = front.displayFields()
+	skill.Origin = frontmatterOrigin(front)
 	if skill.Provider == ProviderCodex {
 		loadCodexInterface(skill)
 	}

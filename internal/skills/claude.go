@@ -67,6 +67,7 @@ func ScanClaude(ctx context.Context, input Env) (Summary, error) {
 	summary.Skills = dedupeSkillsByRealFile(summary.Skills)
 	applyClaudeOverrides(summary.Skills, settings)
 	applyClaudeAdminShadow(summary.Skills)
+	newOriginScanner(env).fill(summary.Skills)
 	finishSummary(&summary)
 	return summary, nil
 }

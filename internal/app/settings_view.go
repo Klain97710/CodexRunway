@@ -47,6 +47,9 @@ type Actions struct {
 type SettingsOptions struct {
 	Version string
 	Actions Actions
+	// Skills returns the skills actions of the running app; nil or an
+	// empty result leaves the skills tab read-only.
+	Skills func() SkillActions
 }
 
 type settingsTab int
@@ -58,26 +61,30 @@ const (
 	tabFloating
 	tabModules
 	tabNotifications
+	tabSkills
 	tabAdvanced
 	tabAbout
 )
 
-var settingsTabs = []settingsTab{tabGeneral, tabAccounts, tabDisplay, tabFloating, tabModules, tabNotifications, tabAdvanced, tabAbout}
+var settingsTabs = []settingsTab{tabGeneral, tabAccounts, tabDisplay, tabFloating, tabModules, tabNotifications, tabSkills, tabAdvanced, tabAbout}
 
 // title is the tab's name in the sidebar and above its page.
 func (t settingsTab) title(l l10n.Localizer) string {
-	if t == tabFloating {
+	switch t {
+	case tabFloating:
 		return tx(l, xFloatingSection)
+	case tabSkills:
+		return tx(l, xSkillsSettingsTab)
 	}
-	return l.Text([...]l10n.Key{l10n.KeyGeneral, l10n.KeyAccounts, l10n.KeyDisplay, "", l10n.KeyPanelModules, l10n.KeyNotificationSettings, l10n.KeyAdvanced, l10n.KeyAbout}[t])
+	return l.Text([...]l10n.Key{l10n.KeyGeneral, l10n.KeyAccounts, l10n.KeyDisplay, "", l10n.KeyPanelModules, l10n.KeyNotificationSettings, "", l10n.KeyAdvanced, l10n.KeyAbout}[t])
 }
 
 func (t settingsTab) icon() *ui.SVG {
-	return [...]*ui.SVG{icGear, icUsers, icEye, icFloating, icLayout, icBell, icSliders, icInfo}[t]
+	return [...]*ui.SVG{icGear, icUsers, icEye, icFloating, icLayout, icBell, icSkill, icSliders, icInfo}[t]
 }
 
 func (t settingsTab) tint() Tint {
-	return [...]Tint{TintGray, TintGreen, TintBlue, TintTeal, TintPurple, TintRed, TintOrange, TintIndigo}[t]
+	return [...]Tint{TintGray, TintGreen, TintBlue, TintTeal, TintPurple, TintRed, TintPink, TintOrange, TintIndigo}[t]
 }
 
 //go:embed assets/app-icon.png
@@ -112,6 +119,7 @@ type settingsUI struct {
 
 	tab      settingsTab
 	accounts *accountForm
+	skills   *settingsSkills
 
 	draft         ProxyDraft
 	draftReady    bool
@@ -173,7 +181,7 @@ func (u *settingsUI) view(c *ui.Context) {
 }
 
 func (u *settingsUI) pageContent(c *ui.Context) {
-	ui.Scroll(c.Key("page-"+fmt.Sprint(int(u.tab)))).Grow(1).Basis(0).Padding(4, 24, 24, 24).Gap(22).Children(func() {
+	ui.Scroll(c.Key("page-"+fmt.Sprint(int(u.tab))+u.skillsPageKey())).Grow(1).Basis(0).Padding(4, 24, 24, 24).Gap(22).Children(func() {
 		if u.s.ReadOnly() {
 			u.readOnlyBanner(c)
 		}
@@ -194,6 +202,8 @@ func (u *settingsUI) pageContent(c *ui.Context) {
 			u.modulesGroup(c)
 		case tabNotifications:
 			u.notificationsGroup(c)
+		case tabSkills:
+			u.skillsPage(c)
 		case tabAdvanced:
 			u.advancedPage(c)
 		case tabAbout:

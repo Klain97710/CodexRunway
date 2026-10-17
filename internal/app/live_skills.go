@@ -8,26 +8,41 @@ import (
 	"time"
 
 	"github.com/egoist/mygo"
+	"github.com/licoy/quosparr/internal/platform"
 	"github.com/licoy/quosparr/internal/skills"
 	"github.com/licoy/quosparr/internal/store"
 )
 
 var errSkillsUnavailable = errors.New("skills service unavailable")
 
-// installSkillActions wires the skills page to the scanner, the provider
-// config writers and the system shell. Deletion only moves to the trash.
+// installSkillActions wires the skills pages to the scanner, the provider
+// config writers, the Quosparr skills trash and the system shell. Deleting
+// moves to that trash (the system Trash from another volume); purging
+// moves on to the system Trash, so nothing is erased.
 func installSkillActions(rt *liveApp, a *SkillActions) {
+	home := rt.skillsEnv().Home
+	trash := skills.NewTrash(platform.RunwayDir(home), home)
+	system := mygo.Shell.TrashItem
 	a.Query = rt.querySkills
 	a.ReadBody = skills.ReadBody
 	a.SetEnabled = rt.setSkillEnabled
-	a.Delete = func(s skills.Skill, roots []skills.RootInfo) error {
-		return skills.Delete(s, roots, mygo.Shell.TrashItem)
+	a.Delete = func(s skills.Skill, roots []skills.RootInfo) (bool, error) {
+		_, inSystem, err := trash.MoveSkill(s, roots, time.Now(), system)
+		return inSystem, err
 	}
-	a.DeleteLink = func(sum skills.Summary, path string) error {
-		return skills.DeleteBrokenLink(sum, path, mygo.Shell.TrashItem)
+	a.DeleteLink = func(sum skills.Summary, path string) (bool, error) {
+		_, inSystem, err := trash.MoveBrokenLink(sum, path, time.Now(), system)
+		return inSystem, err
 	}
 	a.OpenFolder = mygo.Shell.OpenPath
 	a.Reveal = mygo.Shell.ShowItemInFolder
+	a.Copy = mygo.Clipboard.WriteText
+	a.Inspect = skills.Inspect
+	a.TrashDir = trash.Dir
+	a.ListTrash = trash.List
+	a.Restore = trash.Restore
+	a.Purge = func(id string) error { return trash.Purge(id, system) }
+	a.EmptyTrash = func() (int, error) { return trash.Empty(system) }
 }
 
 func (rt *liveApp) skillsEnv() skills.Env {

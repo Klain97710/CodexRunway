@@ -76,11 +76,14 @@ func skillsPanel(t *testing.T, res map[store.Provider]skills.Summary) (*App, *ui
 		},
 		ReadBody:   func(skills.Skill) (string, bool, error) { return "# Steps\n\nRead the diff.", false, nil },
 		SetEnabled: func(_ skills.Skill, on bool) error { calls.enabled = append(calls.enabled, on); return nil },
-		Delete: func(s skills.Skill, _ []skills.RootInfo) error {
+		Delete: func(s skills.Skill, _ []skills.RootInfo) (bool, error) {
 			calls.deleted = append(calls.deleted, s.Removal.Path)
-			return nil
+			return false, nil
 		},
-		DeleteLink: func(_ skills.Summary, p string) error { calls.links = append(calls.links, p); return nil },
+		DeleteLink: func(_ skills.Summary, p string) (bool, error) {
+			calls.links = append(calls.links, p)
+			return false, nil
+		},
 		OpenFolder: func(string) error { return nil },
 		Reveal:     func(p string) { calls.revealed = append(calls.revealed, p) },
 	}}
@@ -231,7 +234,7 @@ func TestPanelSkillDeleteConfirmsThenTrashes(t *testing.T) {
 	if len(calls.deleted) != 1 || calls.deleted[0] != skillsTestShared+"/pdf" {
 		t.Fatalf("deleted %v", calls.deleted)
 	}
-	if a.panelState.skills.open != "" || !hasExact(tt, tx(l, xSkillsDeleted)) {
+	if a.panelState.skills.open != "" || !hasExact(tt, tx(l, xSkillsMovedTrash)) {
 		t.Fatalf("after delete: open=%q texts %q", a.panelState.skills.open, tt.Texts())
 	}
 }

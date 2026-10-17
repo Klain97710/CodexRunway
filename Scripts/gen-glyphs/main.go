@@ -67,6 +67,8 @@ var glyphs = map[string]string{
 	"icSkill":    "magic-line",
 	"icSearch":   "search-line",
 	"icLink":     "links-line",
+	"icFile":     "file-text-line",
+	"icCopy":     "file-copy-line",
 }
 
 func main() {

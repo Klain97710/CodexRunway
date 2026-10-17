@@ -1,6 +1,7 @@
 // Package skills discovers the global Agent Skills each CLI loads (Codex,
 // Claude Code, Grok), reports whether the CLI would use them, and removes a
-// user-owned skill by moving it to the system trash. It only reads official
+// user-owned skill into Quosparr's restorable trash (~/.quosparr/skills-trash).
+// Permanent removal goes through the system trash. It only reads official
 // configuration; enabling or disabling a skill is written by the provider
 // packages (codex, claude, grok).
 package skills
@@ -108,6 +109,86 @@ type Skill struct {
 	Removal          Removal // valid when Deletable
 	Toggleable       bool    // the provider package can switch it on or off
 	ToggleBlock      Reason  // why not, when !Toggleable
+	Origin           Origin  // where it came from, as far as local files tell
+}
+
+// OriginFrom says which local file an Origin was read from.
+type OriginFrom string
+
+// OriginFrom values, in the order a scan trusts them.
+const (
+	OriginNone        OriginFrom = ""
+	OriginLock        OriginFrom = "lock"        // ~/.agents/.skill-lock.json, written by the skills CLI
+	OriginGit         OriginFrom = "git"         // remote "origin" of an enclosing git checkout
+	OriginPlugin      OriginFrom = "plugin"      // the plugin or its marketplace manifest
+	OriginFrontmatter OriginFrom = "frontmatter" // homepage / repository keys of SKILL.md
+)
+
+// Origin is where a skill came from. Every URL is https with credentials,
+// query and fragment removed; anything else is dropped.
+type Origin struct {
+	From        OriginFrom
+	Repository  string // the source repository
+	GitHub      string // "owner/repo" when Repository is on github.com
+	Homepage    string // a declared homepage other than Repository
+	Folder      string // the skill's folder inside Repository, when known
+	SkillPath   string // that folder relative to the repository root ("skills/foo")
+	Branch      string // the checked-out branch of a git checkout
+	Version     string // plugin or frontmatter version
+	Installer   string // "skills", "git", or the plugin marketplace name
+	InstalledAt time.Time
+	UpdatedAt   time.Time
+}
+
+// FileEntry is one file or directory under a skill's folder.
+type FileEntry struct {
+	Path    string // slash-separated, relative to the skill's folder
+	Size    int64  // regular files only
+	Dir     bool
+	Link    bool // a symlink, listed but never followed
+	Skipped bool // a directory (.git, node_modules) listed but not walked
+	ModTime time.Time
+}
+
+// Detail is what Inspect reads when a skill's page opens.
+type Detail struct {
+	Files     []FileEntry // sorted by Path, at most MaxDetailFiles
+	FileCount int         // regular files seen
+	DirCount  int
+	Size      int64 // bytes of the regular files seen
+	Truncated bool  // a limit stopped the walk; the counts are lower bounds
+}
+
+// TrashKind is what a trash entry holds.
+type TrashKind string
+
+// TrashKind values.
+const (
+	TrashSkill      TrashKind = "skill"      // a skill folder, a collection, or a link to one
+	TrashBrokenLink TrashKind = "brokenLink" // a dangling link from the diagnostics list
+)
+
+// TrashEntry is one item in Quosparr's skills trash. Restore moves Item
+// back to Original; Purge hands the entry to the system trash.
+type TrashEntry struct {
+	ID            string
+	Kind          TrashKind
+	Provider      Provider // the CLI whose page it was deleted from
+	SharedWith    []Provider
+	Name          string
+	InvokeName    string
+	DisplayName   string
+	Description   string
+	Covers        []string // invoke names that went with it
+	Original      string   // absolute path it was moved from
+	OriginalLabel string   // Original with the home directory shown as "~"
+	Root          string   // the user skills root it lived under
+	IsLink        bool
+	LinkTarget    string
+	Origin        Origin
+	DeletedAt     time.Time
+	Size          int64  // bytes of regular files, links not followed; -1 when unknown
+	Item          string // the moved file, directory or link inside the trash
 }
 
 // IssueKind is a problem worth showing in the diagnostics list.
@@ -169,4 +250,7 @@ type Env struct {
 const (
 	MaxFrontmatterBytes = 64 << 10
 	MaxBodyBytes        = 256 << 10
+	MaxDetailFiles      = 400  // entries Inspect lists
+	MaxDetailWalk       = 5000 // entries Inspect visits before it stops counting
+	MaxDetailDepth      = 8
 )
