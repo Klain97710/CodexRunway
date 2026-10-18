@@ -82,7 +82,7 @@ func TestDeleteManagedRejectsUnsafeOrChangedFiles(t *testing.T) {
 		path := writeManagedTestFile(t, root, "one.jsonl", "session")
 		session := managedTestSession(t, ProviderCodex, root, path, path)
 		oldTime := session.Files[0].ModTime
-		if err := os.Remove(path); err != nil {
+		if err := os.Rename(path, path+".replaced"); err != nil {
 			t.Fatal(err)
 		}
 		writeManagedTestFile(t, root, "one.jsonl", "session")

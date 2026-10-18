@@ -98,7 +98,7 @@ func TestReadManagedDetailMessagesTruncationAndIdentity(t *testing.T) {
 		t.Fatalf("grown detail = %#v, %v", grown, err)
 	}
 
-	if err := os.Remove(path); err != nil {
+	if err := os.Rename(path, path+".replaced"); err != nil {
 		t.Fatal(err)
 	}
 	writeManagedFixture(t, path, `{"type":"response_item","payload":{"type":"message","role":"user","content":"replacement"}}`)
@@ -132,6 +132,26 @@ func TestReadManagedDetailMessagesTruncationAndIdentity(t *testing.T) {
 	detail, err = ReadManagedDetail(context.Background(), ManagedSession{Provider: ProviderCodex, Root: root, Path: longLine, Files: []ManagedFile{longFile}})
 	if err != nil || !detail.Truncated || len(detail.Messages) != 1 || detail.Messages[0].Text != "after" {
 		t.Fatalf("long-line detail = %#v, %v", detail, err)
+	}
+}
+
+func TestSnapshotManagedFileFreezesIdentity(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "one.jsonl")
+	writeManagedFixture(t, path, "original\n")
+	file, err := SnapshotManagedFile(root, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(path, path+".replaced"); err != nil {
+		t.Fatal(err)
+	}
+	writeManagedFixture(t, path, "replaced\n")
+	if err := os.Chtimes(path, file.ModTime, file.ModTime); err != nil {
+		t.Fatal(err)
+	}
+	if err := VerifyManagedFileIdentity(root, file); err == nil || !strings.Contains(err.Error(), "identity changed") {
+		t.Fatalf("replacement error = %v", err)
 	}
 }
 

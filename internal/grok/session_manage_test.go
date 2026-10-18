@@ -87,10 +87,20 @@ func TestManagedGrokRejectsReplacementAfterSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Remove(summary); err != nil {
+	if len(files) != 1 {
+		t.Fatalf("snapshots = %#v", files)
+	}
+	if err := os.Rename(summary, summary+".replaced"); err != nil {
 		t.Fatal(err)
 	}
 	writeGrokManaged(t, summary, `{"info":{"id":"new"}}`)
+	if err := os.Chtimes(summary, files[0].ModTime, files[0].ModTime); err != nil {
+		t.Fatal(err)
+	}
+	replacement, err := os.Lstat(summary)
+	if err != nil || replacement.Size() != files[0].Size || !replacement.ModTime().Equal(files[0].ModTime) {
+		t.Fatalf("replacement metadata = %#v, %v", replacement, err)
+	}
 	if _, err := (SessionScanner{GrokHome: home}).managedFromCapturedSummary(root, summary, files); err == nil {
 		t.Fatal("replacement accepted with old snapshot")
 	}

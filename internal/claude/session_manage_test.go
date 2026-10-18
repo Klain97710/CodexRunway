@@ -71,10 +71,17 @@ func TestManagedClaudeRejectsReplacementAfterSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Remove(path); err != nil {
+	if err := os.Rename(path, path+".replaced"); err != nil {
 		t.Fatal(err)
 	}
 	writeClaudeManaged(t, path, `{"type":"user","sessionId":"new","timestamp":"2026-10-18T00:00:00Z"}`)
+	if err := os.Chtimes(path, snapshot.ModTime, snapshot.ModTime); err != nil {
+		t.Fatal(err)
+	}
+	replacement, err := os.Lstat(path)
+	if err != nil || replacement.Size() != snapshot.Size || !replacement.ModTime().Equal(snapshot.ModTime) {
+		t.Fatalf("replacement metadata = %#v, %v", replacement, err)
+	}
 	if _, err := readManagedClaudePart(context.Background(), root, path, snapshot); err == nil {
 		t.Fatal("replacement accepted with old snapshot")
 	}

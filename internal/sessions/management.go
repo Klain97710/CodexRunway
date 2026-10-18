@@ -3,6 +3,7 @@ package sessions
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -72,6 +73,23 @@ func SnapshotManagedFile(root, path string) (ManagedFile, error) {
 	}
 	if !info.Mode().IsRegular() {
 		return ManagedFile{}, fmt.Errorf("session file is not regular: %s", filepath.Base(path))
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return ManagedFile{}, err
+	}
+	// File.Stat captures Windows identity now; Lstat defers it until SameFile.
+	info, statErr := f.Stat()
+	closeErr := f.Close()
+	if err := errors.Join(statErr, closeErr); err != nil {
+		return ManagedFile{}, err
+	}
+	current, err := os.Lstat(path)
+	if err != nil {
+		return ManagedFile{}, err
+	}
+	if !current.Mode().IsRegular() || !os.SameFile(info, current) {
+		return ManagedFile{}, fmt.Errorf("session file identity changed: %s", filepath.Base(path))
 	}
 	return ManagedFile{Path: path, Size: info.Size(), ModTime: info.ModTime(), Info: info}, nil
 }
