@@ -34,6 +34,17 @@ const (
 // original file is left untouched. A symlinked path is edited through to its
 // target so the link survives.
 func EditFileWithBackup(path string, backup BackupPolicy, now time.Time, edit func(old []byte) ([]byte, error)) error {
+	return editFileWithBackup(path, backup, now, edit, nil)
+}
+
+// EditFileWithBackupChecked is EditFileWithBackup with a final caller check
+// after the backup and temporary replacement are ready, immediately before
+// the atomic replacement. A failed check leaves the destination untouched.
+func EditFileWithBackupChecked(path string, backup BackupPolicy, now time.Time, edit func(old []byte) ([]byte, error), beforeReplace func() error) error {
+	return editFileWithBackup(path, backup, now, edit, beforeReplace)
+}
+
+func editFileWithBackup(path string, backup BackupPolicy, now time.Time, edit func(old []byte) ([]byte, error), beforeReplace func() error) error {
 	target := path
 	if resolved, err := filepath.EvalSymlinks(path); err == nil {
 		target = resolved
@@ -54,7 +65,7 @@ func EditFileWithBackup(path string, backup BackupPolicy, now time.Time, edit fu
 			return err
 		}
 	}
-	return WriteFileAtomic(target, out, mode)
+	return writeFileAtomic(target, out, mode, beforeReplace)
 }
 
 func readExisting(path string) (data []byte, mode fs.FileMode, exists bool, err error) {

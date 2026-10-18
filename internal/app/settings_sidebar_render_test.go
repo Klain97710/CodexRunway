@@ -19,7 +19,7 @@ func TestExportSettingsSidebarReview(t *testing.T) {
 	names := map[settingsTab]string{
 		tabGeneral: "general", tabAccounts: "accounts", tabDisplay: "display", tabFloating: "floating",
 		tabModules: "modules", tabNotifications: "notifications", tabSessions: "sessions", tabSkills: "skills",
-		tabAdvanced: "advanced", tabAbout: "about",
+		tabMCP: "mcp", tabAdvanced: "advanced", tabAbout: "about",
 	}
 	for _, language := range []store.Language{store.LanguageEnglish, store.LanguageSimplifiedChinese, store.LanguageRussian} {
 		output := dir

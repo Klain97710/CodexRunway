@@ -1,0 +1,40 @@
+package codex
+
+import (
+	"context"
+	"path/filepath"
+	"time"
+
+	"github.com/licoy/quosparr/internal/mcp"
+)
+
+// LoadMCP reads user-scoped MCP declarations from Codex config.toml.
+func (s *Store) LoadMCP(ctx context.Context) (mcp.Snapshot, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	source, err := s.mcpSource()
+	if err != nil {
+		return mcp.Snapshot{}, err
+	}
+	return mcp.Load(ctx, source)
+}
+
+// DeleteMCP removes selected user-scoped declarations under the Store lock.
+func (s *Store) DeleteMCP(ctx context.Context, selected []mcp.Server, now time.Time) ([]mcp.DeleteResult, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	source, err := s.mcpSource()
+	if err != nil {
+		return nil, err
+	}
+	return mcp.Delete(ctx, source, selected, now)
+}
+
+func (s *Store) mcpSource() (mcp.Source, error) {
+	path, err := filepath.Abs(s.ConfigPath())
+	if err != nil {
+		return mcp.Source{}, err
+	}
+	backup, err := filepath.Abs(filepath.Join(s.runwayHome, "backups"))
+	return mcp.Source{Provider: mcp.ProviderCodex, Path: path, BackupDir: backup}, err
+}

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 )
@@ -169,5 +170,47 @@ func TestEditFileWithBackupWritesThroughSymlink(t *testing.T) {
 	}
 	if got, _ := os.ReadFile(real); string(got) != "b" {
 		t.Fatalf("target = %q", got)
+	}
+}
+
+func TestEditFileWithBackupCheckedRejectsChangeBeforeReplace(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "cfg.txt")
+	if err := os.WriteFile(path, []byte("original"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ready := make(chan struct{})
+	changed := make(chan error, 1)
+	go func() {
+		<-ready
+		changed <- os.WriteFile(path, []byte("external"), 0o600)
+	}()
+	err := EditFileWithBackupChecked(path, editPolicy(dir), time.Unix(1_800_000_000, 0),
+		func([]byte) ([]byte, error) { return []byte("edited"), nil },
+		func() error {
+			close(ready)
+			if err := <-changed; err != nil {
+				return err
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			if string(data) != "original" {
+				return errors.New("destination changed")
+			}
+			return nil
+		})
+	if err == nil {
+		t.Fatal("concurrent change was accepted")
+	}
+	if got, _ := os.ReadFile(path); string(got) != "external" {
+		t.Fatalf("destination = %q, want external change preserved", got)
+	}
+	entries, _ := os.ReadDir(dir)
+	for _, entry := range entries {
+		if strings.HasSuffix(entry.Name(), ".tmp") {
+			t.Fatalf("temporary file left behind: %s", entry.Name())
+		}
 	}
 }

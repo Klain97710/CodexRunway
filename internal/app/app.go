@@ -45,6 +45,8 @@ type PanelActions struct {
 	Skills SkillActions
 	// Sessions are the local session-management controls.
 	Sessions SessionActions
+	// MCP manages user-scoped MCP declarations without starting servers.
+	MCP MCPActions
 }
 
 // Options configures App.
@@ -420,9 +422,9 @@ func (a *App) startBackground() {
 	a.stopBackground = a.opts.Seams.StartBackground(ctx)
 }
 
-// OpenSettingsTab opens the settings window on tab 0..9 (general,
+// OpenSettingsTab opens the settings window on tab 0..10 (general,
 // accounts, appearance & menu, floating window, panel modules,
-// notifications, sessions, skills, advanced, about); for dev runs and screenshots.
+// notifications, sessions, skills, MCP, advanced, about); for dev runs and screenshots.
 func (a *App) OpenSettingsTab(tab int) {
 	a.OpenSettings()
 	if a.setUI != nil && tab >= 0 && tab < len(settingsTabs) {
@@ -485,6 +487,7 @@ func (a *App) OpenSettings() {
 		Actions:  actions,
 		Skills:   func() SkillActions { return a.PanelActions().Skills },
 		Sessions: func() SessionActions { return a.PanelActions().Sessions },
+		MCP:      func() MCPActions { return a.PanelActions().MCP },
 	})
 	a.setWin = mygo.NewWindow(mygo.WindowOptions{
 		StateKey:             "settings",
@@ -509,6 +512,7 @@ func (a *App) OpenSettings() {
 		if a.setUI != nil {
 			a.setUI.cancelAccountTask()
 			a.setUI.cancelSessionTasks()
+			a.setUI.cancelMCPTasks()
 		}
 		a.setWin = nil
 		a.setUI = nil
@@ -522,6 +526,7 @@ func (a *App) shutdown() {
 	if a.setUI != nil {
 		a.setUI.cancelAccountTask()
 		a.setUI.cancelSessionTasks()
+		a.setUI.cancelMCPTasks()
 	}
 	// A change made just before quitting still reaches the store.
 	a.settings.Flush()

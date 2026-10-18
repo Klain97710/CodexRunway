@@ -52,6 +52,8 @@ type SettingsOptions struct {
 	Skills func() SkillActions
 	// Sessions returns read and delete operations for local CLI sessions.
 	Sessions func() SessionActions
+	// MCP returns read and delete operations for global native MCP entries.
+	MCP func() MCPActions
 }
 
 type settingsTab int
@@ -65,11 +67,12 @@ const (
 	tabNotifications
 	tabSessions
 	tabSkills
+	tabMCP
 	tabAdvanced
 	tabAbout
 )
 
-var settingsTabs = []settingsTab{tabGeneral, tabAccounts, tabDisplay, tabFloating, tabModules, tabNotifications, tabSessions, tabSkills, tabAdvanced, tabAbout}
+var settingsTabs = []settingsTab{tabGeneral, tabAccounts, tabDisplay, tabFloating, tabModules, tabNotifications, tabSessions, tabSkills, tabMCP, tabAdvanced, tabAbout}
 
 // title is the tab's name in the sidebar and above its page.
 func (t settingsTab) title(l l10n.Localizer) string {
@@ -80,16 +83,18 @@ func (t settingsTab) title(l l10n.Localizer) string {
 		return tx(l, xSkillsSettingsTab)
 	case tabSessions:
 		return tx(l, xSessionsSettingsTab)
+	case tabMCP:
+		return tx(l, xMCPSettingsTab)
 	}
-	return l.Text([...]l10n.Key{l10n.KeyGeneral, l10n.KeyAccounts, l10n.KeyDisplay, "", l10n.KeyPanelModules, l10n.KeyNotificationSettings, "", "", l10n.KeyAdvanced, l10n.KeyAbout}[t])
+	return l.Text([...]l10n.Key{l10n.KeyGeneral, l10n.KeyAccounts, l10n.KeyDisplay, "", l10n.KeyPanelModules, l10n.KeyNotificationSettings, "", "", "", l10n.KeyAdvanced, l10n.KeyAbout}[t])
 }
 
 func (t settingsTab) icon() *ui.SVG {
-	return [...]*ui.SVG{icGear, icUsers, icEye, icFloating, icLayout, icBell, icChat, icSkill, icSliders, icInfo}[t]
+	return [...]*ui.SVG{icGear, icUsers, icEye, icFloating, icLayout, icBell, icChat, icSkill, icPlug, icSliders, icInfo}[t]
 }
 
 func (t settingsTab) tint() Tint {
-	return [...]Tint{TintGray, TintGreen, TintBlue, TintTeal, TintPurple, TintRed, TintTeal, TintPink, TintOrange, TintIndigo}[t]
+	return [...]Tint{TintGray, TintGreen, TintBlue, TintTeal, TintPurple, TintRed, TintTeal, TintPink, TintBlue, TintOrange, TintIndigo}[t]
 }
 
 //go:embed assets/app-icon.png
@@ -126,6 +131,7 @@ type settingsUI struct {
 	accounts *accountForm
 	sessions *settingsSessions
 	skills   *settingsSkills
+	mcp      *settingsMCP
 
 	draft         ProxyDraft
 	draftReady    bool
@@ -187,7 +193,7 @@ func (u *settingsUI) view(c *ui.Context) {
 }
 
 func (u *settingsUI) pageContent(c *ui.Context) {
-	ui.Scroll(c.Key("page-"+fmt.Sprint(int(u.tab))+u.skillsPageKey())).Grow(1).Basis(0).Padding(4, 24, 24, 24).Gap(22).Children(func() {
+	ui.Scroll(c.Key("page-"+fmt.Sprint(int(u.tab))+u.skillsPageKey()+u.mcpPageKey())).Grow(1).Basis(0).Padding(4, 24, 24, 24).Gap(22).Children(func() {
 		if u.s.ReadOnly() {
 			u.readOnlyBanner(c)
 		}
@@ -212,6 +218,8 @@ func (u *settingsUI) pageContent(c *ui.Context) {
 			u.skillsPage(c)
 		case tabSessions:
 			u.sessionsPage(c)
+		case tabMCP:
+			u.mcpPage(c)
 		case tabAdvanced:
 			u.advancedPage(c)
 		case tabAbout:
@@ -233,6 +241,7 @@ func (u *settingsUI) readOnlyBanner(c *ui.Context) {
 // dialogs draws the alerts that are open.
 func (u *settingsUI) dialogs(c *ui.Context) {
 	u.sessionDeleteDialog(c)
+	u.mcpDeleteDialog(c)
 	if u.confirmRepair {
 		l := u.L()
 		if ui.AlertDialog(c.Key("repair-confirm"), &u.confirmRepair,

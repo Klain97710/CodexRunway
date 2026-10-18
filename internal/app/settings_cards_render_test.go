@@ -52,7 +52,7 @@ func exportSettingsCardPages(t *testing.T, u *settingsUI, output string, width i
 	names := map[settingsTab]string{
 		tabGeneral: "general", tabAccounts: "accounts", tabDisplay: "display", tabFloating: "floating",
 		tabModules: "modules", tabNotifications: "notifications", tabSessions: "sessions", tabSkills: "skills",
-		tabAdvanced: "advanced", tabAbout: "about",
+		tabMCP: "mcp", tabAdvanced: "advanced", tabAbout: "about",
 	}
 	for _, tab := range settingsTabs {
 		u.tab = tab

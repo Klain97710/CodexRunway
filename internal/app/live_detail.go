@@ -119,4 +119,5 @@ func installDetailActions(rt *liveApp, a *PanelActions) {
 	a.RepairSessions = func() { rt.queuePreferences(livePreferenceRequest{repair: true}) }
 	installSkillActions(rt, &a.Skills)
 	installSessionActions(rt, &a.Sessions)
+	installMCPActions(rt, &a.MCP)
 }
