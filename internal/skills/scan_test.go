@@ -67,7 +67,7 @@ func TestScanRootSymlinksLoopBrokenAndSystemPolicy(t *testing.T) {
 	if err := os.MkdirAll(rootPath, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	link := filepath.Join(rootPath, "collection")
+	link := filepath.Join(rootPath, "z-collection")
 	if err := os.Symlink(target, link); err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +75,8 @@ func TestScanRootSymlinksLoopBrokenAndSystemPolicy(t *testing.T) {
 		t.Fatal(err)
 	}
 	broken := filepath.Join(rootPath, "broken")
-	if err := os.Symlink(filepath.Join(home, "missing"), broken); err != nil {
+	brokenTarget := filepath.Join(home, "missing")
+	if err := os.Symlink(brokenTarget, broken); err != nil {
 		t.Fatal(err)
 	}
 	fileTarget := filepath.Join(home, "single", "SKILL.md")
@@ -84,7 +85,8 @@ func TestScanRootSymlinksLoopBrokenAndSystemPolicy(t *testing.T) {
 	if err := os.MkdirAll(fileLinkDir, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Symlink(fileTarget, filepath.Join(fileLinkDir, "SKILL.md")); err != nil {
+	fileLink := filepath.Join(fileLinkDir, "SKILL.md")
+	if err := os.Symlink(fileTarget, fileLink); err != nil {
 		t.Fatal(err)
 	}
 	root := newRoot(env, rootPath, ScopeUser)
@@ -92,12 +94,24 @@ func TestScanRootSymlinksLoopBrokenAndSystemPolicy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(skills) != 2 || skills[0].LinkPath != link || skills[0].LinkTarget != target || !hasIssue(issues, IssueBrokenLink) {
+	if len(skills) != 2 {
 		t.Fatalf("linked scan = %#v, %#v", skills, issues)
 	}
-	skills, _, err = scanRoot(context.Background(), env, ProviderCodex, RootInfo{Path: rootPath, Scope: ScopeSystem, Exists: true}, walkOptions{FollowLinks: false})
-	if err != nil || len(skills) != 1 || skills[0].Name != "file-link" {
-		t.Fatalf("system followed links: %#v, %v", skills, err)
+	byName := make(map[string]Skill, len(skills))
+	for _, skill := range skills {
+		byName[skill.Name] = skill
+	}
+	linked, linkedOK := byName["linked"]
+	fileLinked, fileLinkedOK := byName["file-link"]
+	if !linkedOK || linked.LinkPath != link || linked.LinkTarget != target || !fileLinkedOK || fileLinked.LinkPath != fileLink || fileLinked.LinkTarget != fileTarget {
+		t.Fatalf("linked scan = %#v", skills)
+	}
+	if len(issues) != 1 || issues[0].Kind != IssueBrokenLink || issues[0].Path != broken || issues[0].Detail != brokenTarget || !issues[0].Removable {
+		t.Fatalf("linked issues = %#v", issues)
+	}
+	skills, issues, err = scanRoot(context.Background(), env, ProviderCodex, RootInfo{Path: rootPath, Scope: ScopeSystem, Exists: true}, walkOptions{FollowLinks: false})
+	if err != nil || len(skills) != 1 || skills[0].Name != "file-link" || skills[0].LinkPath != fileLink || skills[0].LinkTarget != fileTarget || len(issues) != 0 {
+		t.Fatalf("system followed links: %#v, %#v, %v", skills, issues, err)
 	}
 }
 
