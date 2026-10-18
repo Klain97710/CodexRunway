@@ -147,8 +147,10 @@ func TestSetSkillConfigPathOnlyRule(t *testing.T) {
 }
 
 func TestSetSkillConfigRejectsEditedMultilineAndAllowsUnrelated(t *testing.T) {
-	path, name := skillTarget(t)
-	matched := "[[skills.config]]\npath = \"\"\"" + path + "\"\"\"\nenabled = true\n"
+	path := filepath.Join(t.TempDir(), `demo\windows`, "SKILL.md")
+	name := "demo"
+	quotedPath := tomlQuote(path)
+	matched := "[[skills.config]]\npath = \"\"\"" + quotedPath[1:len(quotedPath)-1] + "\"\"\"\nenabled = true\n"
 	if _, err := SetSkillConfigEnabled([]byte(matched), path, name, false); !errors.Is(err, ErrSkillConfigUnsupported) {
 		t.Fatalf("matched multiline err = %v", err)
 	}
