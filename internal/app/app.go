@@ -43,6 +43,8 @@ type PanelActions struct {
 	Accounts AccountActions
 	// Skills are the skills page controls.
 	Skills SkillActions
+	// Sessions are the local session-management controls.
+	Sessions SessionActions
 }
 
 // Options configures App.
@@ -418,9 +420,9 @@ func (a *App) startBackground() {
 	a.stopBackground = a.opts.Seams.StartBackground(ctx)
 }
 
-// OpenSettingsTab opens the settings window on tab 0..8 (general,
+// OpenSettingsTab opens the settings window on tab 0..9 (general,
 // accounts, appearance & menu, floating window, panel modules,
-// notifications, skills, advanced, about); for dev runs and screenshots.
+// notifications, sessions, skills, advanced, about); for dev runs and screenshots.
 func (a *App) OpenSettingsTab(tab int) {
 	a.OpenSettings()
 	if a.setUI != nil && tab >= 0 && tab < len(settingsTabs) {
@@ -479,9 +481,10 @@ func (a *App) OpenSettings() {
 		actions.OpenFolder = openFolder
 	}
 	a.setUI = newSettingsUI(a.settings, SettingsOptions{
-		Version: a.opts.Version,
-		Actions: actions,
-		Skills:  func() SkillActions { return a.PanelActions().Skills },
+		Version:  a.opts.Version,
+		Actions:  actions,
+		Skills:   func() SkillActions { return a.PanelActions().Skills },
+		Sessions: func() SessionActions { return a.PanelActions().Sessions },
 	})
 	a.setWin = mygo.NewWindow(mygo.WindowOptions{
 		StateKey:             "settings",
@@ -505,6 +508,7 @@ func (a *App) OpenSettings() {
 	a.setWin.OnClosed(func() {
 		if a.setUI != nil {
 			a.setUI.cancelAccountTask()
+			a.setUI.cancelSessionTasks()
 		}
 		a.setWin = nil
 		a.setUI = nil
@@ -517,6 +521,7 @@ func (a *App) shutdown() {
 	a.cancelPanelDetails()
 	if a.setUI != nil {
 		a.setUI.cancelAccountTask()
+		a.setUI.cancelSessionTasks()
 	}
 	// A change made just before quitting still reaches the store.
 	a.settings.Flush()

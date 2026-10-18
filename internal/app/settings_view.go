@@ -50,6 +50,8 @@ type SettingsOptions struct {
 	// Skills returns the skills actions of the running app; nil or an
 	// empty result leaves the skills tab read-only.
 	Skills func() SkillActions
+	// Sessions returns read and delete operations for local CLI sessions.
+	Sessions func() SessionActions
 }
 
 type settingsTab int
@@ -61,12 +63,13 @@ const (
 	tabFloating
 	tabModules
 	tabNotifications
+	tabSessions
 	tabSkills
 	tabAdvanced
 	tabAbout
 )
 
-var settingsTabs = []settingsTab{tabGeneral, tabAccounts, tabDisplay, tabFloating, tabModules, tabNotifications, tabSkills, tabAdvanced, tabAbout}
+var settingsTabs = []settingsTab{tabGeneral, tabAccounts, tabDisplay, tabFloating, tabModules, tabNotifications, tabSessions, tabSkills, tabAdvanced, tabAbout}
 
 // title is the tab's name in the sidebar and above its page.
 func (t settingsTab) title(l l10n.Localizer) string {
@@ -75,16 +78,18 @@ func (t settingsTab) title(l l10n.Localizer) string {
 		return tx(l, xFloatingSection)
 	case tabSkills:
 		return tx(l, xSkillsSettingsTab)
+	case tabSessions:
+		return tx(l, xSessionsSettingsTab)
 	}
-	return l.Text([...]l10n.Key{l10n.KeyGeneral, l10n.KeyAccounts, l10n.KeyDisplay, "", l10n.KeyPanelModules, l10n.KeyNotificationSettings, "", l10n.KeyAdvanced, l10n.KeyAbout}[t])
+	return l.Text([...]l10n.Key{l10n.KeyGeneral, l10n.KeyAccounts, l10n.KeyDisplay, "", l10n.KeyPanelModules, l10n.KeyNotificationSettings, "", "", l10n.KeyAdvanced, l10n.KeyAbout}[t])
 }
 
 func (t settingsTab) icon() *ui.SVG {
-	return [...]*ui.SVG{icGear, icUsers, icEye, icFloating, icLayout, icBell, icSkill, icSliders, icInfo}[t]
+	return [...]*ui.SVG{icGear, icUsers, icEye, icFloating, icLayout, icBell, icChat, icSkill, icSliders, icInfo}[t]
 }
 
 func (t settingsTab) tint() Tint {
-	return [...]Tint{TintGray, TintGreen, TintBlue, TintTeal, TintPurple, TintRed, TintPink, TintOrange, TintIndigo}[t]
+	return [...]Tint{TintGray, TintGreen, TintBlue, TintTeal, TintPurple, TintRed, TintTeal, TintPink, TintOrange, TintIndigo}[t]
 }
 
 //go:embed assets/app-icon.png
@@ -119,6 +124,7 @@ type settingsUI struct {
 
 	tab      settingsTab
 	accounts *accountForm
+	sessions *settingsSessions
 	skills   *settingsSkills
 
 	draft         ProxyDraft
@@ -204,6 +210,8 @@ func (u *settingsUI) pageContent(c *ui.Context) {
 			u.notificationsGroup(c)
 		case tabSkills:
 			u.skillsPage(c)
+		case tabSessions:
+			u.sessionsPage(c)
 		case tabAdvanced:
 			u.advancedPage(c)
 		case tabAbout:
@@ -224,6 +232,7 @@ func (u *settingsUI) readOnlyBanner(c *ui.Context) {
 
 // dialogs draws the alerts that are open.
 func (u *settingsUI) dialogs(c *ui.Context) {
+	u.sessionDeleteDialog(c)
 	if u.confirmRepair {
 		l := u.L()
 		if ui.AlertDialog(c.Key("repair-confirm"), &u.confirmRepair,

@@ -16,7 +16,11 @@ func TestExportSettingsSidebarReview(t *testing.T) {
 		t.Skip("set RUNWAY_SIDEBAR_QA=1 to export offscreen PNGs")
 	}
 	dir := filepath.Join("..", "..", ".build", "v1-sidebar-qa")
-	names := []string{"general", "accounts", "display", "advanced", "about"}
+	names := map[settingsTab]string{
+		tabGeneral: "general", tabAccounts: "accounts", tabDisplay: "display", tabFloating: "floating",
+		tabModules: "modules", tabNotifications: "notifications", tabSessions: "sessions", tabSkills: "skills",
+		tabAdvanced: "advanced", tabAbout: "about",
+	}
 	for _, language := range []store.Language{store.LanguageEnglish, store.LanguageSimplifiedChinese, store.LanguageRussian} {
 		output := dir
 		if language != store.LanguageEnglish {
@@ -51,7 +55,7 @@ func TestExportSettingsSidebarReview(t *testing.T) {
 				}, settingsWidth, settingsHeight)
 				view.SetTitleBar(ui.TitleBar{Height: 40, Left: 80})
 				view.SetDark(dark)
-				exportReviewPNG(t, view, filepath.Join(output, names[int(tab)]+"-"+appearance+".png"))
+				exportReviewPNG(t, view, filepath.Join(output, names[tab]+"-"+appearance+".png"))
 			}
 			panel.SetSize(panelWidth, int(store.DefaultMainPanelHeight))
 			panel.SetDark(dark)

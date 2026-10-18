@@ -30,14 +30,14 @@ v1 已正式发布（`v1.0.0`、`v1.0.1`）；macOS 仅保留 Swift WidgetKit �
 - Codex API 账号（Base URL + API Key）的 Key 与其他 API Key 一样存于账号库托管副本，Base URL、模型与余额缓存只在 `index.json` 行内，不含 Key；用户主动切到中转账号时同一事务写官方 `auth.json`（`auth_mode=apikey`）与 `config.toml` 的 `model_provider = "quosparr"` 和 `[model_providers.quosparr]`，切走时移除该指针与 Quosparr 写入的模型，失败整体回滚；`config.toml` 只做逐行编辑并保留其他内容，写入前备份到 `~/.quosparr/backups`（目录私有、文件 `0600`，保留最近 10 份）；不改 shell rc 或环境变量；官方登录为 API Key 且 `config.toml` 的 `model_provider` 选中带 `base_url` 的服务商时，同步只读该文件，把站点与顶层模型补到尚无站点的对应账号行；从这类账号切走时，若选中的服务商指向同一站点，只移除 `model_provider` 行，保留用户的服务商表；编辑 API 账号可替换 Key（留空保留），行 ID 不变；编辑当前账号且 Key、站点或模型有变时先询问“仅保存 / 保存并应用”，仅保存只改账号库，应用后提示重启 Codex
 - 中转余额与模型列表只请求用户填写的站点，经应用代理策略、不直连回退；Key 只放在请求头，错误、日志与缓存结果中不得出现 Key 或响应正文
 - 刷新非当前托管账号 token 时只写账号库副本，不得写官方 `auth.json`；刷新当前账号时同步官方 auth 与账号库副本。
-- 会话修复只允许处理 `session_index.jsonl`，写入前必须备份。
-- 不删除 `~/.codex/sessions/**`、`~/.codex/archived_sessions/**` 或全局状态文件。
+- 会话日志在普通扫描、详情读取与索引修复中保持只读；会话修复只写已备份的 `session_index.jsonl`。唯一删除例外是用户在“会话管理”中明确选择并确认的 Codex、Claude Code 或 Grok 会话：只将扫描时归属该会话且删除前复核可信根、路径、非符号链接、类型、文件身份、大小与修改时间均未变化的文件逐项移到系统回收站，不永久删除，不移走项目目录，不扩展枚举同目录文件，逐项报告成功、失败与部分完成。
+- 删除操作不直接改写官方 `session_index.jsonl`、全局状态文件或数据库；近期会话与派生统计按现有刷新流程从仍存在的日志重新计算，索引中的孤儿行仅由用户另行确认的会话修复在备份后处理。
 - 读取官方 Claude 凭据时只取 `claudeAiOauth` 的必要字段；`mcpOAuth` 不解析内容，只在用户主动切号时原样保留。
 - `.claude.json` 只读取 `oauthAccount`。切号时只替换这一个键，其他内容原样保留。
 - 写官方 Claude 凭据只有用户主动切号。当前账号的 token 不由 Quosparr 刷新。
 - Claude API 账号的 Key 只存于 `~/.quosparr/accounts/claude-api-<id>/auth.json`（`{"apiKey": "..."}`，权限同上），`claude-index.json` 只保存 Base URL、Key 哈希提示、模型映射与余额缓存；用户主动切到 API 账号时只改 `<config>/settings.json` 的 `env.ANTHROPIC_BASE_URL`、`env.ANTHROPIC_AUTH_TOKEN` 及可选模型映射键，写入前备份到 `~/.quosparr/backups`，切回订阅账号时只移除 Quosparr 写入且值仍匹配的键；钥匙串、`.credentials.json` 与 `.claude.json` 不因 API 账号改动；`settings.json` 首次写入会按键名重排（内容不变）；同步时只读 `settings.json`，其中已有而账号库没有的 `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN`（或 `ANTHROPIC_API_KEY`）自动导入为 API 账号并设为当前，移除时 `ANTHROPIC_API_KEY` 同样按值匹配；编辑当前 API 账号且 Key、站点或模型有变时同样先询问，仅保存不改 `settings.json`，应用后提示重启 Claude Code；Base URL 末尾的 `/v1` 会去掉（Claude Code 自行拼接 `/v1/messages`），旧版本存下的带 `/v1` 行读取时规范化，`settings.json` 仍是旧写法时按同一站点识别，编辑该账号时可选择改写
 - Claude 托管副本在 `~/.quosparr/accounts/claude-<stable-id>/auth.json`（目录 `0700`、文件 `0600`、原子写入；Windows 使用 protected ACL 并关闭继承），只保存 `{"claudeAiOauth": {...}}`。索引 `claude-index.json` 不得包含 token。
-- Claude 会话扫描只读 `projects/**`，不写不删，不读取 `last-prompt` 等用户原文。
+- Claude 会话扫描只读 `projects/**`，不读取 `last-prompt` 等独立缓存；仅在用户打开详情时读取所选会话日志中的对话原文，仅上述用户主动确认的会话删除例外可把已归属同一会话的主日志与配套日志逐项移到系统回收站。
 - Skill 管理只扫描全局级别（不含项目级与旧版 Claude `commands/*.md`），按各 CLI 自身的发现规则读取 SKILL.md 的 frontmatter，正文只在用户展开时读取前 256 KB，不跟随指向凭据文件的链接；跨供应商复制到目标 CLI 的原生用户 skills 目录并尊重自定义主目录，同名目标拒绝覆盖，只有可独立删除的用户 skill 能移动，完整复制后才将原件移入自有回收站，归档失败须明确报告部分完成；删除仅限用户 skills 目录，删除前重新校验路径、类型与所属根目录，先移入 Quosparr 自有回收站 `~/.quosparr/skills-trash/<id>/`（目录私有，`meta.json` 为 `0600`，只含非密钥元数据与 `item/` 原件），可在设置中原位恢复（恢复前再次校验原父目录与根目录、不覆盖已有内容），彻底删除与清空经系统回收站移除，跨卷无法移入时直接退到系统回收站并单独提示，不得直接删除或递归删除，符号链接只移除链接本身；来源识别只读 `~/.agents/.skill-lock.json`、skill 所在 git 仓库的配置、插件清单与 frontmatter，仓库 URL 去除凭据后才展示；系统、bundled、管理员、插件与 claude.ai 同步目录只读；启停只在用户主动操作时写各家官方开关：Codex `config.toml` 的 `[[skills.config]]`（按 SKILL.md 路径）、Claude `settings.json` 的 `skillOverrides`、Grok `config.toml` 的 `[skills].disabled`，写入前分别备份为 `~/.quosparr/backups` 下的 `codex-config-`、`claude-settings-`、`grok-config-`（各保留最近 10 份），只做逐项编辑并保留其他内容
 - 调用 `/usr/bin/security` 使用绝对路径。密钥只经 stdin 传递，超过上限时报错，不退回 argv。stderr 进入日志前只保留退出码和错误类别。
 
