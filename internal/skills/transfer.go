@@ -55,7 +55,12 @@ func TransferSkill(input Env, req TransferRequest, systemTrash func(string) erro
 	if err != nil {
 		return result, err
 	}
-	defer source.root.Close()
+	sourceOpen := true
+	defer func() {
+		if sourceOpen {
+			_ = source.root.Close()
+		}
+	}()
 	targetRoot, err := transferTargetRoot(env, req.Target)
 	if err != nil {
 		return result, err
@@ -101,6 +106,11 @@ func TransferSkill(input Env, req TransferRequest, systemTrash func(string) erro
 		keep = true
 		return result, nil
 	}
+	if err = source.root.Close(); err != nil {
+		keep = true
+		return result, fmt.Errorf("%w: skills: close transfer source: %w", ErrTransferPartial, err)
+	}
+	sourceOpen = false
 	trash := NewTrash(filepath.Join(env.Home, ".quosparr"), env.Home)
 	_, result.SourceInSystemTrash, err = trash.MoveSkill(req.Skill, req.Roots, env.Now, systemTrash)
 	if err != nil {
