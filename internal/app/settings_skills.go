@@ -422,19 +422,18 @@ func (u *settingsUI) openSkillFolder(acts SkillActions, dir string) {
 	}
 }
 
-// skillListRow is one skill: its tile, name and badges, description and
-// a line of facts, with its switch beside the button to its page.
+// skillListRow is one skill: its information opens the detail page, and its
+// controls stay in a separate row below it.
 func (u *settingsUI) skillListRow(c *ui.Context, sum skills.Summary, sk skills.Skill, acts SkillActions) {
 	s := u.skillsState()
 	l, t := u.L(), c.Theme()
-	ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
-		b := ui.ButtonBase(c.Key("skill-row-"+sk.ID)).Label(skillTitle(sk)).Grow(1).Basis(0).Padding(9, 4).Gap(10).
+	ui.Column(c).Gap(2).Padding(4, 0).Children(func() {
+		b := ui.ButtonBase(c.Key("skill-row-"+sk.ID)).Label(skillTitle(sk)).AlignSelf(ui.Stretch).Padding(9, 4).Gap(6).
 			Radius(6).AlignItems(ui.Start).Cursor(ui.CursorPointer)
 		if b.Hovered() {
 			b.Background(pal(t).Hover)
 		}
 		b.Children(func() {
-			skillTile(c, sk, 30)
 			ui.Column(c).Gap(3).Grow(1).Basis(0).Children(func() {
 				ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 					name := ui.Text(c, skillTitle(sk)).FontSize(13).FontWeight(600).SingleLine().Ellipsis("…").Shrink(1)
@@ -447,9 +446,8 @@ func (u *settingsUI) skillListRow(c *ui.Context, sum skills.Summary, sk skills.S
 					skillBadges(c, l, sum, sk)
 				})
 				if sub := skillSubtitle(sk); sub != "" {
-					ui.Text(c, sub).FontSize(12).TextColor(t.TextMuted).MaxLines(2).Ellipsis("…")
+					ui.Text(c, sub).FontSize(12).TextColor(t.TextMuted).SingleLine().Ellipsis("…")
 				}
-				ui.Text(c, skillRowFacts(l, sum, sk)).FontSize(11).TextColor(t.TextMuted.Alpha(0.8)).SingleLine().Ellipsis("…")
 			})
 			ui.Icon(c, icChevRight).Size(12, 12).TextColor(t.TextMuted).Margin(9, 0, 0, 0)
 		})
@@ -457,28 +455,13 @@ func (u *settingsUI) skillListRow(c *ui.Context, sum skills.Summary, sk skills.S
 			s.closeItem()
 			s.open = sk.ID
 		}
-		u.skillRowSwitch(c, sk, acts)
+		u.skillActionsRow(c, sum, sk, acts, true)
 	})
-}
-
-// skillRowFacts is the small line under a row's description.
-func skillRowFacts(l l10n.Localizer, sum skills.Summary, sk skills.Skill) string {
-	parts := []string{skillPath(sum, sk.Dir)}
-	if !sk.ModTime.IsZero() {
-		parts = append(parts, tx(l, xSkillsModified)+" "+sk.ModTime.Local().Format("2006-01-02"))
-	}
-	if len(sk.SharedWith) > 0 {
-		parts = append(parts, tx(l, xSkillsSharedWith)+" "+skillProviders(l, sk.SharedWith))
-	}
-	if sk.Plugin != "" {
-		parts = append(parts, tx(l, xSkillsPlugin)+" "+sk.Plugin)
-	}
-	return strings.Join(parts, " · ")
 }
 
 // skillRowSwitch turns a skill on or off from the list. The switch shows
 // the new value until the scan after the write.
-func (u *settingsUI) skillRowSwitch(c *ui.Context, sk skills.Skill, acts SkillActions) {
+func (u *settingsUI) skillRowSwitch(c *ui.Context, sk skills.Skill, acts SkillActions, compact bool) {
 	s := u.skillsState()
 	l := u.L()
 	if !skillSwitchable(sk) {
@@ -490,7 +473,12 @@ func (u *settingsUI) skillRowSwitch(c *ui.Context, sk skills.Skill, acts SkillAc
 		on = v
 	}
 	set := acts.SetEnabled
-	if !ui.Switch(c.Key("skill-switch-"+sk.ID), &on).Label(tx(l, xSkillsEnabled)+" "+skillTitle(sk)).Disabled(set == nil || s.work.Running).Changed() || set == nil {
+	label := tx(l, xSkillsEnabled) + " " + skillTitle(sk)
+	sw := ui.Switch(c.Key("skill-switch-"+sk.ID), &on).Label(label).Tooltip(label).Disabled(set == nil || s.work.Running)
+	if compact {
+		sw.Size(30, 16).Radius(8)
+	}
+	if !sw.Changed() || set == nil {
 		return
 	}
 	u.toggleSkill(acts, sk, on)
@@ -632,7 +620,7 @@ func (u *settingsUI) skillIssueRow(c *ui.Context, sum skills.Summary, is skills.
 		}
 		del := acts.DeleteLink
 		id := "link\x00" + is.Path
-		b := PillButton(c, icTrash, tx(l, xSkillsRemoveLink), del == nil || s.work.Running)
+		b := IconButton(c, icTrash, tx(l, xSkillsRemoveLink), del == nil || s.work.Running)
 		open := s.confirm == id
 		if b.Clicked() && del != nil {
 			s.confirm, open = id, true
@@ -777,7 +765,7 @@ func (u *settingsUI) skillHeader(c *ui.Context, sum skills.Summary, sk skills.Sk
 		})
 		u.skillLinks(c, sk)
 		ui.Box(c).Height(1).Background(pal(t).Line)
-		u.skillActionsRow(c, sum, sk, acts)
+		u.skillActionsRow(c, sum, sk, acts, false)
 	})
 }
 
@@ -795,14 +783,14 @@ func (u *settingsUI) skillLinks(c *ui.Context, sk skills.Skill) {
 			if o.GitHub != "" {
 				icon, label = icGithub, o.GitHub
 			}
-			if PillButton(c, icon, label, false).Tooltip(o.Repository).Clicked() {
+			if IconButton(c, icon, label, false).Tooltip(label + "\n" + o.Repository).Clicked() {
 				c.OpenURL(o.Repository)
 			}
 		}
-		if o.Folder != "" && PillButton(c, icFolder, tx(l, xSkillsOpenOnline), false).Tooltip(o.Folder).Clicked() {
+		if o.Folder != "" && IconButton(c, icFolder, tx(l, xSkillsOpenOnline), false).Tooltip(tx(l, xSkillsOpenOnline)+"\n"+o.Folder).Clicked() {
 			c.OpenURL(o.Folder)
 		}
-		if o.Homepage != "" && o.Homepage != o.Repository && PillButton(c, icGlobe, tx(l, xSkillsOpenHomepage), false).Tooltip(o.Homepage).Clicked() {
+		if o.Homepage != "" && o.Homepage != o.Repository && IconButton(c, icGlobe, tx(l, xSkillsOpenHomepage), false).Tooltip(tx(l, xSkillsOpenHomepage)+"\n"+o.Homepage).Clicked() {
 			c.OpenURL(o.Homepage)
 		}
 	})
@@ -810,57 +798,89 @@ func (u *settingsUI) skillLinks(c *ui.Context, sk skills.Skill) {
 
 // skillActionsRow is the switch, the folder and copy buttons and the
 // trash button with its confirmation.
-func (u *settingsUI) skillActionsRow(c *ui.Context, sum skills.Summary, sk skills.Skill, acts SkillActions) {
-	s := u.skillsState()
+func (u *settingsUI) skillActionsRow(c *ui.Context, sum skills.Summary, sk skills.Skill, acts SkillActions, compact bool) {
 	l, t := u.L(), c.Theme()
-	ui.Row(c).Gap(8).Wrap().AlignItems(ui.Center).Children(func() {
+	row := ui.Row(c).Gap(8).AlignItems(ui.Center)
+	if !compact {
+		row.Wrap()
+	}
+	row.Children(func() {
 		if skillSwitchable(sk) {
-			ui.Row(c).Gap(8).Padding(0, 4, 0, 0).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, tx(l, xSkillsEnabled)).FontSize(13)
-				u.skillRowSwitch(c, sk, acts)
-			})
+			if compact {
+				u.skillRowSwitch(c, sk, acts, true)
+			} else {
+				ui.Row(c).Gap(8).Padding(0, 4, 0, 0).AlignItems(ui.Center).Children(func() {
+					ui.Text(c, tx(l, xSkillsEnabled)).FontSize(13)
+					u.skillRowSwitch(c, sk, acts, false)
+				})
+			}
 		}
-		if PillButton(c, icFolder, tx(l, xSkillsOpenFolder), acts.OpenFolder == nil).Clicked() {
+		if IconButton(c, icFolder, tx(l, xSkillsOpenFolder), acts.OpenFolder == nil).Clicked() {
 			u.openSkillFolder(acts, sk.Dir)
 		}
-		if PillButton(c, icFile, tx(l, xSkillsReveal), acts.Reveal == nil).Clicked() && acts.Reveal != nil {
+		if IconButton(c, icFile, tx(l, xSkillsReveal), acts.Reveal == nil).Clicked() && acts.Reveal != nil {
 			acts.Reveal(sk.File)
 		}
-		if PillButton(c, icCopy, tx(l, xSkillsCopyPath), acts.Copy == nil).Clicked() && acts.Copy != nil {
+		if IconButton(c, icLink, tx(l, xSkillsCopyPath), acts.Copy == nil).Clicked() && acts.Copy != nil {
 			acts.Copy(sk.File)
 			u.toast = tx(l, xSkillsCopied)
 		}
+		u.skillTransferMenu(c, sum, sk, acts)
+		if compact && sk.Deletable {
+			u.skillDeleteButton(c, sum, sk, acts)
+		}
 		ui.Spacer(c).Grow(1)
-		if !sk.Deletable {
-			return
-		}
-		del := acts.Delete
-		b := pillButton(c, icTrash, tx(l, xSkillsDelete), del == nil || s.work.Running, true)
-		open := s.confirm == sk.ID
-		if b.Clicked() && del != nil && !s.work.Running {
-			s.confirm, open = sk.ID, true
-		}
-		msg := tx(l, xSkillsDeleteMessage, skillPath(sum, sk.Removal.Path))
-		confirmPopover(c, l, b, &open, tx(l, xSkillsDeleteTitle), msg, tx(l, xSkillsDelete), func() { skillDeleteNotes(c, l, sk) }, func() {
-			var system bool
-			u.skillWork(acts, func() (string, error) {
-				var err error
-				system, err = del(sk, sum.Roots)
-				return skillMovedText(l, system), err
-			}, xSkillsDeleteFailed, func(err error) {
-				if err == nil {
-					notice := s.notice
-					s.closeItem()
-					s.notice = notice
-				}
-			})
-		})
-		if !open && s.confirm == sk.ID {
-			s.confirm = ""
+		if compact {
+			skillListMetadata(c, l, sk)
+		} else if sk.Deletable {
+			u.skillDeleteButton(c, sum, sk, acts)
 		}
 	})
 	if !sk.Deletable {
 		ui.Text(c, skillReadOnlyText(l, sk)).FontSize(11).TextColor(t.TextMuted)
+	}
+}
+
+func skillListMetadata(c *ui.Context, l l10n.Localizer, sk skills.Skill) {
+	t := c.Theme()
+	if len(sk.SharedWith) > 0 {
+		providers := skillProviders(l, sk.SharedWith)
+		ui.Text(c, tx(l, xSkillsSharedCompact, providers)).FontSize(11).TextColor(t.TextMuted).SingleLine().Ellipsis("…").Shrink(1).
+			Tooltip(tx(l, xSkillsSharedWith) + " " + providers)
+	}
+	if !sk.ModTime.IsZero() {
+		date := sk.ModTime.Local().Format("2006-01-02")
+		ui.Text(c, date).FontSize(11).FontFeatures("tnum").TextColor(t.TextMuted).SingleLine().Shrink(0).
+			Tooltip(tx(l, xSkillsModified) + " " + sk.ModTime.Local().Format("2006-01-02 15:04"))
+	}
+}
+
+func (u *settingsUI) skillDeleteButton(c *ui.Context, sum skills.Summary, sk skills.Skill, acts SkillActions) {
+	s := u.skillsState()
+	l := u.L()
+	del := acts.Delete
+	b := IconButton(c, icTrash, tx(l, xSkillsDelete), del == nil || s.work.Running)
+	open := s.confirm == sk.ID
+	if b.Clicked() && del != nil && !s.work.Running {
+		s.confirm, open = sk.ID, true
+	}
+	msg := tx(l, xSkillsDeleteMessage, skillPath(sum, sk.Removal.Path))
+	confirmPopover(c, l, b, &open, tx(l, xSkillsDeleteTitle), msg, tx(l, xSkillsDelete), func() { skillDeleteNotes(c, l, sk) }, func() {
+		var system bool
+		u.skillWork(acts, func() (string, error) {
+			var err error
+			system, err = del(sk, sum.Roots)
+			return skillMovedText(l, system), err
+		}, xSkillsDeleteFailed, func(err error) {
+			if err == nil {
+				notice := s.notice
+				s.closeItem()
+				s.notice = notice
+			}
+		})
+	})
+	if !open && s.confirm == sk.ID {
+		s.confirm = ""
 	}
 }
 
@@ -1147,7 +1167,7 @@ func (u *settingsUI) skillsTrash(c *ui.Context, acts SkillActions) {
 			u.openSkillFolder(acts, acts.TrashDir)
 		}
 		empty := acts.EmptyTrash
-		b := pillButton(c, icTrash, tx(l, xSkillsEmptyTrash), empty == nil || len(tr.list) == 0 || s.work.Running, true)
+		b := IconButton(c, icTrash, tx(l, xSkillsEmptyTrash), empty == nil || len(tr.list) == 0 || s.work.Running)
 		open := tr.confirm == "empty"
 		if b.Clicked() && empty != nil && len(tr.list) > 0 {
 			tr.confirm, open = "empty", true
@@ -1242,7 +1262,7 @@ func (u *settingsUI) trashRow(c *ui.Context, e skills.TrashEntry, acts SkillActi
 				acts.Reveal(e.Item)
 			}
 			restore := acts.Restore
-			if PillButton(c, icUndo, tx(l, xSkillsRestore), restore == nil || s.work.Running).Clicked() && restore != nil {
+			if IconButton(c, icUndo, tx(l, xSkillsRestore), restore == nil || s.work.Running).Clicked() && restore != nil {
 				id := e.ID
 				u.skillWork(acts, func() (string, error) {
 					got, err := restore(id)
@@ -1251,7 +1271,7 @@ func (u *settingsUI) trashRow(c *ui.Context, e skills.TrashEntry, acts SkillActi
 			}
 			purge := acts.Purge
 			key := "purge:" + e.ID
-			b := pillButton(c, icTrash, tx(l, xSkillsPurge), purge == nil || s.work.Running, true)
+			b := IconButton(c, icTrash, tx(l, xSkillsPurge), purge == nil || s.work.Running)
 			open := tr.confirm == key
 			if b.Clicked() && purge != nil {
 				tr.confirm, open = key, true

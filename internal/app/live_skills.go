@@ -34,6 +34,9 @@ func installSkillActions(rt *liveApp, a *SkillActions) {
 		_, inSystem, err := trash.MoveBrokenLink(sum, path, time.Now(), system)
 		return inSystem, err
 	}
+	a.Transfer = func(req skills.TransferRequest) (skills.TransferResult, error) {
+		return skills.TransferSkill(rt.skillsEnv(), req, system)
+	}
 	a.OpenFolder = mygo.Shell.OpenPath
 	a.Reveal = mygo.Shell.ShowItemInFolder
 	a.Copy = mygo.Clipboard.WriteText

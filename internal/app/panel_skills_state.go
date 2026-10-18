@@ -21,6 +21,7 @@ type SkillActions struct {
 	// system Trash from another volume (system is true); nothing is erased.
 	Delete     func(skills.Skill, []skills.RootInfo) (system bool, err error)
 	DeleteLink func(skills.Summary, string) (system bool, err error)
+	Transfer   func(skills.TransferRequest) (skills.TransferResult, error)
 	OpenFolder func(string) error
 	Reveal     func(string)
 	Copy       func(string)

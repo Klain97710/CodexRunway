@@ -28,22 +28,40 @@ const (
 	xSkillsShowIssues     textKey = "skillsShowIssues"
 	xSkillsHideIssues     textKey = "skillsHideIssues"
 	xSkillsIssuesHint     textKey = "skillsIssuesHint"
+	xSkillsSharedCompact  textKey = "skillsSharedCompact"
 
-	xSkillsBack         textKey = "skillsBack"
-	xSkillsOpenRepo     textKey = "skillsOpenRepo"
-	xSkillsOpenOnline   textKey = "skillsOpenOnline"
-	xSkillsOpenHomepage textKey = "skillsOpenHomepage"
-	xSkillsCopyPath     textKey = "skillsCopyPath"
-	xSkillsCopied       textKey = "skillsCopied"
-	xSkillsMovedTrash   textKey = "skillsMovedTrash"
-	xSkillsMovedSystem  textKey = "skillsMovedSystem"
-	xSkillsReason       textKey = "skillsReason"
-	xSkillsSwitch       textKey = "skillsSwitch"
-	xSkillsSecBasics    textKey = "skillsSecBasics"
-	xSkillsDisplayName  textKey = "skillsDisplayName"
-	xSkillsScope        textKey = "skillsScope"
-	xSkillsScopeUser    textKey = "skillsScopeUser"
-	xSkillsRealPath     textKey = "skillsRealPath"
+	xSkillsBack                   textKey = "skillsBack"
+	xSkillsOpenRepo               textKey = "skillsOpenRepo"
+	xSkillsOpenOnline             textKey = "skillsOpenOnline"
+	xSkillsOpenHomepage           textKey = "skillsOpenHomepage"
+	xSkillsCopyPath               textKey = "skillsCopyPath"
+	xSkillsCopied                 textKey = "skillsCopied"
+	xSkillsTransfer               textKey = "skillsTransfer"
+	xSkillsCopyTo                 textKey = "skillsCopyTo"
+	xSkillsMoveTo                 textKey = "skillsMoveTo"
+	xSkillsMove                   textKey = "skillsMove"
+	xSkillsMoveTitle              textKey = "skillsMoveTitle"
+	xSkillsMoveMessage            textKey = "skillsMoveMessage"
+	xSkillsCopiedTo               textKey = "skillsCopiedTo"
+	xSkillsMovedTo                textKey = "skillsMovedTo"
+	xSkillsTransferFailed         textKey = "skillsTransferFailed"
+	xSkillsTransferProviderError  textKey = "skillsTransferProviderError"
+	xSkillsTransferConflict       textKey = "skillsTransferConflict"
+	xSkillsTransferSource         textKey = "skillsTransferSource"
+	xSkillsTransferOverlap        textKey = "skillsTransferOverlap"
+	xSkillsTransferUnsafeLink     textKey = "skillsTransferUnsafeLink"
+	xSkillsTransferNotMovable     textKey = "skillsTransferNotMovable"
+	xSkillsTransferPartial        textKey = "skillsTransferPartial"
+	xSkillsTransferPartialUnknown textKey = "skillsTransferPartialUnknown"
+	xSkillsMovedTrash             textKey = "skillsMovedTrash"
+	xSkillsMovedSystem            textKey = "skillsMovedSystem"
+	xSkillsReason                 textKey = "skillsReason"
+	xSkillsSwitch                 textKey = "skillsSwitch"
+	xSkillsSecBasics              textKey = "skillsSecBasics"
+	xSkillsDisplayName            textKey = "skillsDisplayName"
+	xSkillsScope                  textKey = "skillsScope"
+	xSkillsScopeUser              textKey = "skillsScopeUser"
+	xSkillsRealPath               textKey = "skillsRealPath"
 
 	xSkillsSecOrigin     textKey = "skillsSecOrigin"
 	xSkillsOriginUnknown textKey = "skillsOriginUnknown"
@@ -129,22 +147,40 @@ func init() {
 		xSkillsShowIssues:     {"Show", "展开", "展開", "펼치기", "表示", "Показать", "Afficher"},
 		xSkillsHideIssues:     {"Hide", "收起", "收合", "접기", "隠す", "Скрыть", "Masquer"},
 		xSkillsIssuesHint:     {"Broken links, nested skills, duplicate names and invalid frontmatter", "失效链接、嵌套、重名与无效 frontmatter", "失效連結、巢狀、重名與無效 frontmatter", "끊어진 링크, 중첩, 중복 이름, 잘못된 frontmatter", "切れたリンク、入れ子、名前の重複、無効なfrontmatter", "Битые ссылки, вложенность, повторы имён и неверный frontmatter", "Liens cassés, imbrications, noms en double et frontmatter invalide"},
+		xSkillsSharedCompact:  {"Shared: %s", "共享：%s", "共用：%s", "공유: %s", "共有：%s", "Общий: %s", "Partagé : %s"},
 
-		xSkillsBack:         {"Back", "返回", "返回", "뒤로", "戻る", "Назад", "Retour"},
-		xSkillsOpenRepo:     {"Repository", "打开仓库", "打開儲存庫", "저장소 열기", "リポジトリを開く", "Репозиторий", "Dépôt"},
-		xSkillsOpenOnline:   {"Folder in repository", "仓库中的目录", "儲存庫中的目錄", "저장소의 폴더", "リポジトリ内のフォルダ", "Папка в репозитории", "Dossier dans le dépôt"},
-		xSkillsOpenHomepage: {"Homepage", "主页", "首頁", "홈페이지", "ホームページ", "Домашняя страница", "Page d'accueil"},
-		xSkillsCopyPath:     {"Copy path", "复制路径", "複製路徑", "경로 복사", "パスをコピー", "Копировать путь", "Copier le chemin"},
-		xSkillsCopied:       {"Path copied", "已复制路径", "已複製路徑", "경로를 복사했습니다", "パスをコピーしました", "Путь скопирован", "Chemin copié"},
-		xSkillsMovedTrash:   {"Moved to the Quosparr trash; restore it from the Trash tab", "已移到 Quosparr 回收站，可在“回收站”中恢复", "已移到 Quosparr 回收站，可在「回收站」中復原", "Quosparr 휴지통으로 옮겼습니다. 휴지통 탭에서 복원할 수 있습니다", "Quosparrのゴミ箱に移動しました。ゴミ箱タブから復元できます", "Перемещено в корзину Quosparr; восстановить можно на вкладке «Корзина»", "Déplacé dans la corbeille de Quosparr ; restaurez-le depuis l'onglet Corbeille"},
-		xSkillsMovedSystem:  {"Moved to the system Trash, as it is on another volume", "位于其他磁盘，已移到系统回收站", "位於其他磁碟，已移到系統資源回收筒", "다른 볼륨에 있어 시스템 휴지통으로 옮겼습니다", "別のボリュームにあるため、システムのゴミ箱に移動しました", "Перемещено в системную корзину: файл на другом томе", "Déplacé dans la corbeille du système, car sur un autre volume"},
-		xSkillsReason:       {"Reason", "原因", "原因", "이유", "理由", "Причина", "Raison"},
-		xSkillsSwitch:       {"On / off", "启停", "啟停", "켜기/끄기", "オン/オフ", "Вкл. / выкл.", "Activation"},
-		xSkillsSecBasics:    {"Details", "基本信息", "基本資訊", "기본 정보", "基本情報", "Сведения", "Détails"},
-		xSkillsDisplayName:  {"Display name", "显示名称", "顯示名稱", "표시 이름", "表示名", "Отображаемое имя", "Nom affiché"},
-		xSkillsScope:        {"Type", "类型", "類型", "유형", "種類", "Тип", "Type"},
-		xSkillsScopeUser:    {"User", "用户", "使用者", "사용자", "ユーザー", "Пользовательский", "Utilisateur"},
-		xSkillsRealPath:     {"Real path", "真实路径", "實際路徑", "실제 경로", "実際のパス", "Реальный путь", "Chemin réel"},
+		xSkillsBack:                   {"Back", "返回", "返回", "뒤로", "戻る", "Назад", "Retour"},
+		xSkillsOpenRepo:               {"Repository", "打开仓库", "打開儲存庫", "저장소 열기", "リポジトリを開く", "Репозиторий", "Dépôt"},
+		xSkillsOpenOnline:             {"Folder in repository", "仓库中的目录", "儲存庫中的目錄", "저장소의 폴더", "リポジトリ内のフォルダ", "Папка в репозитории", "Dossier dans le dépôt"},
+		xSkillsOpenHomepage:           {"Homepage", "主页", "首頁", "홈페이지", "ホームページ", "Домашняя страница", "Page d'accueil"},
+		xSkillsCopyPath:               {"Copy path", "复制路径", "複製路徑", "경로 복사", "パスをコピー", "Копировать путь", "Copier le chemin"},
+		xSkillsCopied:                 {"Path copied", "已复制路径", "已複製路徑", "경로를 복사했습니다", "パスをコピーしました", "Путь скопирован", "Chemin copié"},
+		xSkillsTransfer:               {"Copy or move skill", "复制或移动 Skill", "複製或移動 Skill", "Skill 복사 또는 이동", "Skillをコピーまたは移動", "Копировать или переместить навык", "Copier ou déplacer le skill"},
+		xSkillsCopyTo:                 {"Copy to", "复制到", "複製到", "복사 대상", "コピー先", "Копировать в", "Copier vers"},
+		xSkillsMoveTo:                 {"Move to", "移动到", "移動到", "이동 대상", "移動先", "Переместить в", "Déplacer vers"},
+		xSkillsMove:                   {"Move", "移动", "移動", "이동", "移動", "Переместить", "Déplacer"},
+		xSkillsMoveTitle:              {"Move %s to %s?", "将 %s 移动到 %s？", "將 %s 移動到 %s？", "%s을(를) %s(으)로 이동할까요?", "%sを%sへ移動しますか？", "Переместить %s в %s?", "Déplacer %s vers %s ?"},
+		xSkillsMoveMessage:            {"A copy is created in %s, then the source at %s moves to the Trash. Existing items are never overwritten.", "先在 %s 中创建副本，再将位于 %s 的原件移到回收站，不会覆盖已有内容。", "先在 %s 中建立副本，再將位於 %s 的原件移到資源回收筒，不會覆寫已有內容。", "%s에 복사본을 만든 다음 %s의 원본을 휴지통으로 이동합니다. 기존 항목은 덮어쓰지 않습니다.", "%sにコピーを作成してから、%sにある元の項目をゴミ箱へ移動します。既存の項目は上書きしません。", "Копия создаётся в %s, затем исходник из %s перемещается в корзину. Существующие объекты не перезаписываются.", "Une copie est créée dans %s, puis la source située dans %s est mise à la corbeille. Aucun élément existant n'est écrasé."},
+		xSkillsCopiedTo:               {"Copied to %s", "已复制到 %s", "已複製到 %s", "%s에 복사했습니다", "%sにコピーしました", "Скопировано в %s", "Copié vers %s"},
+		xSkillsMovedTo:                {"Moved to %s. %s", "已移动到 %s；%s", "已移動到 %s；%s", "%s(으)로 이동했습니다. %s", "%sに移動しました。%s", "Перемещено в %s. %s", "Déplacé vers %s. %s"},
+		xSkillsTransferFailed:         {"Could not copy or move: %s", "无法复制或移动：%s", "無法複製或移動：%s", "복사하거나 이동할 수 없습니다: %s", "コピーまたは移動できません：%s", "Не удалось скопировать или переместить: %s", "Impossible de copier ou déplacer : %s"},
+		xSkillsTransferProviderError:  {"the target CLI is not supported", "不支持目标 CLI", "不支援目標 CLI", "대상 CLI를 지원하지 않습니다", "対象CLIはサポートされていません", "целевой CLI не поддерживается", "le CLI cible n'est pas pris en charge"},
+		xSkillsTransferConflict:       {"a skill with the same folder name already exists at the target", "目标位置已有同名 Skill 目录", "目標位置已有同名 Skill 目錄", "대상에 같은 이름의 Skill 폴더가 이미 있습니다", "移動先に同名のSkillフォルダがあります", "в целевом месте уже есть папка навыка с таким именем", "un dossier de skill du même nom existe déjà à destination"},
+		xSkillsTransferSource:         {"the source changed or is no longer valid", "源 Skill 已变化或不再有效", "來源 Skill 已變更或不再有效", "원본 Skill이 변경되었거나 더 이상 유효하지 않습니다", "元のSkillが変更されたか、無効になりました", "исходный навык изменился или больше недействителен", "le skill source a changé ou n'est plus valide"},
+		xSkillsTransferOverlap:        {"the source and target locations overlap", "源位置与目标位置重叠", "來源位置與目標位置重疊", "원본 위치와 대상 위치가 겹칩니다", "コピー元とコピー先の場所が重複しています", "исходное и целевое расположения пересекаются", "les emplacements source et cible se chevauchent"},
+		xSkillsTransferUnsafeLink:     {"the skill contains a symbolic link that cannot be copied safely", "Skill 包含无法安全复制的符号链接", "Skill 包含無法安全複製的符號連結", "Skill에 안전하게 복사할 수 없는 심볼릭 링크가 있습니다", "Skillに安全にコピーできないシンボリックリンクがあります", "навык содержит символическую ссылку, которую нельзя безопасно скопировать", "le skill contient un lien symbolique qui ne peut pas être copié en toute sécurité"},
+		xSkillsTransferNotMovable:     {"this source cannot be moved as one skill; it can still be copied", "此来源无法作为单个 Skill 移动，但仍可复制", "此來源無法作為單一 Skill 移動，但仍可複製", "이 원본은 단일 Skill로 이동할 수 없지만 복사는 가능합니다", "このコピー元は単一のSkillとして移動できませんが、コピーはできます", "этот источник нельзя переместить как один навык, но его можно скопировать", "cette source ne peut pas être déplacée comme un seul skill, mais elle peut être copiée"},
+		xSkillsTransferPartial:        {"the copy was created at %s, but the source remains because it could not be moved to the Trash", "副本已创建在 %s，但原件无法移到回收站，仍保留在原处", "副本已建立在 %s，但原件無法移到資源回收筒，仍保留在原處", "복사본이 %s에 생성되었지만 원본을 휴지통으로 이동하지 못해 원래 위치에 남아 있습니다", "コピーは%sに作成されましたが、元の項目をゴミ箱へ移動できず元の場所に残っています", "копия создана в %s, но исходник остался на месте, поскольку его не удалось переместить в корзину", "la copie a été créée dans %s, mais la source reste en place car elle n'a pas pu être mise à la corbeille"},
+		xSkillsTransferPartialUnknown: {"the copy was created, but the source remains because it could not be moved to the Trash", "副本已创建，但原件无法移到回收站，仍保留在原处", "副本已建立，但原件無法移到資源回收筒，仍保留在原處", "복사본은 생성되었지만 원본을 휴지통으로 이동하지 못해 원래 위치에 남아 있습니다", "コピーは作成されましたが、元の項目をゴミ箱へ移動できず元の場所に残っています", "копия создана, но исходник остался на месте, поскольку его не удалось переместить в корзину", "la copie a été créée, mais la source reste en place car elle n'a pas pu être mise à la corbeille"},
+		xSkillsMovedTrash:             {"Moved to the Quosparr trash; restore it from the Trash tab", "已移到 Quosparr 回收站，可在“回收站”中恢复", "已移到 Quosparr 回收站，可在「回收站」中復原", "Quosparr 휴지통으로 옮겼습니다. 휴지통 탭에서 복원할 수 있습니다", "Quosparrのゴミ箱に移動しました。ゴミ箱タブから復元できます", "Перемещено в корзину Quosparr; восстановить можно на вкладке «Корзина»", "Déplacé dans la corbeille de Quosparr ; restaurez-le depuis l'onglet Corbeille"},
+		xSkillsMovedSystem:            {"Moved to the system Trash, as it is on another volume", "位于其他磁盘，已移到系统回收站", "位於其他磁碟，已移到系統資源回收筒", "다른 볼륨에 있어 시스템 휴지통으로 옮겼습니다", "別のボリュームにあるため、システムのゴミ箱に移動しました", "Перемещено в системную корзину: файл на другом томе", "Déplacé dans la corbeille du système, car sur un autre volume"},
+		xSkillsReason:                 {"Reason", "原因", "原因", "이유", "理由", "Причина", "Raison"},
+		xSkillsSwitch:                 {"On / off", "启停", "啟停", "켜기/끄기", "オン/オフ", "Вкл. / выкл.", "Activation"},
+		xSkillsSecBasics:              {"Details", "基本信息", "基本資訊", "기본 정보", "基本情報", "Сведения", "Détails"},
+		xSkillsDisplayName:            {"Display name", "显示名称", "顯示名稱", "표시 이름", "表示名", "Отображаемое имя", "Nom affiché"},
+		xSkillsScope:                  {"Type", "类型", "類型", "유형", "種類", "Тип", "Type"},
+		xSkillsScopeUser:              {"User", "用户", "使用者", "사용자", "ユーザー", "Пользовательский", "Utilisateur"},
+		xSkillsRealPath:               {"Real path", "真实路径", "實際路徑", "실제 경로", "実際のパス", "Реальный путь", "Chemin réel"},
 
 		xSkillsSecOrigin:     {"Source and install", "来源与安装", "來源與安裝", "출처 및 설치", "入手元とインストール", "Источник и установка", "Source et installation"},
 		xSkillsOriginUnknown: {"No repository, install record or homepage was found for this skill", "未找到该 Skill 的仓库、安装记录或主页", "未找到該 Skill 的儲存庫、安裝紀錄或首頁", "이 Skill의 저장소, 설치 기록, 홈페이지를 찾지 못했습니다", "このSkillのリポジトリ、インストール記録、ホームページは見つかりません", "Репозиторий, запись об установке и домашняя страница не найдены", "Aucun dépôt, historique d'installation ni page d'accueil trouvé"},

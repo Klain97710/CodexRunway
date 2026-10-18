@@ -557,19 +557,23 @@ func (a *App) skillActions(c *ui.Context, l l10n.Localizer, sum skills.Summary, 
 	s := &a.panelState.skills
 	ac := acts.Skills
 	ui.Row(c).Gap(8).Wrap().AlignItems(ui.Center).Children(func() {
-		if PillButton(c, icFolder, tx(l, xSkillsOpenFolder), ac.OpenFolder == nil).Clicked() && ac.OpenFolder != nil {
+		if IconButton(c, icFolder, tx(l, xSkillsOpenFolder), ac.OpenFolder == nil).Clicked() && ac.OpenFolder != nil {
 			if err := ac.OpenFolder(sk.Dir); err != nil {
 				s.notice, s.noticeErr = tx(l, xSkillsOpenFailed, err.Error()), true
 			}
 		}
-		if PillButton(c, icSearch, tx(l, xSkillsReveal), ac.Reveal == nil).Clicked() && ac.Reveal != nil {
+		if IconButton(c, icSearch, tx(l, xSkillsReveal), ac.Reveal == nil).Clicked() && ac.Reveal != nil {
 			ac.Reveal(sk.File)
+		}
+		if IconButton(c, icLink, tx(l, xSkillsCopyPath), ac.Copy == nil).Clicked() && ac.Copy != nil {
+			ac.Copy(sk.File)
+			s.notice, s.noticeErr = tx(l, xSkillsCopied), false
 		}
 		if !sk.Deletable {
 			return
 		}
 		del := ac.Delete
-		b := pillButton(c, icTrash, tx(l, xSkillsDelete), del == nil || s.work.Running, true)
+		b := IconButton(c, icTrash, tx(l, xSkillsDelete), del == nil || s.work.Running)
 		open := s.confirm == sk.ID
 		if b.Clicked() && del != nil && !s.work.Running {
 			s.confirm, open = sk.ID, true

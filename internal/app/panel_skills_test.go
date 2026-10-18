@@ -175,6 +175,9 @@ func TestPanelSkillItemPageToggleRevealAndBack(t *testing.T) {
 	if len(calls.revealed) != 1 || calls.revealed[0] != skillsTestShared+"/pdf/SKILL.md" {
 		t.Fatalf("revealed %v", calls.revealed)
 	}
+	for _, label := range []string{tx(l, xSkillsOpenFolder), tx(l, xSkillsReveal), tx(l, xSkillsCopyPath), tx(l, xSkillsDelete)} {
+		assertSkillIconButton(t, tt, label)
+	}
 	if err := tt.Click(l.Text(l10n.KeyBack)); err != nil {
 		t.Fatal(err)
 	}

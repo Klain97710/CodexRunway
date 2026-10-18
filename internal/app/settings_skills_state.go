@@ -222,6 +222,9 @@ type settingsSkills struct {
 	open   string // ID of the skill page; "" shows the list
 	// confirm is the delete confirmation that is open.
 	confirm string
+	// transfer is the move confirmation opened from an action menu.
+	transferID     string
+	transferTarget skills.Provider
 
 	task       Task
 	cancel     context.CancelFunc
@@ -274,6 +277,7 @@ func (s *settingsSkills) selectProvider(p store.Provider) {
 
 func (s *settingsSkills) closeItem() {
 	s.open, s.confirm, s.notice, s.noticeErr = "", "", "", false
+	s.transferID, s.transferTarget = "", ""
 	s.body, s.detail = panelSkillBody{}, skillDetailState{}
 }
 
@@ -389,7 +393,7 @@ func (u *settingsUI) skillWork(acts SkillActions, fn func() (string, error), fai
 		switch {
 		case err == nil:
 			s.notice, s.noticeErr = ok, false
-		case errors.Is(err, skills.ErrChanged):
+		case errors.Is(err, skills.ErrChanged) && !errors.Is(err, skills.ErrTransferPartial):
 			s.notice, s.noticeErr = tx(l, xSkillsChanged), true
 		default:
 			s.notice, s.noticeErr = tx(l, fail, skillErrorText(l, err)), true
@@ -404,13 +408,30 @@ func (u *settingsUI) skillWork(acts SkillActions, fn func() (string, error), fai
 
 // skillErrorText names the trash errors a user can act on.
 func skillErrorText(l l10n.Localizer, err error) string {
+	var partial *skillTransferPartialError
 	switch {
+	case errors.As(err, &partial):
+		return tx(l, xSkillsTransferPartial, partial.path)
 	case errors.Is(err, skills.ErrTrashConflict):
 		return tx(l, xSkillsRestoreConflict)
 	case errors.Is(err, skills.ErrTrashParentGone):
 		return tx(l, xSkillsRestoreParent)
 	case errors.Is(err, skills.ErrTrashEntry):
 		return tx(l, xSkillsTrashDamaged)
+	case errors.Is(err, skills.ErrTransferProvider):
+		return tx(l, xSkillsTransferProviderError)
+	case errors.Is(err, skills.ErrTransferConflict):
+		return tx(l, xSkillsTransferConflict)
+	case errors.Is(err, skills.ErrTransferSource):
+		return tx(l, xSkillsTransferSource)
+	case errors.Is(err, skills.ErrTransferOverlap):
+		return tx(l, xSkillsTransferOverlap)
+	case errors.Is(err, skills.ErrTransferUnsafeLink):
+		return tx(l, xSkillsTransferUnsafeLink)
+	case errors.Is(err, skills.ErrTransferNotMovable):
+		return tx(l, xSkillsTransferNotMovable)
+	case errors.Is(err, skills.ErrTransferPartial):
+		return tx(l, xSkillsTransferPartialUnknown)
 	}
 	return err.Error()
 }
