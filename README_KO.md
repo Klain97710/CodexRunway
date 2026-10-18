@@ -10,7 +10,7 @@
 
 메뉴 막대에 앉은 작은 참새가 Codex, Claude, Grok 할당량을 지켜봅니다.
 
-Quosparr는 macOS, Windows, Linux용 네이티브 메뉴 막대 / 시스템 트레이 앱입니다. Codex, Claude Code, Grok 구독 할당량, reset credits, API 환산 비용, 로컬 세션을 보여 주며 공급자별로 계정을 따로 관리합니다.
+Quosparr는 macOS, Windows, Linux용 네이티브 메뉴 막대 / 시스템 트레이 앱입니다. Codex, Claude Code, Grok 구독 할당량, reset credits, API 환산 비용, 로컬 세션을 보여 주며 공급자별로 계정을 따로 관리합니다. 세 공급자의 전역 Skill, MCP 서버, 로컬 세션도 한곳에서 관리할 수 있습니다.
 
 </div>
 
@@ -46,7 +46,9 @@ Quosparr는 macOS, Windows, Linux용 네이티브 메뉴 막대 / 시스템 트�
 - 선택 사항인 항상 위 데스크톱 플로팅 창은 공급자를 최대 세 개까지 남은 사용량으로 보여 주며 캡슐, 카드, 링, 배터리 네 가지 스타일을 제공합니다. 클릭하면 주 패널이 열리고, 드래그로 옮기며, 오른쪽 클릭으로 더 많은 옵션을 봅니다. 불투명도, 위치 잠금, 전체 화면 앱 위 표시 여부를 설정할 수 있습니다.
 - 오늘, 현재 주기, 이전 주기, 이번 달 또는 사용자 지정 범위의 API 환산 비용과 토큰 사용량.
 - 연초부터의 토큰 사용량 차트(히트맵, 꺾은선, 막대 / 일간, 주간, 누적).
-- Skills 페이지에서 공급자별 전역 skill의 출처, CLI 로드 여부, 함께 쓰는 CLI를 보여 줍니다. 검색, `SKILL.md` 보기, 폴더 열기, CLI 자체 설정에서 켜기 / 끄기(쓰기 전 백업), Quosparr Skill 휴지통으로 이동, 끊어진 링크, 중첩 폴더, 중복 이름 진단을 지원하며 대부분은 한 번에 고칠 수 있고 여러 skill을 선택해 함께 삭제하거나 고칠 수도 있으며, 언제나 위험을 먼저 보여 주고 확인을 받습니다. 설정의 Skill 관리는 공급자별 탭과 상태·유형 필터, 설치 출처·파일·frontmatter·GitHub 저장소나 홈페이지 링크를 담은 상세 페이지, 삭제한 skill을 복원하거나 시스템 휴지통으로 보내는 휴지통을 제공합니다.
+- Skills 페이지에서 공급자별 전역 skill의 출처, CLI 로드 여부, 함께 쓰는 CLI를 보여 줍니다. 검색, `SKILL.md` 보기, 폴더 열기, CLI 자체 설정에서 켜기 / 끄기(쓰기 전 백업), 다른 CLI로 복사 또는 이동(같은 이름은 덮어쓰지 않음), Quosparr Skill 휴지통으로 이동, 끊어진 링크, 중첩 폴더, 중복 이름 진단을 지원하며 대부분은 한 번에 고칠 수 있고 여러 skill을 선택해 함께 삭제하거나 고칠 수도 있으며, 언제나 위험을 먼저 보여 주고 확인을 받습니다. 설정의 Skill 관리는 공급자별 탭과 상태·유형 필터, 설치 출처·파일·frontmatter·GitHub 저장소나 홈페이지 링크를 담은 상세 페이지, 삭제한 skill을 복원하거나 시스템 휴지통으로 보내는 휴지통을 제공합니다.
+- 설정의 세션 관리에서 공급자별 로컬 세션 전체를 볼 수 있습니다. 제목, 프로젝트, ID로 검색하고 프로젝트와 날짜 범위로 거를 수 있으며, 상세 페이지에서 모델, 토큰 내역, API 환산 비용, 관련 파일, 대화 미리보기를 확인합니다. 선택한 세션은 확인 후 하나씩 시스템 휴지통으로 옮기며 영구 삭제하지 않습니다. 공식 인덱스와 데이터베이스는 그대로 두고, 파생 통계는 남은 로그로 다시 계산합니다.
+- 설정의 MCP 관리에서 공급자별 사용자 수준 전역 MCP 서버(Codex와 Grok은 `config.toml`, Claude는 `.claude.json`)를 보여 줍니다. 명령, 사이트, 구조는 민감 정보를 가린 요약으로만 표시하고 env와 headers 값은 보여 주지 않으며, 서버에 연결하거나 실행하지 않습니다. 여러 항목을 선택해 삭제할 수 있고, 삭제 전에 `~/.quosparr/backups`에 백업하며 다른 설정은 유지합니다. 변경 사항은 해당 CLI를 다시 시작하면 적용됩니다. 프로젝트, 플러그인, 기업 관리 MCP는 표시하지 않습니다.
 - 라이트, 다크, 시스템 모양과 English, 简体中文, 繁體中文, 한국어, 日本語, Русский, Français.
 - 내장 업데이트와 macOS 14+ 데스크톱 위젯.
 
@@ -144,7 +146,8 @@ Linux에는 GTK3, AppIndicator, 트레이를 지원하는 데스크톱, 프록�
 - Claude 자격 증명은 macOS에서 `/usr/bin/security`로 키체인을 읽고, Windows와 Linux에서는 `<config>/.credentials.json`을 읽습니다. 관리 사본은 `~/.quosparr/accounts/claude-<stable-id>/auth.json`이며 `claudeAiOauth`만 담습니다. 인덱스 `claude-index.json`에는 토큰이 없습니다. 전환은 MCP 토큰을 유지하고 `.claude.json`의 `oauthAccount`만 바꿉니다. Quosparr는 현재 계정을 새로고침하지 않습니다.
 - API 계정 키는 관리 사본(`~/.quosparr/accounts/<id>/auth.json` 또는 `claude-api-<id>/auth.json`)에만 저장되고, 인덱스에는 Base URL, 모델, 잔액 캐시만 남습니다. 잔액과 모델 요청은 입력한 사이트로만 프록시 설정을 따라 전송됩니다. 수정되는 `config.toml`과 `settings.json`은 먼저 `~/.quosparr/backups`에 백업되며, `settings.json`에 처음 기록할 때 키 순서가 정렬됩니다.
 - Grok 자격 증명은 `$GROK_HOME/auth.json`에서 읽으며 관리 사본은 `~/.quosparr/accounts/grok-<stable-id>/auth.json`에 있습니다. Grok 전환은 OAuth / 호환 레거시 범위만 바꾸고 API 키와 알 수 없는 범위는 유지합니다. 새 세션에만 보장되며, 실행 중인 Grok 프로세스는 종료되지 않고 이전 계정을 다시 쓸 수 있으므로 앱이 전환 전에 경고합니다.
-- 세션 복구는 `session_index.jsonl`만 다루며 먼저 백업합니다. `~/.codex/sessions`와 `~/.codex/archived_sessions` 아래 파일은 삭제하지 않습니다.
+- 세션 복구는 `session_index.jsonl`만 다루며 먼저 백업합니다. 세션 로그는 세션 관리에서 직접 선택하고 확인한 경우에만 시스템 휴지통으로 옮기며, 옮기기 전에 파일이 바뀌지 않았는지 하나씩 다시 확인합니다. 영구 삭제하지 않고 공식 인덱스나 데이터베이스도 고쳐 쓰지 않습니다.
+- Skill과 MCP의 켜기 / 끄기, 복구, 삭제는 확인을 받은 뒤에만 실행합니다. 구성 파일은 쓰기 전에 `~/.quosparr/backups`에 백업하고, 삭제한 skill은 먼저 복원 가능한 Quosparr Skill 휴지통으로 가며, MCP 목록에는 키나 env, headers 값을 표시하지 않습니다.
 - API 환산 비용은 로컬 세션 로그에서 계산합니다. 세션 내용은 업로드하지 않습니다.
 - 토큰과 API 키는 로그, 자가 진단 출력, 이슈 템플릿에 쓰지 않습니다.
 - Codex 초기화 업데이트와 업데이트 확인은 공개 데이터만 가져오며 계정, 토큰, 세션 내용은 보내지 않습니다.

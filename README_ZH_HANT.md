@@ -10,7 +10,7 @@
 
 一隻停在選單列裡的小麻雀，替你守著 Codex、Claude 與 Grok 的額度。
 
-Quosparr 是適用於 macOS、Windows、Linux 的原生選單列 / 系統匣應用程式，顯示 Codex、Claude Code 與 Grok 訂閱額度、reset credits、API 等價成本與本機工作階段，三個供應商各自獨立管理帳號。
+Quosparr 是適用於 macOS、Windows、Linux 的原生選單列 / 系統匣應用程式，顯示 Codex、Claude Code 與 Grok 訂閱額度、reset credits、API 等價成本與本機工作階段，三個供應商各自獨立管理帳號，並可集中管理三家的全域 Skill、MCP 服務與本機工作階段。
 
 </div>
 
@@ -46,7 +46,9 @@ Quosparr 是適用於 macOS、Windows、Linux 的原生選單列 / 系統匣應�
 - 可選的置頂桌面懸浮窗，最多顯示三個供應商的剩餘額度，提供膠囊、卡片、圓環、電池四種樣式；按一下開啟主面板，拖曳可移動，按右鍵查看更多選項，可調整不透明度、鎖定位置，並選擇是否顯示在全螢幕應用程式上方。
 - 查看今天、本週期、上週期、本月或自訂範圍的 API 等價成本與 token 用量。
 - 年度 token 用量圖表，支援熱力圖、折線圖和長條圖（每日 / 每週 / 累計）。
-- Skills 頁面列出各供應商的全域 skill，顯示來源、是否被 CLI 載入以及與哪些 CLI 共用；可搜尋、檢視 `SKILL.md`、打開所在目錄、在 CLI 自己的設定中啟停（寫入前備份）、移到 Quosparr 的 Skill 回收站，並提示失效連結、巢狀與重名等問題，多數問題可一鍵修復，也可多選後批次刪除或修復，執行前都會列出風險並請你確認；設定中的「Skill 管理」依供應商分頁，可依狀態與類型篩選，詳情頁顯示安裝來源、檔案、frontmatter 及 GitHub 儲存庫或首頁連結，回收站中的 skill 可復原或移到系統資源回收筒。
+- Skills 頁面列出各供應商的全域 skill，顯示來源、是否被 CLI 載入以及與哪些 CLI 共用；可搜尋、檢視 `SKILL.md`、打開所在目錄、在 CLI 自己的設定中啟停（寫入前備份）、複製或移動到其他 CLI（同名時不覆寫）、移到 Quosparr 的 Skill 回收站，並提示失效連結、巢狀與重名等問題，多數問題可一鍵修復，也可多選後批次刪除或修復，執行前都會列出風險並請你確認；設定中的「Skill 管理」依供應商分頁，可依狀態與類型篩選，詳情頁顯示安裝來源、檔案、frontmatter 及 GitHub 儲存庫或首頁連結，回收站中的 skill 可復原或移到系統資源回收筒。
+- 設定中的「工作階段管理」依供應商列出本機全部工作階段，可依標題、專案或 ID 搜尋，依專案與日期範圍篩選，詳情頁顯示模型、Token 明細、API 等價成本、相關檔案與對話預覽；選取的工作階段經確認後逐一移到系統資源回收筒，不會永久刪除，官方索引與資料庫保持不變，衍生統計隨後依剩餘日誌重新計算。
+- 設定中的「MCP 管理」依供應商列出使用者層級的全域 MCP 服務（Codex 與 Grok 的 `config.toml`、Claude 的 `.claude.json`），只顯示脫敏後的命令、站點與結構摘要，不顯示 env 與 headers 的值，也不連線或啟動任何服務；可多選後刪除，刪除前先備份到 `~/.quosparr/backups` 並保留其他設定，重新啟動對應 CLI 後生效。專案層級、外掛與企業託管的 MCP 不會顯示。
 - 支援淺色、深色、跟隨系統外觀，以及 English、简体中文、繁體中文、한국어、日本語、Русский、Français。
 - 內建線上更新，macOS 14+ 提供桌面小工具。
 
@@ -144,7 +146,8 @@ Linux 需要 GTK3、AppIndicator、支援系統匣的桌面環境，以及可用
 - Claude 憑證在 macOS 上經 `/usr/bin/security` 讀取鑰匙圈，在 Windows 與 Linux 上讀取 `<config>/.credentials.json`。託管副本位於 `~/.quosparr/accounts/claude-<stable-id>/auth.json`，只含 `claudeAiOauth`。索引 `claude-index.json` 不含 token。切換保留 MCP 權杖，並只替換 `.claude.json` 的 `oauthAccount`。Quosparr 不重新整理目前帳號。
 - API 帳號的 Key 只保存在託管副本（`~/.quosparr/accounts/<id>/auth.json` 或 `claude-api-<id>/auth.json`），索引只保存 Base URL、模型與餘額快取。餘額與模型請求只發往你填寫的站點，並遵循代理設定。被修改的 `config.toml` 與 `settings.json` 會先備份到 `~/.quosparr/backups`；首次寫入 `settings.json` 時會依鍵名重新排序
 - Grok 憑證從 `$GROK_HOME/auth.json` 讀取，託管副本位於 `~/.quosparr/accounts/grok-<stable-id>/auth.json`。Grok 切換帳號只會取代 OAuth / 相容 legacy scope，並保留 API Key 與未知 scope。此操作僅保證新的工作階段使用新帳號；已在執行的 Grok 行程不會被終止，且可能寫回舊帳號，因此切換前應用程式會顯示警告。
-- 工作階段修復只處理 `session_index.jsonl`，寫入前會先備份。`~/.codex/sessions` 與 `~/.codex/archived_sessions` 下的檔案絕不會被刪除。
+- 工作階段修復只處理 `session_index.jsonl`，寫入前會先備份。工作階段日誌只有在你於「工作階段管理」中選取並確認後才會移到系統資源回收筒，移動前逐一複核檔案未變更，不會永久刪除，也不改寫官方索引或資料庫。
+- Skill 與 MCP 的啟停、修復和刪除都在你確認後才執行：設定檔寫入前先備份到 `~/.quosparr/backups`，刪除的 skill 先進入可復原的 Quosparr Skill 回收站，MCP 清單不顯示金鑰以及 env、headers 的值。
 - API 等價成本依本機工作階段日誌計算，不會上傳工作階段內容。
 - token 與 API Key 絕不會寫入日誌、自我檢查輸出或 issue 範本。
 - Codex 重設動態與更新檢查只讀取公開資料，不會傳送帳號、token 或工作階段內容。
