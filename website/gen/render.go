@@ -42,7 +42,7 @@ type pageData struct {
 
 // Remix Icon names paired by index with Features.Common and Privacy.Items.
 var (
-	featureIcons = []string{"dashboard-3-line", "picture-in-picture-line", "checkbox-multiple-line", "coins-line", "line-chart-line", "palette-line", "font-size", "refresh-line", "global-line"}
+	featureIcons = []string{"dashboard-3-line", "picture-in-picture-line", "checkbox-multiple-line", "coins-line", "line-chart-line", "magic-line", "plug-line", "chat-history-line", "palette-line", "font-size", "refresh-line", "global-line"}
 	privacyIcons = []string{"folder-shield-2-line", "key-2-line", "eye-off-line", "database-2-line", "history-line"}
 )
 
