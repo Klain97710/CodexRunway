@@ -14,16 +14,46 @@ func (u *settingsUI) sessionsPage(c *ui.Context) {
 	if !s.loaded && !s.task.Running && s.task.Err == nil {
 		u.startSessionsScan(actions)
 	}
-	ui.Column(c).Gap(14).Children(func() {
-		u.sessionProviderTabs(c, actions)
-		if s.open != "" {
-			u.sessionDetailPage(c, actions)
+	// The tabs, filters and selection bar stay put; the list or the open
+	// session scrolls under them, its bar at the window's edge. An open
+	// session hides the tabs, as a page of its own.
+	item, open := s.findOpen()
+	if s.open != "" && !open {
+		s.open = ""
+	}
+	key := "session-list-" + string(s.provider)
+	if open {
+		key = "session-detail-" + s.open
+	}
+	splitPage(c, key, func() {
+		if open {
+			u.sessionDetailHeader(c, item, actions)
 			return
 		}
+		u.sessionProviderTabs(c, actions)
 		u.sessionFilterBar(c)
 		u.sessionNotice(c)
+		u.sessionListHeader(c, actions)
+	}, func() {
+		if open {
+			u.sessionDetailPage(c, item, actions)
+			return
+		}
 		u.sessionList(c, actions)
 	})
+}
+
+// sessionListHeader reports a failed refresh and holds the selection bar
+// once the list has loaded.
+func (u *settingsUI) sessionListHeader(c *ui.Context, actions SessionActions) {
+	s, l, t := u.sessionsState(), u.L(), c.Theme()
+	if !s.loaded {
+		return
+	}
+	if s.task.Err != nil {
+		ui.Text(c, tx(l, xSessionsRefreshFailed, s.task.Err.Error())).FontSize(12).TextColor(t.Danger)
+	}
+	u.sessionSelectionBar(c, s.filtered(), actions)
 }
 
 func (u *settingsUI) sessionProviderTabs(c *ui.Context, actions SessionActions) {
@@ -75,11 +105,7 @@ func (u *settingsUI) sessionList(c *ui.Context, actions SessionActions) {
 		}
 		return
 	}
-	if s.task.Err != nil {
-		ui.Text(c, tx(l, xSessionsRefreshFailed, s.task.Err.Error())).FontSize(12).TextColor(t.Danger)
-	}
 	list := s.filtered()
-	u.sessionSelectionBar(c, list, actions)
 	if len(list) == 0 {
 		message := tx(l, xSessionsEmpty)
 		if len(s.items) > 0 {
@@ -89,10 +115,8 @@ func (u *settingsUI) sessionList(c *ui.Context, actions SessionActions) {
 		return
 	}
 	shown := min(s.shown, len(list))
-	ui.Text(c, tx(l, xSessionsShowing, shown, len(list))).FontSize(11).TextColor(t.TextMuted).Padding(0, 4)
-	Panel(c).Children(func() {
-		for i, item := range list[:shown] {
-			settingsRule(c, i)
+	listPanel(c).Children(func() {
+		for _, item := range list[:shown] {
 			u.sessionRow(c, item, actions)
 		}
 	})
@@ -105,30 +129,48 @@ func (u *settingsUI) sessionList(c *ui.Context, actions SessionActions) {
 	}
 }
 
+// sessionSelectionBar tops the list: a box selecting every filtered
+// session, mixed while only some are, the counts, and on the right the
+// batch actions.
 func (u *settingsUI) sessionSelectionBar(c *ui.Context, list []sessions.ManagedSession, actions SessionActions) {
 	s, l, t := u.sessionsState(), u.L(), c.Theme()
 	selected := len(s.selectedItems())
-	ui.Row(c).Gap(8).Wrap().AlignItems(ui.Center).Children(func() {
-		ui.Text(c, tx(l, xSessionsSelectionCounts, len(list), selected)).FontSize(12).FontFeatures("tnum").TextColor(t.TextMuted)
-		ui.Spacer(c).Grow(1)
-		if PillButton(c, icCheckCircle, tx(l, xSessionsSelectAll), s.work.Running || len(list) == 0).
-			Label(tx(l, xSessionsSelectFiltered, len(list))).Tooltip(tx(l, xSessionsSelectFiltered, len(list))).Clicked() {
-			s.selected = make(map[string]bool, len(list))
-			for _, item := range list {
-				s.selected[sessionKey(item)] = true
+	all := len(list) > 0
+	for _, item := range list {
+		if !s.selected[sessionKey(item)] {
+			all = false
+			break
+		}
+	}
+	listBar(c).Children(func() {
+		label := tx(l, xSessionsSelectFiltered, len(list))
+		if all {
+			label = tx(l, xSessionsClearSelection)
+		}
+		if mixedCheckbox(c, "session-select-all", all, selected > 0, label, s.work.Running || len(list) == 0) {
+			if all {
+				s.clearSelection()
+			} else {
+				s.selected = make(map[string]bool, len(list))
+				for _, item := range list {
+					s.selected[sessionKey(item)] = true
+				}
 			}
 		}
-		if PillButton(c, icClose, tx(l, xSessionsDeselectAll), s.work.Running || selected == 0).
-			Label(tx(l, xSessionsClearSelection)).Tooltip(tx(l, xSessionsClearSelection)).Clicked() {
-			s.clearSelection()
+		counts := tx(l, xSessionsShowing, min(s.shown, len(list)), len(list))
+		if selected > 0 {
+			counts += " · " + tx(l, xSessionsSelected, selected)
 		}
-		if PillButton(c, icTrash, tx(l, xSessionsDeleteShort), s.work.Running || selected == 0 || actions.Delete == nil).
-			Label(tx(l, xSessionsDeleteSelected)).Tooltip(tx(l, xSessionsDeleteSelected)).Clicked() {
-			s.confirm = true
+		ui.Text(c, counts).FontSize(12).FontFeatures("tnum").TextColor(t.TextMuted).SingleLine().Grow(1).Basis(0)
+		if SmallPillButton(c, icTrash, tx(l, xSessionsDeleteShort), s.work.Running || selected == 0 || actions.Delete == nil).
+			Label(tx(l, xSessionsDeleteSelected)).Tooltip(tx(l, xSessionsDeleteSelected)).Cursor(ui.CursorPointer).Clicked() {
+			s.confirmDelete("")
 		}
 	})
 }
 
+// sessionRow is one session: its box, then its title and details, which
+// open it, then its actions. The whole row lights up under the pointer.
 func (u *settingsUI) sessionRow(c *ui.Context, item sessions.ManagedSession, actions SessionActions) {
 	s, l, t := u.sessionsState(), u.L(), c.Theme()
 	key := sessionKey(item)
@@ -137,22 +179,19 @@ func (u *settingsUI) sessionRow(c *ui.Context, item sessions.ManagedSession, act
 	if strings.TrimSpace(title) == "" {
 		title = l.Text(l10n.KeyUnknown)
 	}
-	ui.Row(c).Gap(10).Padding(8, 0).AlignItems(ui.Center).Children(func() {
-		if ui.Checkbox(c.Key("session-check-"+key), &checked, "").Label(tx(l, xSessionsSelectOne, title)).Size(18, 18).Disabled(s.work.Running).Changed() {
+	listRow(c, "session-row-"+key, checked).Children(func() {
+		if ui.Checkbox(c.Key("session-check-"+key), &checked, "").Label(tx(l, xSessionsSelectOne, title)).Size(18, 18).Disabled(s.work.Running).Cursor(ui.CursorPointer).Changed() {
 			if checked {
 				s.selected[key] = true
 			} else {
 				delete(s.selected, key)
 			}
 		}
-		button := ui.ButtonBase(c.Key("session-open-" + key)).Label(tx(l, xSessionsOpenDetails, title)).Grow(1).Basis(0).Padding(2).Radius(6)
-		if button.Hovered() {
-			button.Background(pal(t).Hover)
-		}
+		button := ui.ButtonBase(c.Key("session-open-" + key)).Label(tx(l, xSessionsOpenDetails, title)).Grow(1).Basis(0).Cursor(ui.CursorPointer)
 		button.Children(func() {
 			ui.Column(c).Gap(2).Grow(1).Basis(0).Children(func() {
 				ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
-					ui.Text(c, title).FontSize(13).FontWeight(550).SingleLine().Ellipsis("…").Grow(1).Basis(0)
+					ui.Text(c, title).FontSize(13).FontWeight(550).SingleLine().Ellipsis("…").Shrink(1)
 					if item.Archived {
 						ui.Text(c, tx(l, xSessionsArchived)).FontSize(10).TextColor(t.TextMuted)
 					}
@@ -168,12 +207,22 @@ func (u *settingsUI) sessionRow(c *ui.Context, item sessions.ManagedSession, act
 			s.open = key
 			u.loadSessionDetail(actions, item)
 		}
-		if actions.Reveal != nil && IconButton(c, icFolder, tx(l, xSessionsReveal), false).Clicked() {
-			if err := actions.Reveal(item.Path); err != nil {
-				s.notice, s.noticeErr = err.Error(), true
-			}
-		}
+		u.sessionActionButtons(c, item, actions)
 	})
+}
+
+// sessionActionButtons show a session's files and move it to the Trash,
+// after the same confirmation as the selection.
+func (u *settingsUI) sessionActionButtons(c *ui.Context, item sessions.ManagedSession, actions SessionActions) {
+	s, l := u.sessionsState(), u.L()
+	if actions.Reveal != nil && IconButton(c, icFolder, tx(l, xSessionsReveal), false).Cursor(ui.CursorPointer).Clicked() {
+		if err := actions.Reveal(item.Path); err != nil {
+			s.notice, s.noticeErr = err.Error(), true
+		}
+	}
+	if actions.Delete != nil && IconButton(c, icTrash, tx(l, xSessionsDeleteOne), s.work.Running).Cursor(ui.CursorPointer).Clicked() {
+		s.confirmDelete(sessionKey(item))
+	}
 }
 
 func nonEmpty(values []string) []string {

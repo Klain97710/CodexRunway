@@ -249,20 +249,34 @@ func Panel(c *ui.Context) ui.Element {
 // PillButton is a capsule button with an optional icon. A disabled one
 // reports no clicks.
 func PillButton(c *ui.Context, icon *ui.SVG, label string, disabled bool) ui.Element {
-	return pillButton(c, icon, label, disabled, false)
+	return pillButton(c, icon, label, disabled, false, false)
+}
+
+// SmallPillButton is a PillButton for dense toolbars, such as filters.
+func SmallPillButton(c *ui.Context, icon *ui.SVG, label string, disabled bool) ui.Element {
+	return pillButton(c, icon, label, disabled, false, true)
 }
 
 // WarningPillButton is a PillButton filled with the warning color, for an
 // action that has work waiting, such as unsaved changes.
 func WarningPillButton(c *ui.Context, label string) ui.Element {
-	return pillButton(c, nil, label, false, true)
+	return pillButton(c, nil, label, false, true, false)
 }
 
-func pillButton(c *ui.Context, icon *ui.SVG, label string, disabled, warn bool) ui.Element {
+// SmallWarningPillButton is a WarningPillButton for dense toolbars.
+func SmallWarningPillButton(c *ui.Context, label string) ui.Element {
+	return pillButton(c, nil, label, false, true, true)
+}
+
+func pillButton(c *ui.Context, icon *ui.SVG, label string, disabled, warn, small bool) ui.Element {
 	t := c.Theme()
-	b := ui.ButtonBase(c).Label(label).Disabled(disabled).Padding(6, 12).Gap(6).Radius(6).AlignItems(ui.Center)
+	padY, padX, gap, size := float32(6), float32(12), float32(6), float32(13)
+	if small {
+		padY, padX, gap, size = 5, 9, 4, 12
+	}
+	b := ui.ButtonBase(c).Label(label).Disabled(disabled).Padding(padY, padX).Gap(gap).Radius(6).AlignItems(ui.Center)
 	if label == "" {
-		b.Padding(6, 8) // an icon alone: name it with Label
+		b.Padding(padY, padY+2) // an icon alone: name it with Label
 	}
 	bg, col := t.Text.Alpha(0.06), t.Text
 	if warn {
@@ -283,10 +297,10 @@ func pillButton(c *ui.Context, icon *ui.SVG, label string, disabled, warn bool) 
 	b.Background(bg)
 	return b.Children(func() {
 		if icon != nil {
-			ui.Icon(c, icon).FontSize(13).TextColor(col)
+			ui.Icon(c, icon).FontSize(size).TextColor(col)
 		}
 		if label != "" {
-			ui.Text(c, label).FontSize(13).FontWeight(500).TextColor(col).SingleLine()
+			ui.Text(c, label).FontSize(size).FontWeight(500).TextColor(col).SingleLine()
 		}
 	})
 }

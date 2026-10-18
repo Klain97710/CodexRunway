@@ -274,3 +274,61 @@ func TestExportSettingsMCPReview(t *testing.T) {
 	confirm := ui.NewTester(u.view, settingsMinWidth, settingsHeight)
 	exportReviewPNG(t, confirm, filepath.Join(dir, "mcp-confirm-zh-Hans.png"))
 }
+
+func TestMCPSelectAllBoxSkipsReadOnlyAndClears(t *testing.T) {
+	u, tt, _ := settingsMCPView(t, MCPActions{})
+	if err := tt.Click(tx(u.L(), xMCPSelectFiltered, 2)); err != nil {
+		t.Fatal(err)
+	}
+	if !u.mcp.selected["codex\x00alpha"] || !u.mcp.selected["codex\x00remote"] || len(u.mcp.selected) != 2 {
+		t.Fatalf("selection = %#v", u.mcp.selected)
+	}
+	if err := tt.Click(tx(u.L(), xMCPClearSelection)); err != nil {
+		t.Fatal(err)
+	}
+	if len(u.mcp.selected) != 0 {
+		t.Fatalf("selection after clear = %#v", u.mcp.selected)
+	}
+}
+
+func TestMCPRowDeleteTargetsOnlyItsServer(t *testing.T) {
+	actions := MCPActions{Delete: func(context.Context, store.Provider, []mcp.Server) ([]mcp.DeleteResult, error) { return nil, nil }}
+	u, tt, _ := settingsMCPView(t, actions)
+	u.mcp.selected["codex\x00remote"] = true
+	tt.Frame()
+	if err := tt.Click(tx(u.L(), xMCPDeleteOne)); err != nil {
+		t.Fatal(err)
+	}
+	got := u.mcp.deleteTargets()
+	if !u.mcp.confirm || len(got) != 1 || got[0].ID != "codex\x00alpha" {
+		t.Fatalf("row delete targets %+v", got)
+	}
+	if !tt.HasText(tx(u.L(), xMCPDeleteConfirmMessage, "Codex", 1)) {
+		t.Fatalf("confirmation = %q", tt.Texts())
+	}
+	if err := tt.Click(u.text(l10n.KeyCancel)); err != nil {
+		t.Fatal(err)
+	}
+	if u.mcp.confirmKey != "" || !u.mcp.selected["codex\x00remote"] {
+		t.Fatalf("cancel left key %q, selection %#v", u.mcp.confirmKey, u.mcp.selected)
+	}
+	u.mcp.confirmDelete("codex\x00managed")
+	if got := u.mcp.deleteTargets(); len(got) != 0 {
+		t.Fatalf("read-only server became a target: %+v", got)
+	}
+}
+
+func TestMCPDetailHidesProviderTabs(t *testing.T) {
+	u, tt, _ := settingsMCPView(t, MCPActions{})
+	u.mcp.open = "codex\x00alpha"
+	tt.Frame()
+	if tt.HasText("Claude") || tt.HasText("Grok") {
+		t.Fatalf("detail kept the provider tabs; texts %q", tt.Texts())
+	}
+	if err := tt.Click(tx(u.L(), xMCPBack)); err != nil {
+		t.Fatal(err)
+	}
+	if u.mcp.open != "" || !tt.HasText("Claude") {
+		t.Fatalf("back did not return to the list; texts %q", tt.Texts())
+	}
+}

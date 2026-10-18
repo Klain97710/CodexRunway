@@ -9,27 +9,24 @@ import (
 	"github.com/licoy/quosparr/internal/sessions"
 )
 
-func (u *settingsUI) sessionDetailPage(c *ui.Context, actions SessionActions) {
-	s, l, t := u.sessionsState(), u.L(), c.Theme()
-	item, ok := s.findOpen()
-	if !ok {
-		s.open = ""
-		return
-	}
-	u.loadSessionDetail(actions, item)
+// sessionDetailHeader stays above the scrolling session: the quiet back
+// link of the panel's pages, the title and the session's actions.
+func (u *settingsUI) sessionDetailHeader(c *ui.Context, item sessions.ManagedSession, actions SessionActions) {
+	s, l := u.sessionsState(), u.L()
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-		if PillButton(c, icChevLeft, tx(l, xSessionsBack), false).Clicked() {
+		if detailBackButton(c, l.Text(l10n.KeyBack)).Label(tx(l, xSessionsBack)).Tooltip(tx(l, xSessionsBack)).Clicked() {
 			s.open = ""
 			s.detail = sessionDetailState{generation: s.detail.generation + 1}
 			return
 		}
 		ui.Text(c, item.Title).FontSize(15).FontWeight(650).Grow(1).Basis(0).SingleLine().Ellipsis("…")
-		if actions.Reveal != nil && IconButton(c, icFolder, tx(l, xSessionsReveal), false).Clicked() {
-			if err := actions.Reveal(item.Path); err != nil {
-				s.notice, s.noticeErr = err.Error(), true
-			}
-		}
+		u.sessionActionButtons(c, item, actions)
 	})
+}
+
+func (u *settingsUI) sessionDetailPage(c *ui.Context, item sessions.ManagedSession, actions SessionActions) {
+	s, l, t := u.sessionsState(), u.L(), c.Theme()
+	u.loadSessionDetail(actions, item)
 	u.sessionMetadata(c, item)
 	switch {
 	case s.detail.task.Running:

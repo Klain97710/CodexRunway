@@ -13,6 +13,7 @@ const (
 	xMCPSelectFiltered       textKey = "mcpSelectFiltered"
 	xMCPClearSelection       textKey = "mcpClearSelection"
 	xMCPDeleteSelected       textKey = "mcpDeleteSelected"
+	xMCPDeleteOne            textKey = "mcpDeleteOne"
 	xMCPSelectOne            textKey = "mcpSelectOne"
 	xMCPOpenDetails          textKey = "mcpOpenDetails"
 	xMCPDisabled             textKey = "mcpDisabled"
@@ -54,6 +55,7 @@ func init() {
 		xMCPSelectFiltered:       {"Select filtered (%d)", "全选筛选结果（%d）", "全選篩選結果（%d）", "필터 결과 선택 (%d)", "絞り込み結果を選択（%d）", "Выбрать результаты (%d)", "Sélectionner les résultats (%d)"},
 		xMCPClearSelection:       {"Clear selection", "清除选择", "清除選擇", "선택 지우기", "選択を解除", "Снять выделение", "Effacer la sélection"},
 		xMCPDeleteSelected:       {"Delete selected", "删除所选配置", "刪除所選設定", "선택한 구성 삭제", "選択した設定を削除", "Удалить выбранные", "Supprimer la sélection"},
+		xMCPDeleteOne:            {"Delete configuration", "删除此配置", "刪除此設定", "이 구성 삭제", "この設定を削除", "Удалить конфигурацию", "Supprimer la configuration"},
 		xMCPSelectOne:            {"Select %s", "选择 %s", "選擇 %s", "%s 선택", "%s を選択", "Выбрать %s", "Sélectionner %s"},
 		xMCPOpenDetails:          {"Open details for %s", "打开 %s 的详情", "開啟 %s 的詳細資料", "%s 세부 정보 열기", "%s の詳細を開く", "Открыть сведения: %s", "Ouvrir les détails de %s"},
 		xMCPDisabled:             {"Disabled in configuration", "配置中已禁用", "設定中已停用", "구성에서 비활성화됨", "設定で無効", "Отключено в конфигурации", "Désactivé dans la configuration"},

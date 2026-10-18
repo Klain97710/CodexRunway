@@ -22,6 +22,9 @@ type settingsMCP struct {
 	selected   map[string]bool
 	open       string
 	confirm    bool
+	// confirmKey names the one server a row or detail page asked to
+	// delete; empty, the confirmation deletes the selection.
+	confirmKey string
 	work       Task
 	notice     string
 	noticeErr  bool
@@ -47,7 +50,23 @@ func (s *settingsMCP) switchProvider(provider store.Provider) {
 	}
 	s.provider, s.search, s.open = provider, "", ""
 	s.snapshot, s.loaded, s.stale, s.notice, s.noticeErr = mcp.Snapshot{}, false, false, "", false
-	s.selected, s.confirm = map[string]bool{}, false
+	s.selected, s.confirm, s.confirmKey = map[string]bool{}, false, ""
+}
+
+// confirmDelete asks to delete one server, or the selection for "".
+func (s *settingsMCP) confirmDelete(id string) {
+	s.confirm, s.confirmKey = true, id
+}
+
+// deleteTargets are the servers the open confirmation deletes.
+func (s *settingsMCP) deleteTargets() []mcp.Server {
+	if s.confirmKey == "" {
+		return s.selectedServers()
+	}
+	if server, ok := s.find(s.confirmKey); ok && server.Deletable {
+		return []mcp.Server{server}
+	}
+	return nil
 }
 
 func (s *settingsMCP) filtered(l l10n.Localizer) []mcp.Server {

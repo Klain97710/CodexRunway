@@ -56,31 +56,32 @@ func sessionProjects(items []sessions.ManagedSession) []sessionProject {
 	return projects
 }
 
+// sessionFilterBar lays the filters out in one row, wrapping in a narrow
+// window: search, project, date range, quick ranges and Apply.
 func (u *settingsUI) sessionFilterBar(c *ui.Context) {
 	s, l, t := u.sessionsState(), u.L(), c.Theme()
-	Panel(c).Padding(10, 12).Gap(8).Children(func() {
-		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-			ui.TextInput(c.Key("session-search"), &s.draft.search).Placeholder(tx(l, xSessionsSearchHint)).Label(tx(l, xSessionsSearch)).Grow(1).Basis(0)
+	Panel(c).Padding(8, 10).Gap(6).Children(func() {
+		ui.Row(c).Gap(6).Wrap().AlignItems(ui.Center).Children(func() {
+			ui.TextInput(c.Key("session-search"), &s.draft.search).Placeholder(tx(l, xSessionsSearchHint)).Label(tx(l, xSessionsSearch)).
+				FontSize(12).Height(listControlHeight).Grow(1).Basis(0).MinWidth(140)
 			u.sessionProjectPicker(c, sessionProjects(s.items))
-			if PillButton(c, nil, tx(l, xSessionsApply), s.work.Running).Clicked() {
+			ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() {
+				u.sessionDateField(c, 0, tx(l, xSessionsStartDate), tx(l, xSessionsChooseStart), &s.draft.from)
+				ui.Text(c, "–").FontSize(11).TextColor(t.TextMuted)
+				u.sessionDateField(c, 1, tx(l, xSessionsEndDate), tx(l, xSessionsChooseEnd), &s.draft.to)
+			})
+			u.sessionQuickRanges(c)
+			// Apply turns the warning color while the draft waits for it.
+			var apply ui.Element
+			if !s.work.Running && s.filterPending() {
+				apply = SmallWarningPillButton(c, tx(l, xSessionsApply))
+			} else {
+				apply = SmallPillButton(c, nil, tx(l, xSessionsApply), s.work.Running)
+			}
+			if apply.Height(listControlHeight).Cursor(ui.CursorPointer).Tooltip(tx(l, xSessionsFilterSubmitHint)).Clicked() {
 				s.applyFilter(time.Local)
 			}
 		})
-		ui.Row(c).Gap(6).Wrap().AlignItems(ui.Center).Children(func() {
-			u.sessionDateField(c, 0, tx(l, xSessionsStartDate), tx(l, xSessionsChooseStart), &s.draft.from)
-			ui.Text(c, "–").FontSize(12).TextColor(t.TextMuted)
-			u.sessionDateField(c, 1, tx(l, xSessionsEndDate), tx(l, xSessionsChooseEnd), &s.draft.to)
-			ui.Text(c, tx(l, xSessionsQuickRange)).FontSize(11).TextColor(t.TextMuted)
-			for _, option := range []struct {
-				label string
-				days  int
-			}{{l.Text(l10n.KeyToday), 1}, {tx(l, xSessionsLast7Days), 7}, {tx(l, xSessionsLast30Days), 30}, {tx(l, xSessionsAllDates), 0}} {
-				if PillButton(c, nil, option.label, s.work.Running).Clicked() {
-					s.setQuickRange(time.Now(), option.days)
-				}
-			}
-		})
-		ui.Text(c, tx(l, xSessionsFilterSubmitHint)).FontSize(11).TextColor(t.TextMuted)
 		if s.filterErr != nil {
 			key := xSessionsInvalidDate
 			if s.filterErr.Error() == "date range is reversed" {
@@ -91,13 +92,32 @@ func (u *settingsUI) sessionFilterBar(c *ui.Context) {
 	})
 }
 
+// sessionQuickRanges is a small calendar menu button that applies a date
+// range at once, keeping the draft search and project, and checks the range
+// applied.
+func (u *settingsUI) sessionQuickRanges(c *ui.Context) {
+	s, l := u.sessionsState(), u.L()
+	now := time.Now()
+	applied, matched := s.applied.quickRange(now)
+	listMenuButton(c, "session-quick-range", icCalendarAlert, "", tx(l, xSessionsQuickRange), s.work.Running, func(m *ui.Menu) {
+		for _, option := range []struct {
+			label string
+			days  int
+		}{{l.Text(l10n.KeyToday), 1}, {tx(l, xSessionsLast7Days), 7}, {tx(l, xSessionsLast30Days), 30}, {tx(l, xSessionsAllDates), 0}} {
+			if m.Item(option.label).Checked(matched && applied == option.days).Chosen() {
+				s.setQuickRange(now, option.days)
+			}
+		}
+	})
+}
+
 func (u *settingsUI) sessionDateField(c *ui.Context, index int, label, emptyLabel string, value *string) {
 	s, l := u.sessionsState(), u.L()
 	display := *value
 	if display == "" {
 		display = emptyLabel
 	}
-	anchor := PillButton(c, icCalendarAlert, display, s.work.Running).Label(label).Tooltip(label)
+	anchor := SmallPillButton(c, nil, display, s.work.Running).Height(listControlHeight).Cursor(ui.CursorPointer).Label(label).Tooltip(label)
 	if anchor.Clicked() {
 		s.dateOpen[index] = !s.dateOpen[index]
 		if date, err := time.ParseInLocation(dateLayout, *value, time.Local); err == nil {
@@ -122,65 +142,38 @@ func (u *settingsUI) sessionDateField(c *ui.Context, index int, label, emptyLabe
 	})
 }
 
+// sessionProjectPicker chooses the project as the font picker does: All
+// projects first, then the scanned ones, which typing filters. A chosen
+// project no longer scanned stays listed under its saved label.
 func (u *settingsUI) sessionProjectPicker(c *ui.Context, projects []sessionProject) {
-	s, l, t := u.sessionsState(), u.L(), c.Theme()
-	value, label := s.draft.project, tx(l, xSessionsAllProjects)
-	if value != "" {
-		label = s.draft.projectLabel
-		if label == "" {
-			label = strings.TrimPrefix(strings.TrimPrefix(value, "cwd:"), "name:")
+	s, l := u.sessionsState(), u.L()
+	all := tx(l, xSessionsAllProjects)
+	options, keys := []string{all}, map[string]string{all: ""}
+	add := func(label, key string) {
+		if _, ok := keys[label]; !ok {
+			options, keys[label] = append(options, label), key
 		}
 	}
+	selected := all
 	for _, project := range projects {
-		if project.key == value {
-			label = project.label
-			break
+		add(project.label, project.key)
+		if project.key == s.draft.project {
+			selected = project.label
 		}
 	}
-	sel := ui.SelectBase(c.Key("session-project"), &value)
-	trigger := sel.Trigger.Label(tx(l, xSessionsProjectFilter)).Disabled(s.work.Running).Width(190).Gap(5).Padding(5, 7).Radius(6).AlignItems(ui.Center)
-	if !s.work.Running && (trigger.Hovered() || sel.Open()) {
-		trigger.Background(pal(t).Hover)
+	if s.draft.project != "" && selected == all {
+		label := s.draft.projectLabel
+		if label == "" {
+			label = strings.TrimPrefix(strings.TrimPrefix(s.draft.project, "cwd:"), "name:")
+		}
+		add(label, s.draft.project)
+		selected = label
 	}
-	trigger.Children(func() {
-		ui.Text(c, label).FontSize(12).SingleLine().Ellipsis("…").Tooltip(label).Grow(1).Basis(0)
-		ui.Icon(c, icUpDown).Size(13, 13).TextColor(t.TextMuted)
-	})
-	sel.Popup(func(panel ui.Element) {
-		popupMenu(c, panel.MaxWidth(420))
-		ui.Scroll(c.Key("session-project-options")).MaxHeight(260).Children(func() {
-			u.sessionProjectOption(c, sel, "", tx(l, xSessionsAllProjects), "", value)
-			for _, project := range projects {
-				u.sessionProjectOption(c, sel, project.key, project.label, project.path, value)
-			}
-		})
-	})
-	if trigger.Changed() {
-		s.draft.project, s.draft.projectLabel = value, ""
-		for _, project := range projects {
-			if project.key == value {
-				s.draft.projectLabel = project.label
-				break
-			}
+	if ui.Combobox(c.Key("session-project"), &selected, options).Label(tx(l, xSessionsProjectFilter)).
+		FontSize(12).Width(170).Height(listControlHeight).Disabled(s.work.Running).Changed() {
+		s.draft.project, s.draft.projectLabel = keys[selected], ""
+		if s.draft.project != "" {
+			s.draft.projectLabel = selected
 		}
 	}
-}
-
-func (u *settingsUI) sessionProjectOption(c *ui.Context, sel ui.SelectParts[string], key, label, path, current string) {
-	t := c.Theme()
-	item := sel.Item(key).Padding(5, 10, 5, 6).Gap(5).Radius(5).AlignItems(ui.Center)
-	color := t.Text
-	if item.Highlighted() {
-		item.Background(t.Accent)
-		color = t.AccentText
-	}
-	item.Children(func() {
-		checkmark(c, key == current, color)
-		ui.Column(c).Gap(1).MinWidth(0).MaxWidth(370).Children(func() {
-			ui.Text(c, label).MaxWidth(370).FontSize(12).TextColor(color).SingleLine().Ellipsis("…").Tooltip(label)
-			if path != "" && !strings.Contains(label, path) {
-				ui.Text(c, path).MaxWidth(370).FontSize(10).TextColor(color.Alpha(0.72)).SingleLine().Ellipsis("…").Tooltip(path)
-			}
-		})
-	})
 }

@@ -15,12 +15,15 @@ func (u *settingsUI) mcpDeleteDialog(c *ui.Context) {
 	if s == nil || !s.confirm {
 		return
 	}
-	items := s.selectedServers()
+	items := s.deleteTargets()
 	l := u.L()
 	message := tx(l, xMCPDeleteConfirmMessage, l.Text(providerKey(s.provider)), len(items))
 	if ui.AlertDialog(c.Key("mcp-delete-confirm"), &s.confirm, tx(l, xMCPDeleteConfirmTitle), message,
 		l.Text(l10n.KeyCancel), tx(l, xMCPDeleteSelected)) == 1 {
 		u.deleteMCPServers(u.mcpActions(), items)
+	}
+	if !s.confirm {
+		s.confirmKey = ""
 	}
 }
 

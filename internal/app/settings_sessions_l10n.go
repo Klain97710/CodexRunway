@@ -30,11 +30,9 @@ const (
 	xSessionsSelectFiltered       textKey = "sessionsSelectFiltered"
 	xSessionsClearSelection       textKey = "sessionsClearSelection"
 	xSessionsSelected             textKey = "sessionsSelected"
-	xSessionsSelectionCounts      textKey = "sessionsSelectionCounts"
-	xSessionsSelectAll            textKey = "sessionsSelectAll"
-	xSessionsDeselectAll          textKey = "sessionsDeselectAll"
 	xSessionsDeleteSelected       textKey = "sessionsDeleteSelected"
 	xSessionsDeleteShort          textKey = "sessionsDeleteShort"
+	xSessionsDeleteOne            textKey = "sessionsDeleteOne"
 	xSessionsShowMore             textKey = "sessionsShowMore"
 	xSessionsSelectOne            textKey = "sessionsSelectOne"
 	xSessionsOpenDetails          textKey = "sessionsOpenDetails"
@@ -99,11 +97,9 @@ func init() {
 		xSessionsSelectFiltered:       {"Select all %d filtered sessions", "选择当前筛选的全部 %d 个会话", "選取目前篩選的全部 %d 個工作階段", "필터 결과 %d개 모두 선택", "絞り込み結果 %d 件をすべて選択", "Выбрать все отфильтрованные: %d", "Sélectionner les %d sessions filtrées"},
 		xSessionsClearSelection:       {"Clear selection", "清空选择", "清除選取", "선택 해제", "選択を解除", "Снять выделение", "Effacer la sélection"},
 		xSessionsSelected:             {"%d selected", "已选 %d 个", "已選 %d 個", "%d개 선택됨", "%d 件選択中", "Выбрано: %d", "%d sélectionnées"},
-		xSessionsSelectionCounts:      {"Filtered %d · Selected %d", "筛选结果 %d · 已选 %d", "篩選結果 %d · 已選 %d", "필터 결과 %d · 선택 %d", "絞り込み %d · 選択 %d", "В фильтре %d · Выбрано %d", "Filtrées %d · Sélectionnées %d"},
-		xSessionsSelectAll:            {"Select all", "全选", "全選", "모두 선택", "すべて選択", "Выбрать все", "Tout sélectionner"},
-		xSessionsDeselectAll:          {"Deselect all", "取消全选", "取消全選", "모두 선택 해제", "すべて選択解除", "Снять всё", "Tout désélectionner"},
 		xSessionsDeleteSelected:       {"Move selected to Trash", "将所选会话移到系统回收站", "將所選工作階段移到系統資源回收筒", "선택 항목을 시스템 휴지통으로 이동", "選択項目をシステムのゴミ箱へ移動", "Переместить выбранное в корзину", "Déplacer la sélection dans la corbeille"},
 		xSessionsDeleteShort:          {"Delete selected", "删除已选", "刪除已選", "선택 항목 삭제", "選択項目を削除", "Удалить выбранное", "Supprimer la sélection"},
+		xSessionsDeleteOne:            {"Move to Trash", "移到系统回收站", "移到系統資源回收筒", "시스템 휴지통으로 이동", "システムのゴミ箱へ移動", "Переместить в корзину", "Déplacer dans la corbeille"},
 		xSessionsShowMore:             {"Show %d more", "再显示 %d 个", "再顯示 %d 個", "%d개 더 보기", "さらに %d 件表示", "Показать ещё %d", "Afficher %d de plus"},
 		xSessionsSelectOne:            {"Select %s", "选择 %s", "選取 %s", "%s 선택", "%s を選択", "Выбрать %s", "Sélectionner %s"},
 		xSessionsOpenDetails:          {"Open details for %s", "打开 %s 的详情", "開啟 %s 的詳細資料", "%s 상세 정보 열기", "%s の詳細を開く", "Открыть сведения: %s", "Ouvrir les détails de %s"},

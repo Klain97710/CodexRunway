@@ -193,13 +193,18 @@ func (u *settingsUI) view(c *ui.Context) {
 }
 
 func (u *settingsUI) pageContent(c *ui.Context) {
-	ui.Scroll(c.Key("page-"+fmt.Sprint(int(u.tab))+u.skillsPageKey()+u.mcpPageKey())).Grow(1).Basis(0).Padding(4, 24, 24, 24).Gap(22).Children(func() {
-		if u.s.ReadOnly() {
-			u.readOnlyBanner(c)
-		}
-		if err := u.s.SaveError(); err != nil {
-			ui.Text(c, tx(u.L(), xSettingsSaveFailed, err.Error())).FontSize(12).TextColor(c.Theme().Danger)
-		}
+	if split := splitPages[u.tab]; split != nil {
+		// Managed lists scroll only their list, under fixed controls.
+		ui.Column(c).Grow(1).Basis(0).Padding(4, 0, 0, 0).Gap(14).Children(func() {
+			if u.s.ReadOnly() || u.s.SaveError() != nil {
+				ui.Column(c).Padding(0, 24).Gap(14).Children(func() { u.pageNotices(c) })
+			}
+			split(u, c)
+		})
+		return
+	}
+	ui.Scroll(c.Key("page-"+fmt.Sprint(int(u.tab))+u.skillsPageKey())).Grow(1).Basis(0).Padding(4, 24, 24, 24).Gap(22).Children(func() {
+		u.pageNotices(c)
 		switch u.tab {
 		case tabGeneral:
 			u.generalPage(c)
@@ -216,16 +221,29 @@ func (u *settingsUI) pageContent(c *ui.Context) {
 			u.notificationsGroup(c)
 		case tabSkills:
 			u.skillsPage(c)
-		case tabSessions:
-			u.sessionsPage(c)
-		case tabMCP:
-			u.mcpPage(c)
 		case tabAdvanced:
 			u.advancedPage(c)
 		case tabAbout:
 			u.aboutPage(c)
 		}
 	})
+}
+
+// splitPages are the tabs whose page lays out its own scrolling, under
+// fixed controls.
+var splitPages = map[settingsTab]func(*settingsUI, *ui.Context){
+	tabSessions: (*settingsUI).sessionsPage,
+	tabMCP:      (*settingsUI).mcpPage,
+}
+
+// pageNotices tops a page with why settings cannot be changed or saved.
+func (u *settingsUI) pageNotices(c *ui.Context) {
+	if u.s.ReadOnly() {
+		u.readOnlyBanner(c)
+	}
+	if err := u.s.SaveError(); err != nil {
+		ui.Text(c, tx(u.L(), xSettingsSaveFailed, err.Error())).FontSize(12).TextColor(c.Theme().Danger)
+	}
 }
 
 // readOnlyBanner explains why nothing can be changed.

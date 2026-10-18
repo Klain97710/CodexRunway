@@ -13,18 +13,7 @@ import (
 
 func (u *settingsUI) sessionNotice(c *ui.Context) {
 	s := u.sessionsState()
-	if s.notice == "" {
-		return
-	}
-	t := c.Theme()
-	color, icon := t.Success, icCheckCircle
-	if s.noticeErr {
-		color, icon = t.Danger, icWarnCircle
-	}
-	ui.Row(c).Gap(8).Padding(8, 10).Radius(8).Background(color.Alpha(0.10)).AlignItems(ui.Center).Children(func() {
-		ui.Icon(c, icon).Size(13, 13).TextColor(color)
-		ui.Text(c, s.notice).FontSize(12).TextColor(color).Grow(1).Basis(0)
-	})
+	listNotice(c, "session-notice-close", s.notice, s.noticeErr, u.text(l10n.KeyOk), func() { s.notice, s.noticeErr = "", false })
 }
 
 func (u *settingsUI) sessionDeleteDialog(c *ui.Context) {
@@ -32,12 +21,15 @@ func (u *settingsUI) sessionDeleteDialog(c *ui.Context) {
 	if s == nil || !s.confirm {
 		return
 	}
-	items := s.selectedItems()
+	items := s.deleteTargets()
 	l := u.L()
 	message := tx(l, xSessionsDeleteConfirmMessage, l.Text(providerKey(s.provider)), len(items))
 	if ui.AlertDialog(c.Key("session-delete-confirm"), &s.confirm, tx(l, xSessionsDeleteConfirmTitle), message,
 		l.Text(l10n.KeyCancel), tx(l, xSessionsDeleteSelected)) == 1 {
 		u.deleteSessions(u.sessionActions(), items)
+	}
+	if !s.confirm {
+		s.confirmKey = ""
 	}
 }
 

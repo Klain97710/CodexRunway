@@ -2,10 +2,12 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/licoy/quosparr/internal/l10n"
 	"github.com/licoy/quosparr/internal/sessions"
 	"github.com/licoy/quosparr/internal/store"
 )
@@ -122,7 +124,7 @@ func TestSessionProjectSelectAndSelectAllUseCurrentFilter(t *testing.T) {
 	if got := len(u.sessions.filtered()); got != 1 {
 		t.Fatalf("project filter count = %d", got)
 	}
-	if err := tt.Click(tx(u.L(), xSessionsSelectAll)); err != nil {
+	if err := tt.Click(tx(u.L(), xSessionsSelectFiltered, 1)); err != nil {
 		t.Fatal(err)
 	}
 	if got := u.sessions.selectedItems(); len(got) != 1 || got[0].ID != "new" {
@@ -139,8 +141,17 @@ func TestSessionProjectPickerKeepsMissingSelectionLabel(t *testing.T) {
 	u.sessions.draft.project = "cwd:/missing/project"
 	u.sessions.draft.projectLabel = "Missing project · /missing/project"
 	tt.Frame()
+	if err := tt.Click(tx(u.L(), xSessionsProjectFilter)); err != nil {
+		t.Fatal(err)
+	}
 	if !tt.HasText(u.sessions.draft.projectLabel) {
 		t.Fatalf("missing selected project looks like all projects; texts %q", tt.Texts())
+	}
+	if err := tt.Click(tx(u.L(), xSessionsAllProjects)); err != nil {
+		t.Fatal(err)
+	}
+	if u.sessions.draft.project != "" || u.sessions.draft.projectLabel != "" {
+		t.Fatalf("all projects kept %q (%q)", u.sessions.draft.project, u.sessions.draft.projectLabel)
 	}
 }
 
@@ -155,5 +166,116 @@ func TestSessionRefreshPreservesDraftAndAppliedFilter(t *testing.T) {
 	finishDetail(t, queue)
 	if s.draft.search != "draft" || s.draft.project != "cwd:/draft" || s.applied.search != "applied" || s.applied.project != "cwd:/applied" {
 		t.Fatalf("refresh changed filters: draft=%+v applied=%+v", s.draft, s.applied)
+	}
+}
+
+func TestSessionListScrollsUnderFixedFilters(t *testing.T) {
+	u, tt, _ := settingsSessionsView(t, SessionActions{})
+	for i := range 40 {
+		u.sessions.items = append(u.sessions.items, managedSession(fmt.Sprint("extra", i), fmt.Sprint("Extra session ", i), time.Date(2026, 10, 1, 9, 0, 0, 0, time.Local)))
+	}
+	tt.Frame()
+	apply, ok := tt.Find(tx(u.L(), xSessionsApply))
+	row, rowOK := tt.Find("Review session management")
+	if !ok || !rowOK {
+		t.Fatalf("filters or list missing; texts %q", tt.Texts())
+	}
+	tt.Scroll(row.X+row.W/2, row.Y+row.H/2, 0, 400)
+	tt.Frame()
+	after, _ := tt.Find(tx(u.L(), xSessionsApply))
+	if after.Y != apply.Y {
+		t.Fatalf("filters scrolled from %v to %v", apply.Y, after.Y)
+	}
+	if moved, ok := tt.Find("Review session management"); ok && moved.Y == row.Y {
+		t.Fatal("session list did not scroll")
+	}
+}
+
+func TestSessionFilterPendingAndQuickRangeMatch(t *testing.T) {
+	s := settingsSessions{selected: map[string]bool{}}
+	if s.filterPending() {
+		t.Fatal("empty filters pending")
+	}
+	s.draft.search = "  release "
+	if !s.filterPending() || !s.applyFilter(time.Local) || s.filterPending() {
+		t.Fatalf("pending around apply: draft=%+v applied=%+v", s.draft, s.applied)
+	}
+	now := time.Date(2026, 10, 18, 12, 0, 0, 0, time.Local)
+	for _, days := range []int{0, 1, 7, 30} {
+		s.setQuickRange(now, days)
+		if got, ok := s.applied.quickRange(now); !ok || got != days {
+			t.Fatalf("quick range %d matched %d %t", days, got, ok)
+		}
+	}
+	s.draft.from = "2026-10-01"
+	s.applyFilter(time.Local)
+	if _, ok := s.applied.quickRange(now); ok {
+		t.Fatalf("custom range matched a quick range: %+v", s.applied)
+	}
+}
+
+func TestSessionSelectAllBoxTogglesFilteredSessions(t *testing.T) {
+	u, tt, _ := settingsSessionsView(t, SessionActions{})
+	s := u.sessions
+	s.selected[sessionKey(s.items[0])] = true
+	tt.Frame()
+	if err := tt.Click(tx(u.L(), xSessionsSelectFiltered, 2)); err != nil {
+		t.Fatal(err)
+	}
+	if len(s.selectedItems()) != 2 {
+		t.Fatalf("mixed box did not select all: %v", s.selected)
+	}
+	if err := tt.Click(tx(u.L(), xSessionsClearSelection)); err != nil {
+		t.Fatal(err)
+	}
+	if len(s.selected) != 0 {
+		t.Fatalf("checked box did not clear: %v", s.selected)
+	}
+}
+
+func TestSessionRowDeleteTargetsOnlyItsSession(t *testing.T) {
+	var deleted []sessions.ManagedSession
+	actions := SessionActions{
+		Query: func(context.Context, store.Provider) ([]sessions.ManagedSession, error) { return nil, nil },
+		Delete: func(_ context.Context, items []sessions.ManagedSession) ([]sessions.DeleteResult, error) {
+			deleted = items
+			return []sessions.DeleteResult{{Session: items[0], Removed: 1, Total: 1}}, nil
+		},
+	}
+	u, tt, queue := settingsSessionsView(t, actions)
+	s := u.sessions
+	keep := sessionKey(s.items[1])
+	s.selected[keep] = true
+	tt.Frame()
+	if err := tt.Click(tx(u.L(), xSessionsDeleteOne)); err != nil {
+		t.Fatal(err)
+	}
+	if !s.confirm || s.confirmKey != sessionKey(s.items[0]) || !tt.HasText(tx(u.L(), xSessionsDeleteConfirmMessage, "Codex", 1)) {
+		t.Fatalf("row delete confirmation: confirm=%t key=%q texts %q", s.confirm, s.confirmKey, tt.Texts())
+	}
+	cancel, ok := tt.Find(u.text(l10n.KeyCancel))
+	if !ok {
+		t.Fatal("cancel button missing")
+	}
+	tt.ClickAt(cancel.X+cancel.W+8+20, cancel.Y+cancel.H/2)
+	finishDetail(t, queue) // delete
+	finishDetail(t, queue) // rescan
+	if len(deleted) != 1 || deleted[0].ID != "new" || s.confirmKey != "" {
+		t.Fatalf("deleted %+v, selection %v, key %q", deleted, s.selected, s.confirmKey)
+	}
+}
+
+func TestSessionDetailHidesProviderTabs(t *testing.T) {
+	u, tt, _ := settingsSessionsView(t, SessionActions{})
+	u.sessions.open = sessionKey(u.sessions.items[0])
+	tt.Frame()
+	if tt.HasText("Claude") || !tt.HasText(u.text(l10n.KeyBack)) {
+		t.Fatalf("detail page texts %q", tt.Texts())
+	}
+	if err := tt.Click(tx(u.L(), xSessionsBack)); err != nil {
+		t.Fatal(err)
+	}
+	if u.sessions.open != "" || !tt.HasText("Claude") {
+		t.Fatalf("back did not return to the list; texts %q", tt.Texts())
 	}
 }

@@ -94,12 +94,15 @@ type settingsSessions struct {
 	dateOpen   [2]bool
 	dateCursor [2]time.Time
 
-	open      string
-	detail    sessionDetailState
-	confirm   bool
-	work      Task
-	notice    string
-	noticeErr bool
+	open    string
+	detail  sessionDetailState
+	confirm bool
+	// confirmKey names the one session a row or detail page asked to
+	// delete; empty, the confirmation deletes the selection.
+	confirmKey string
+	work       Task
+	notice     string
+	noticeErr  bool
 }
 
 func (u *settingsUI) sessionsState() *settingsSessions {
@@ -156,7 +159,25 @@ func (s *settingsSessions) filtered() []sessions.ManagedSession {
 
 func (s *settingsSessions) clearSelection() {
 	s.selected = map[string]bool{}
-	s.confirm = false
+	s.confirm, s.confirmKey = false, ""
+}
+
+// confirmDelete asks to delete one session, or the selection for "".
+func (s *settingsSessions) confirmDelete(key string) {
+	s.confirm, s.confirmKey = true, key
+}
+
+// deleteTargets are the sessions the open confirmation deletes.
+func (s *settingsSessions) deleteTargets() []sessions.ManagedSession {
+	if s.confirmKey == "" {
+		return s.selectedItems()
+	}
+	for _, item := range s.items {
+		if sessionKey(item) == s.confirmKey {
+			return []sessions.ManagedSession{item}
+		}
+	}
+	return nil
 }
 
 func (s *settingsSessions) applyFilter(location *time.Location) bool {
@@ -168,6 +189,32 @@ func (s *settingsSessions) applyFilter(location *time.Location) bool {
 	s.applied, s.shown = next, sessionPageSize
 	s.clearSelection()
 	return true
+}
+
+// filterPending reports whether the draft differs from the applied filter,
+// so Apply has changes waiting.
+func (s *settingsSessions) filterPending() bool {
+	d, a := s.draft, s.applied
+	return strings.TrimSpace(d.search) != a.search || strings.TrimSpace(d.from) != a.from ||
+		strings.TrimSpace(d.to) != a.to || d.project != a.project
+}
+
+// quickRange reports the quick range f covers on now's day: 0 for all
+// dates, or the days ending today that setQuickRange would choose.
+func (f sessionFilter) quickRange(now time.Time) (int, bool) {
+	if f.from == "" && f.to == "" {
+		return 0, true
+	}
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	if f.to != today.Format(dateLayout) {
+		return 0, false
+	}
+	for _, days := range []int{1, 7, 30} {
+		if f.from == today.AddDate(0, 0, 1-days).Format(dateLayout) {
+			return days, true
+		}
+	}
+	return 0, false
 }
 
 func (s *settingsSessions) setQuickRange(now time.Time, days int) {
