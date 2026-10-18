@@ -47,6 +47,32 @@ func TestDryRunReportsIndexProblems(t *testing.T) {
 	}
 }
 
+func TestDryRunTracksSessionIndexUpdates(t *testing.T) {
+	f := newFixture(t)
+	r := Repairer{CodexHome: f.home}
+	checkMissing := func(want int) {
+		t.Helper()
+		report, err := r.DryRun()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(report.MissingIndexIDs) != want {
+			t.Fatalf("missing IDs = %v, want %d", report.MissingIndexIDs, want)
+		}
+	}
+	f.write("sessions/rollout-s1.jsonl", repairSession("s1", "First", "2026-06-29T01:00:00Z"))
+	checkMissing(1)
+	// A later index write resolves the missing entry without a repair.
+	f.write("session_index.jsonl", `{"id":"s1","thread_name":"First","updated_at":"2026-06-29T01:00:00Z"}`)
+	checkMissing(0)
+	f.write("sessions/rollout-s2.jsonl", repairSession("s2", "Second", "2026-06-29T02:00:00Z"))
+	checkMissing(1)
+	if _, err := r.Repair(); err != nil {
+		t.Fatal(err)
+	}
+	checkMissing(0)
+}
+
 func TestStaleTitles(t *testing.T) {
 	f := newFixture(t)
 	f.write("sessions/2026/06/29/rollout-s1.jsonl", repairSession("s1", "Real title", "2026-06-29T01:00:00Z"))

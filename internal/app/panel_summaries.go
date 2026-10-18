@@ -229,7 +229,7 @@ func repairRow(c *ui.Context, l l10n.Localizer, acts PanelActions, st *panelStat
 				if PillButton(c, nil, l.Text(l10n.KeyCancel), false).Clicked() {
 					st.info = ""
 				}
-				if PillButton(c, nil, l.Text(l10n.KeyRepair), true).Clicked() {
+				if PillButton(c, nil, l.Text(l10n.KeyRepair), acts.RepairSessions == nil).Clicked() {
 					st.info = ""
 					acts.RepairSessions()
 				}
