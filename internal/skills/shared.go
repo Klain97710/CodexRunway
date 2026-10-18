@@ -129,4 +129,5 @@ func finishSummary(summary *Summary) {
 		}
 	}
 	setRemovals(summary)
+	markFixes(summary)
 }

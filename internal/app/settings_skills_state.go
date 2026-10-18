@@ -215,6 +215,17 @@ type skillTrashState struct {
 	confirm  string
 }
 
+// shown is the trash under its provider and search filters.
+func (tr *skillTrashState) shown() []skills.TrashEntry {
+	var list []skills.TrashEntry
+	for _, e := range tr.list {
+		if trashMatches(e, tr.provider, tr.search) {
+			list = append(list, e)
+		}
+	}
+	return list
+}
+
 // settingsSkills is the state of the settings skills page.
 type settingsSkills struct {
 	tab    int // index into store.Providers(), or skillsTrashTab
@@ -238,6 +249,12 @@ type settingsSkills struct {
 	// pending holds a switch's new value until the next scan shows it.
 	pending    map[string]bool
 	showIssues bool
+	// fixChoice and fixDesc are the open fix confirmation's choices: which
+	// of the issue's fixes, and the description to write.
+	fixChoice int
+	fixDesc   string
+	// selected are the IDs of the skills checked in the list.
+	selected map[string]bool
 
 	body   panelSkillBody
 	md     markdown.Options
@@ -412,6 +429,8 @@ func skillErrorText(l l10n.Localizer, err error) string {
 	switch {
 	case errors.As(err, &partial):
 		return tx(l, xSkillsTransferPartial, partial.path)
+	case errors.Is(err, skills.ErrNotFixable):
+		return tx(l, xSkillsFixStale)
 	case errors.Is(err, skills.ErrTrashConflict):
 		return tx(l, xSkillsRestoreConflict)
 	case errors.Is(err, skills.ErrTrashParentGone):

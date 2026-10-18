@@ -22,9 +22,15 @@ type SkillActions struct {
 	Delete     func(skills.Skill, []skills.RootInfo) (system bool, err error)
 	DeleteLink func(skills.Summary, string) (system bool, err error)
 	Transfer   func(skills.TransferRequest) (skills.TransferResult, error)
-	OpenFolder func(string) error
-	Reveal     func(string)
-	Copy       func(string)
+	// The diagnostics fixes: lifting a nested Claude skill moves its outer
+	// folder to the skills trash; a description is written into SKILL.md
+	// after a backup.
+	LiftNested         func(skills.Summary, skills.Skill) (skills.LiftResult, error)
+	SuggestDescription func(skills.Skill) string
+	AddDescription     func(skills.Skill, string) error
+	OpenFolder         func(string) error
+	Reveal             func(string)
+	Copy               func(string)
 	// Inspect lists a skill's folder for its page in the settings.
 	Inspect func(context.Context, skills.Skill) (skills.Detail, error)
 	// The trash: restoring renames an entry back, purging and emptying

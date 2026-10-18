@@ -6,6 +6,7 @@ const (
 	xSkillsTrash          textKey = "skillsTrash"
 	xSkillsAll            textKey = "skillsAll"
 	xSkillsSourceAll      textKey = "skillsSourceAll"
+	xSkillsProviderAll    textKey = "skillsProviderAll"
 	xSkillsFilter         textKey = "skillsFilter"
 	xSkillsSearchMore     textKey = "skillsSearchMore"
 	xSkillsFlagShared     textKey = "skillsFlagShared"
@@ -125,6 +126,7 @@ func init() {
 		xSkillsTrash:          {"Trash", "回收站", "回收站", "휴지통", "ゴミ箱", "Корзина", "Corbeille"},
 		xSkillsAll:            {"All", "全部", "全部", "전체", "すべて", "Все", "Tous"},
 		xSkillsSourceAll:      {"All locations", "全部位置", "全部位置", "모든 위치", "すべての場所", "Все места", "Tous les emplacements"},
+		xSkillsProviderAll:    {"All providers", "全部服务商", "全部服務商", "모든 공급자", "すべてのプロバイダー", "Все провайдеры", "Tous les fournisseurs"},
 		xSkillsFilter:         {"Filter", "筛选", "篩選", "필터", "絞り込み", "Фильтр", "Filtrer"},
 		xSkillsSearchMore:     {"Name, description, path or repository", "名称、描述、路径或仓库", "名稱、描述、路徑或儲存庫", "이름, 설명, 경로 또는 저장소", "名前、説明、パス、リポジトリ", "Имя, описание, путь или репозиторий", "Nom, description, chemin ou dépôt"},
 		xSkillsFlagShared:     {"Shared", "共享", "共用", "공유", "共有", "Общие", "Partagés"},

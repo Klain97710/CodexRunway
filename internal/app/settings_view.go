@@ -203,7 +203,7 @@ func (u *settingsUI) pageContent(c *ui.Context) {
 		})
 		return
 	}
-	ui.Scroll(c.Key("page-"+fmt.Sprint(int(u.tab))+u.skillsPageKey())).Grow(1).Basis(0).Padding(4, 24, 24, 24).Gap(22).Children(func() {
+	ui.Scroll(c.Key("page-"+fmt.Sprint(int(u.tab)))).Grow(1).Basis(0).Padding(4, 24, 24, 24).Gap(22).Children(func() {
 		u.pageNotices(c)
 		switch u.tab {
 		case tabGeneral:
@@ -219,8 +219,6 @@ func (u *settingsUI) pageContent(c *ui.Context) {
 			u.modulesGroup(c)
 		case tabNotifications:
 			u.notificationsGroup(c)
-		case tabSkills:
-			u.skillsPage(c)
 		case tabAdvanced:
 			u.advancedPage(c)
 		case tabAbout:
@@ -233,6 +231,7 @@ func (u *settingsUI) pageContent(c *ui.Context) {
 // fixed controls.
 var splitPages = map[settingsTab]func(*settingsUI, *ui.Context){
 	tabSessions: (*settingsUI).sessionsPage,
+	tabSkills:   (*settingsUI).skillsPage,
 	tabMCP:      (*settingsUI).mcpPage,
 }
 

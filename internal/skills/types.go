@@ -212,6 +212,8 @@ type Issue struct {
 	Name      string // skill or link name, when known
 	Detail    string // e.g. the dangling link target, or the other path of a duplicate
 	Removable bool   // a broken link that DeleteBrokenLink may remove
+	Fixes     []Fix  // the one-click fixes on offer, in the order to show
+	Lift      NestedFix
 }
 
 // RootInfo describes one scanned location, present or not.

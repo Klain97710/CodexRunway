@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -18,7 +19,8 @@ var errSkillsUnavailable = errors.New("skills service unavailable")
 // installSkillActions wires the skills pages to the scanner, the provider
 // config writers, the Quosparr skills trash and the system shell. Deleting
 // moves to that trash (the system Trash from another volume); purging
-// moves on to the system Trash, so nothing is erased.
+// moves on to the system Trash, so nothing is erased. The diagnostics
+// fixes go through the same trash and back SKILL.md up before editing it.
 func installSkillActions(rt *liveApp, a *SkillActions) {
 	home := rt.skillsEnv().Home
 	trash := skills.NewTrash(platform.RunwayDir(home), home)
@@ -36,6 +38,14 @@ func installSkillActions(rt *liveApp, a *SkillActions) {
 	}
 	a.Transfer = func(req skills.TransferRequest) (skills.TransferResult, error) {
 		return skills.TransferSkill(rt.skillsEnv(), req, system)
+	}
+	a.LiftNested = func(sum skills.Summary, s skills.Skill) (skills.LiftResult, error) {
+		return trash.LiftNested(sum, s, time.Now(), system)
+	}
+	a.SuggestDescription = skills.SuggestDescription
+	backup := platform.BackupPolicy{Dir: filepath.Join(platform.RunwayDir(home), "backups"), Prefix: "skill-md-", Ext: ".md", Keep: 10}
+	a.AddDescription = func(s skills.Skill, description string) error {
+		return skills.AddDescription(s, description, backup, time.Now())
 	}
 	a.OpenFolder = mygo.Shell.OpenPath
 	a.Reveal = mygo.Shell.ShowItemInFolder

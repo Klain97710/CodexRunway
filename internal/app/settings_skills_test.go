@@ -29,6 +29,8 @@ type settingsSkillCalls struct {
 	transferResult skills.TransferResult
 	transferErr    error
 	queryResult    map[store.Provider]skills.Summary
+	lifted         []string
+	described      []string
 }
 
 const settingsSkillsRepo = "https://github.com/acme/agent-skills"
@@ -80,6 +82,15 @@ func settingsSkillsView(t *testing.T, system bool) (*settingsUI, *ui.Tester, cha
 			return system, nil
 		},
 		DeleteLink: func(skills.Summary, string) (bool, error) { return system, nil },
+		LiftNested: func(_ skills.Summary, s skills.Skill) (skills.LiftResult, error) {
+			calls.lifted = append(calls.lifted, s.File)
+			return skills.LiftResult{Paths: []string{"/home/u/.claude/skills/" + s.Name}}, nil
+		},
+		SuggestDescription: func(skills.Skill) string { return "Suggested text" },
+		AddDescription: func(s skills.Skill, d string) error {
+			calls.described = append(calls.described, s.Name+": "+d)
+			return nil
+		},
 		OpenFolder: func(string) error { return nil },
 		Reveal:     func(string) {},
 		Copy:       func(p string) { calls.copied = append(calls.copied, p) },
@@ -431,6 +442,22 @@ func TestSettingsSkillPageShowsOriginFilesAndLinks(t *testing.T) {
 	}
 }
 
+func TestSettingsSkillPageHidesTabsAndFilters(t *testing.T) {
+	l := l10n.New(l10n.English)
+	u, tt, queue, _ := settingsSkillsView(t, false)
+	u.skills.open = u.skills.result[store.ProviderCodex].Skills[0].ID
+	tt.Frame()
+	settleSkills(t, tt, queue, 1)
+	for _, text := range []string{"Claude", "Grok", tx(l, xSkillsTrash), tx(l, xSkillsFilter)} {
+		if hasExact(tt, text) {
+			t.Fatalf("skill page kept %q; texts %q", text, tt.Texts())
+		}
+	}
+	if !hasExact(tt, "Codex") || !hasExact(tt, tx(l, xSkillsBack)) {
+		t.Fatalf("breadcrumb missing; texts %q", tt.Texts())
+	}
+}
+
 func TestSettingsSkillPageWithoutOriginSaysUnknown(t *testing.T) {
 	l := l10n.New(l10n.English)
 	u, tt, queue, _ := settingsSkillsView(t, false)
@@ -480,8 +507,16 @@ func TestSettingsSkillsTrashRestoresPurgesAndFilters(t *testing.T) {
 	for _, label := range []string{tx(l, xSkillsOpenTrashDir), tx(l, xSkillsEmptyTrash), tx(l, xSkillsRestore), tx(l, xSkillsPurge)} {
 		assertSkillIconButton(t, tt, label)
 	}
-	u.skills.trash.provider = 2 // Claude
-	tt.Frame()
+	// The provider picker is a select, as the font picker: typing narrows
+	// its options and Enter chooses one.
+	if err := tt.Click(tx(l, xSkillsProviderAll)); err != nil {
+		t.Fatal(err)
+	}
+	tt.Type("Claude")
+	tt.Key(0, ui.KeyEnter)
+	if u.skills.trash.provider != 2 {
+		t.Fatalf("picker chose provider %d; texts %q", u.skills.trash.provider, tt.Texts())
+	}
 	if hasExact(tt, "lint") || !hasExact(tt, "gone") {
 		t.Fatalf("provider filter did not apply; texts %q", tt.Texts())
 	}
@@ -578,4 +613,219 @@ func TestSkillsUIReviewPNGs(t *testing.T) {
 	a.panelState.skills.open = "codex\x00" + skillsTestRoot + "/review/SKILL.md"
 	panel.Frame()
 	exportReviewPNG(t, panel, filepath.Join(dir, "skills-panel-detail-zh-Hans.png"))
+}
+
+// settingsSkillsWithIssues shows the Codex tab's diagnostics as issues,
+// kept across the rescans a fix runs.
+func settingsSkillsWithIssues(t *testing.T, issues func(sum skills.Summary) []skills.Issue) (*settingsUI, *ui.Tester, chan func(), *settingsSkillCalls) {
+	t.Helper()
+	u, tt, queue, calls := settingsSkillsView(t, false)
+	res := settingsSkillsFixture()
+	sum := res[store.ProviderCodex]
+	sum.Issues = issues(sum)
+	res[store.ProviderCodex] = sum
+	calls.queryResult, u.skills.result, u.skills.showIssues = res, res, true
+	tt.Frame()
+	return u, tt, queue, calls
+}
+
+// clickFixConfirm clicks the confirmation's action, right of Cancel.
+func clickFixConfirm(t *testing.T, tt *ui.Tester, l l10n.Localizer) {
+	t.Helper()
+	cancel, ok := tt.Find(l.Text(l10n.KeyCancel))
+	if !ok {
+		t.Fatalf("no confirmation; texts %q", tt.Texts())
+	}
+	tt.ClickAt(cancel.X+cancel.W+28, cancel.Y+cancel.H/2)
+}
+
+func TestSettingsSkillFixAddsDescriptionAfterRisks(t *testing.T) {
+	l := l10n.New(l10n.English)
+	u, tt, queue, calls := settingsSkillsWithIssues(t, func(sum skills.Summary) []skills.Issue {
+		pdf := sum.Skills[1]
+		return []skills.Issue{{Kind: skills.IssueMissingDesc, Path: pdf.File, Name: pdf.Name, Fixes: []skills.Fix{skills.FixAddDescription}}}
+	})
+	if err := tt.Click(tx(l, xSkillsFix)); err != nil {
+		t.Fatal(err)
+	}
+	for _, text := range []string{tx(l, xSkillsFixRisks), tx(l, xSkillsRiskEditBackup), tx(l, xSkillsRiskEditUpdate)} {
+		if !tt.HasText(text) {
+			t.Fatalf("fix confirmation missing %q; texts %q", text, tt.Texts())
+		}
+	}
+	if u.skills.fixDesc != "Suggested text" || len(calls.described) != 0 {
+		t.Fatalf("opening wrote %v or lost the suggestion %q", calls.described, u.skills.fixDesc)
+	}
+	u.skills.fixDesc = "  Fill in PDF forms  "
+	tt.Frame()
+	clickFixConfirm(t, tt, l)
+	settleSkills(t, tt, queue, 3)
+	if len(calls.described) != 1 || calls.described[0] != "pdf: Fill in PDF forms" || !tt.HasText(tx(l, xSkillsFixedDesc)) {
+		t.Fatalf("described %v; texts %q", calls.described, tt.Texts())
+	}
+}
+
+func TestSettingsSkillFixDuplicateChoosesBetweenFixes(t *testing.T) {
+	l := l10n.New(l10n.English)
+	u, tt, queue, calls := settingsSkillsWithIssues(t, func(sum skills.Summary) []skills.Issue {
+		review := sum.Skills[0]
+		return []skills.Issue{{Kind: skills.IssueDuplicateName, Path: review.File, Name: review.Name, Detail: "/home/u/.agents/skills/review/SKILL.md",
+			Fixes: []skills.Fix{skills.FixDisableCopy, skills.FixTrashCopy}}}
+	})
+	if err := tt.Click(tx(l, xSkillsFix)); err != nil {
+		t.Fatal(err)
+	}
+	if !tt.HasText(tx(l, xSkillsRiskConfigBackup)) || !tt.HasText(tx(l, xSkillsFixTrash)) {
+		t.Fatalf("duplicate fix choices missing; texts %q", tt.Texts())
+	}
+	if err := tt.Click(tx(l, xSkillsFixTrash)); err != nil {
+		t.Fatal(err)
+	}
+	if u.skills.fixChoice != 1 || !tt.HasText(tx(l, xSkillsDeleteRestart)) || tt.HasText(tx(l, xSkillsRiskConfigBackup)) {
+		t.Fatalf("choice %d; texts %q", u.skills.fixChoice, tt.Texts())
+	}
+	clickFixConfirm(t, tt, l)
+	settleSkills(t, tt, queue, 3)
+	if len(calls.deleted) != 1 || len(calls.enabled) != 0 {
+		t.Fatalf("deleted %v, switched %v", calls.deleted, calls.enabled)
+	}
+}
+
+func TestSettingsSkillFixLiftNamesWrapperRisk(t *testing.T) {
+	l := l10n.New(l10n.English)
+	_, tt, queue, calls := settingsSkillsWithIssues(t, func(sum skills.Summary) []skills.Issue {
+		pdf := sum.Skills[1]
+		wrapper := filepath.Dir(pdf.Dir)
+		return []skills.Issue{{Kind: skills.IssueNested, Path: pdf.File, Name: pdf.Name, Fixes: []skills.Fix{skills.FixLiftNested},
+			Lift: skills.NestedFix{Wrapper: wrapper, Lifts: []skills.Lift{{File: pdf.File, Name: pdf.Name, Target: filepath.Join(wrapper, "pdf")}}, Extra: 2}}}
+	})
+	if err := tt.Click(tx(l, xSkillsFix)); err != nil {
+		t.Fatal(err)
+	}
+	if !tt.HasText(tx(l, xSkillsRiskReinstall)) || !tt.HasText("2 other items") {
+		t.Fatalf("lift risks missing; texts %q", tt.Texts())
+	}
+	if err := tt.Click(l.Text(l10n.KeyCancel)); err != nil {
+		t.Fatal(err)
+	}
+	if len(calls.lifted) != 0 {
+		t.Fatal("cancel lifted the skill")
+	}
+	if err := tt.Click(tx(l, xSkillsFix)); err != nil {
+		t.Fatal(err)
+	}
+	clickFixConfirm(t, tt, l)
+	settleSkills(t, tt, queue, 3)
+	if len(calls.lifted) != 1 || !tt.HasText(tx(l, xSkillsFixedLift, "/home/u/.claude/skills/pdf")) {
+		t.Fatalf("lifted %v; texts %q", calls.lifted, tt.Texts())
+	}
+}
+
+func TestSettingsSkillIssueWithoutFixHasNoButton(t *testing.T) {
+	l := l10n.New(l10n.English)
+	_, tt, _, _ := settingsSkillsWithIssues(t, func(sum skills.Summary) []skills.Issue {
+		return []skills.Issue{{Kind: skills.IssueTruncated, Path: skillsTestRoot}}
+	})
+	if _, ok := tt.Find(tx(l, xSkillsFix)); ok {
+		t.Fatalf("offered a fix for a truncated scan; texts %q", tt.Texts())
+	}
+}
+
+func TestSettingsSkillFixLiftNamesWholeCollection(t *testing.T) {
+	l := l10n.New(l10n.English)
+	_, tt, _, _ := settingsSkillsWithIssues(t, func(sum skills.Summary) []skills.Issue {
+		pdf := sum.Skills[1]
+		wrapper := filepath.Dir(pdf.Dir)
+		lifts := []skills.Lift{{File: pdf.File, Name: "pdf", Target: "/r/pdf"}, {File: "/x/SKILL.md", Name: "pdf-audit", Target: "/r/pdf-audit"}}
+		return []skills.Issue{{Kind: skills.IssueNested, Path: pdf.File, Name: pdf.Name, Fixes: []skills.Fix{skills.FixLiftNested},
+			Lift: skills.NestedFix{Wrapper: wrapper, Lifts: lifts}}}
+	})
+	if err := tt.Click(tx(l, xSkillsFix)); err != nil {
+		t.Fatal(err)
+	}
+	if !tt.HasText(tx(l, xSkillsFixLiftAllMsg, "~/.agents", 2, "pdf, pdf-audit")) {
+		t.Fatalf("collection lift message missing; texts %q", tt.Texts())
+	}
+}
+
+func TestSettingsSkillRowOffersItsFix(t *testing.T) {
+	l := l10n.New(l10n.English)
+	u, tt, _, _ := settingsSkillsWithIssues(t, func(sum skills.Summary) []skills.Issue {
+		pdf := sum.Skills[1]
+		return []skills.Issue{{Kind: skills.IssueMissingDesc, Path: pdf.File, Name: pdf.Name, Fixes: []skills.Fix{skills.FixAddDescription}}}
+	})
+	u.skills.showIssues = false
+	tt.Frame()
+	if _, ok := tt.Find(tx(l, xSkillsFix)); !ok {
+		t.Fatalf("the row has no fix; texts %q", tt.Texts())
+	}
+	u.skills.open = u.skills.result[store.ProviderCodex].Skills[1].ID
+	tt.Frame()
+	if _, ok := tt.Find(tx(l, xSkillsFix)); !ok {
+		t.Fatalf("the skill page has no fix; texts %q", tt.Texts())
+	}
+}
+
+func TestSettingsSkillBatchDeleteAfterRisks(t *testing.T) {
+	l := l10n.New(l10n.English)
+	u, tt, queue, calls := settingsSkillsView(t, false)
+	if err := tt.Click(tx(l, xSkillsSelectFiltered, 2)); err != nil {
+		t.Fatal(err)
+	}
+	if !tt.HasText(tx(l, xSkillsSelectionCounts, 3, 2)) {
+		t.Fatalf("select all missed; texts %q", tt.Texts())
+	}
+	if err := tt.Click(tx(l, xSkillsDeleteSelected, 2)); err != nil {
+		t.Fatal(err)
+	}
+	if !tt.HasText(tx(l, xSkillsBatchDeleteMsg)) || !tt.HasText(tx(l, xSkillsDeleteShared, "Grok")) || len(calls.deleted) != 0 {
+		t.Fatalf("no risks before deleting %v; texts %q", calls.deleted, tt.Texts())
+	}
+	clickFixConfirm(t, tt, l)
+	settleSkills(t, tt, queue, 3)
+	if len(calls.deleted) != 2 || len(u.skills.selected) != 0 || !tt.HasText(tx(l, xSkillsBatchDeleted, 2)) {
+		t.Fatalf("deleted %v, selection %v; texts %q", calls.deleted, u.skills.selected, tt.Texts())
+	}
+}
+
+func TestSettingsSkillBatchFixUsesFirstFixes(t *testing.T) {
+	l := l10n.New(l10n.English)
+	_, tt, queue, calls := settingsSkillsWithIssues(t, func(sum skills.Summary) []skills.Issue {
+		review, pdf := sum.Skills[0], sum.Skills[1]
+		return []skills.Issue{
+			{Kind: skills.IssueMissingDesc, Path: pdf.File, Name: pdf.Name, Fixes: []skills.Fix{skills.FixAddDescription}},
+			{Kind: skills.IssueDuplicateName, Path: review.File, Name: review.Name, Detail: "/home/u/.agents/skills/review/SKILL.md",
+				Fixes: []skills.Fix{skills.FixDisableCopy, skills.FixTrashCopy}},
+		}
+	})
+	if err := tt.Click(tx(l, xSkillsSelectFiltered, 2)); err != nil {
+		t.Fatal(err)
+	}
+	if err := tt.Click(tx(l, xSkillsFixSelected, 2)); err != nil {
+		t.Fatal(err)
+	}
+	for _, text := range []string{tx(l, xSkillsBatchDescNote), tx(l, xSkillsRiskConfigBackup), tx(l, xSkillsRiskEditBackup)} {
+		if !tt.HasText(text) {
+			t.Fatalf("batch fix missing %q; texts %q", text, tt.Texts())
+		}
+	}
+	clickFixConfirm(t, tt, l)
+	settleSkills(t, tt, queue, 3)
+	if !slices.Equal(calls.enabled, []bool{false}) || !slices.Equal(calls.described, []string{"pdf: Suggested text"}) || len(calls.deleted) != 0 {
+		t.Fatalf("switched %v, described %v, deleted %v", calls.enabled, calls.described, calls.deleted)
+	}
+	if !tt.HasText(tx(l, xSkillsBatchFixed, 2)) {
+		t.Fatalf("no batch result; texts %q", tt.Texts())
+	}
+}
+
+func TestSkillBatchDeletesSkipsFoldersInsideOthers(t *testing.T) {
+	acts := SkillActions{Delete: func(skills.Skill, []skills.RootInfo) (bool, error) { return false, nil }}
+	mk := func(path string) skills.Skill {
+		return skills.Skill{Deletable: true, Removal: skills.Removal{Path: path}}
+	}
+	got := skillBatchDeletes(acts, []skills.Skill{mk("/r/pack/one"), mk("/r/pack"), mk("/r/package"), mk("/r/pack")})
+	if len(got) != 2 || got[0].Removal.Path != "/r/pack" || got[1].Removal.Path != "/r/package" {
+		t.Fatalf("deletes = %+v", got)
+	}
 }
