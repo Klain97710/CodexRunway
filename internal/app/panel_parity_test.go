@@ -3,12 +3,14 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/licoy/quosparr/internal/codex"
+	"github.com/licoy/quosparr/internal/codexapi"
 	"github.com/licoy/quosparr/internal/estimate"
 	"github.com/licoy/quosparr/internal/export/swiftjson"
 	"github.com/licoy/quosparr/internal/l10n"
@@ -151,6 +153,54 @@ func TestPanelParityCurrentSubscriptionVisibleWithOrWithoutSidebar(t *testing.T)
 	}
 }
 
+func TestPanelParityCreditsBalanceClosesQuotaSection(t *testing.T) {
+	snap := panelFixture()
+	expiry := time.Date(2026, 11, 7, 12, 0, 0, 0, time.Local)
+	balance := 42.5
+	snap.Accounts.Display = codex.AccountDisplay{
+		Authenticated: true, DisplayName: "ada@example.com", Tier: codex.TierPlus,
+		SubscriptionExpiresAt: &expiry,
+	}
+	snap.Codex.Quota = &codexapi.QuotaSnapshot{CreditsBalance: &balance}
+	a, tt := newPanel(t, func(p *store.Preferences) {
+		p.Language = store.LanguageSimplifiedChinese
+	}, snap, PanelActions{})
+	l := a.L()
+	texts := tt.Texts()
+	label := slices.Index(texts, l.Text(l10n.KeyCreditsBalance))
+	amount := slices.Index(texts, "42.50")
+	expiryAt := slices.Index(texts, "2026/11/7")
+	quota := slices.Index(texts, l.Text(l10n.KeyQuota))
+	meter := slices.Index(texts, l10n.Format("%d%% %s", 70, l.Text(l10n.KeyLeft)))
+	if label < 0 || amount < 0 || expiryAt < 0 || quota < 0 || meter < 0 {
+		t.Fatalf("credits, subscription or quota text missing; texts %q", texts)
+	}
+	if !(expiryAt < quota && meter < label && label < amount) {
+		t.Fatalf("credits balance should follow the last quota meter, not the subscription chip; texts %q", texts)
+	}
+}
+
+func TestPanelParityCreditsBalanceHiddenWhenDisabled(t *testing.T) {
+	snap := panelFixture()
+	expiry := time.Date(2026, 11, 7, 12, 0, 0, 0, time.Local)
+	balance := 42.5
+	snap.Accounts.Display = codex.AccountDisplay{
+		Authenticated: true, DisplayName: "ada@example.com", Tier: codex.TierPlus,
+		SubscriptionExpiresAt: &expiry,
+	}
+	snap.Codex.Quota = &codexapi.QuotaSnapshot{CreditsBalance: &balance}
+	a, tt := newPanel(t, func(p *store.Preferences) {
+		p.Language = store.LanguageSimplifiedChinese
+		p.ShowsCreditsBalance = false
+	}, snap, PanelActions{})
+	if hasExact(tt, a.L().Text(l10n.KeyCreditsBalance)) || hasExact(tt, "42.50") {
+		t.Fatalf("credits balance chip should be hidden; texts %q", tt.Texts())
+	}
+	if !hasExact(tt, "2026/11/7") {
+		t.Fatalf("subscription chip should still be visible; texts %q", tt.Texts())
+	}
+}
+
 func TestPanelParityRecentCostShowsCurrency(t *testing.T) {
 	price, err := swiftjson.ParseDecimal("18.42")
 	if err != nil {
@@ -250,8 +300,7 @@ func TestPanelParityGrokChartUsesLocalCalendar(t *testing.T) {
 				}
 				t.Logf("tooltip hit box: %+v", r)
 				tt.Move(r.X+r.W/2, r.Y+r.H/2)
-				time.Sleep(650 * time.Millisecond)
-				tt.Frame()
+				tt.Advance(650 * time.Millisecond)
 				if !tt.HasText("900") {
 					t.Fatal("local day tooltip lost its token count")
 				}
@@ -269,8 +318,7 @@ func TestPanelParityGrokTooltipHidesOfficialSource(t *testing.T) {
 		t.Fatal("fixture day missing")
 	}
 	tt.Move(r.X+r.W/2, r.Y+r.H/2)
-	time.Sleep(650 * time.Millisecond)
-	tt.Frame()
+	tt.Advance(650 * time.Millisecond)
 	joined := strings.Join(tt.Texts(), "\n")
 	if !strings.Contains(joined, "2026-10-12\n") {
 		t.Fatalf("tooltip did not open; texts %q", tt.Texts())
@@ -300,5 +348,18 @@ func TestPanelParityTrendUsesMonthlyLabel(t *testing.T) {
 				t.Fatalf("%s chart lacks %q; texts %q", style, l.Text(key), tt.Texts())
 			}
 		})
+	}
+}
+
+func TestPanelParityCreditsBalanceHiddenWhenZero(t *testing.T) {
+	snap := panelFixture()
+	balance := 0.0
+	snap.Accounts.Display = codex.AccountDisplay{Authenticated: true, DisplayName: "ada@example.com", Tier: codex.TierPlus}
+	snap.Codex.Quota = &codexapi.QuotaSnapshot{CreditsBalance: &balance}
+	a, tt := newPanel(t, func(p *store.Preferences) {
+		p.Language = store.LanguageSimplifiedChinese
+	}, snap, PanelActions{})
+	if hasExact(tt, a.L().Text(l10n.KeyCreditsBalance)) || hasExact(tt, "0.00") {
+		t.Fatalf("zero credits balance should be hidden; texts %q", tt.Texts())
 	}
 }

@@ -49,6 +49,13 @@ type Actions struct {
 type SettingsOptions struct {
 	Version string
 	Actions Actions
+	// Skills returns the skills actions of the running app; nil or an
+	// empty result leaves the skills tab read-only.
+	Skills func() SkillActions
+	// Sessions returns read and delete operations for local CLI sessions.
+	Sessions func() SessionActions
+	// MCP returns read and delete operations for global native MCP entries.
+	MCP func() MCPActions
 }
 
 type settingsTab int
@@ -60,26 +67,36 @@ const (
 	tabFloating
 	tabModules
 	tabNotifications
+	tabSessions
+	tabSkills
+	tabMCP
 	tabAdvanced
 	tabAbout
 )
 
-var settingsTabs = []settingsTab{tabGeneral, tabAccounts, tabDisplay, tabFloating, tabModules, tabNotifications, tabAdvanced, tabAbout}
+var settingsTabs = []settingsTab{tabGeneral, tabAccounts, tabDisplay, tabFloating, tabModules, tabNotifications, tabSessions, tabSkills, tabMCP, tabAdvanced, tabAbout}
 
 // title is the tab's name in the sidebar and above its page.
 func (t settingsTab) title(l l10n.Localizer) string {
-	if t == tabFloating {
+	switch t {
+	case tabFloating:
 		return tx(l, xFloatingSection)
+	case tabSkills:
+		return tx(l, xSkillsSettingsTab)
+	case tabSessions:
+		return tx(l, xSessionsSettingsTab)
+	case tabMCP:
+		return tx(l, xMCPSettingsTab)
 	}
-	return l.Text([...]l10n.Key{l10n.KeyGeneral, l10n.KeyAccounts, l10n.KeyDisplay, "", l10n.KeyPanelModules, l10n.KeyNotificationSettings, l10n.KeyAdvanced, l10n.KeyAbout}[t])
+	return l.Text([...]l10n.Key{l10n.KeyGeneral, l10n.KeyAccounts, l10n.KeyDisplay, "", l10n.KeyPanelModules, l10n.KeyNotificationSettings, "", "", "", l10n.KeyAdvanced, l10n.KeyAbout}[t])
 }
 
 func (t settingsTab) icon() *ui.SVG {
-	return [...]*ui.SVG{icGear, icUsers, icEye, icFloating, icLayout, icBell, icSliders, icInfo}[t]
+	return [...]*ui.SVG{icGear, icUsers, icEye, icFloating, icLayout, icBell, icChat, icSkill, icPlug, icSliders, icInfo}[t]
 }
 
 func (t settingsTab) tint() Tint {
-	return [...]Tint{TintGray, TintGreen, TintBlue, TintTeal, TintPurple, TintRed, TintOrange, TintIndigo}[t]
+	return [...]Tint{TintGray, TintGreen, TintBlue, TintTeal, TintPurple, TintRed, TintTeal, TintPink, TintBlue, TintOrange, TintIndigo}[t]
 }
 
 //go:embed assets/app-icon.png
@@ -113,6 +130,9 @@ type settingsUI struct {
 
 	tab      settingsTab
 	accounts *accountForm
+	sessions *settingsSessions
+	skills   *settingsSkills
+	mcp      *settingsMCP
 
 	draft         ProxyDraft
 	draftReady    bool
@@ -129,6 +149,7 @@ type settingsUI struct {
 
 	pickingColor bool
 	customColor  ui.Color
+	floatingApps *floatingAppsDialog
 	// fonts are the installed families, listed once a settings window
 	// shows them, so fonts installed meanwhile show in the next window.
 	fonts       []string
@@ -173,13 +194,18 @@ func (u *settingsUI) view(c *ui.Context) {
 }
 
 func (u *settingsUI) pageContent(c *ui.Context) {
+	if split := splitPages[u.tab]; split != nil {
+		// Managed lists scroll only their list, under fixed controls.
+		ui.Column(c).Grow(1).Basis(0).Padding(4, 0, 0, 0).Gap(14).Children(func() {
+			if u.s.ReadOnly() || u.s.SaveError() != nil {
+				ui.Column(c).Padding(0, 24).Gap(14).Children(func() { u.pageNotices(c) })
+			}
+			split(u, c)
+		})
+		return
+	}
 	ui.Scroll(c.Key("page-"+fmt.Sprint(int(u.tab)))).Grow(1).Basis(0).Padding(4, 24, 24, 24).Gap(22).Children(func() {
-		if u.s.ReadOnly() {
-			u.readOnlyBanner(c)
-		}
-		if err := u.s.SaveError(); err != nil {
-			ui.Text(c, tx(u.L(), xSettingsSaveFailed, err.Error())).FontSize(12).TextColor(c.Theme().Danger)
-		}
+		u.pageNotices(c)
 		switch u.tab {
 		case tabGeneral:
 			u.generalPage(c)
@@ -202,6 +228,24 @@ func (u *settingsUI) pageContent(c *ui.Context) {
 	})
 }
 
+// splitPages are the tabs whose page lays out its own scrolling, under
+// fixed controls.
+var splitPages = map[settingsTab]func(*settingsUI, *ui.Context){
+	tabSessions: (*settingsUI).sessionsPage,
+	tabSkills:   (*settingsUI).skillsPage,
+	tabMCP:      (*settingsUI).mcpPage,
+}
+
+// pageNotices tops a page with why settings cannot be changed or saved.
+func (u *settingsUI) pageNotices(c *ui.Context) {
+	if u.s.ReadOnly() {
+		u.readOnlyBanner(c)
+	}
+	if err := u.s.SaveError(); err != nil {
+		ui.Text(c, tx(u.L(), xSettingsSaveFailed, err.Error())).FontSize(12).TextColor(c.Theme().Danger)
+	}
+}
+
 // readOnlyBanner explains why nothing can be changed.
 func (u *settingsUI) readOnlyBanner(c *ui.Context) {
 	t := c.Theme()
@@ -214,6 +258,8 @@ func (u *settingsUI) readOnlyBanner(c *ui.Context) {
 
 // dialogs draws the alerts that are open.
 func (u *settingsUI) dialogs(c *ui.Context) {
+	u.sessionDeleteDialog(c)
+	u.mcpDeleteDialog(c)
 	if u.confirmRepair {
 		l := u.L()
 		if ui.AlertDialog(c.Key("repair-confirm"), &u.confirmRepair,

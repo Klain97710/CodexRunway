@@ -49,12 +49,16 @@ func TestExportSettingsCardsReview(t *testing.T) {
 
 func exportSettingsCardPages(t *testing.T, u *settingsUI, output string, width int, dark bool, appearance string) {
 	t.Helper()
-	names := []string{"general", "accounts", "display", "advanced", "about"}
+	names := map[settingsTab]string{
+		tabGeneral: "general", tabAccounts: "accounts", tabDisplay: "display", tabFloating: "floating",
+		tabModules: "modules", tabNotifications: "notifications", tabSessions: "sessions", tabSkills: "skills",
+		tabMCP: "mcp", tabAdvanced: "advanced", tabAbout: "about",
+	}
 	for _, tab := range settingsTabs {
 		u.tab = tab
 		view := ui.NewTester(u.view, width, settingsHeight)
 		view.SetDark(dark)
-		exportReviewPNG(t, view, filepath.Join(output, names[int(tab)]+"-"+appearance+".png"))
+		exportReviewPNG(t, view, filepath.Join(output, names[tab]+"-"+appearance+".png"))
 	}
 	// The tall, local page makes every display card header visible in one image.
 	all := ui.NewTester(func(c *ui.Context) {

@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/licoy/quosparr/internal/apiquota"
 )
 
 // IndexVersion is the claude-index.json schema version.
@@ -24,10 +26,21 @@ type ManagedAccount struct {
 	RequiresReauth   bool               `json:"requiresReauth"`
 	LastError        string             `json:"lastError,omitempty"`
 	CachedQuota      json.RawMessage    `json:"cachedQuota,omitempty"`
+
+	// Kind is KindAPI for an API relay account and empty for a subscription
+	// (OAuth) account. API holds the relay profile and APIQuota the last
+	// balance reading; neither contains the key.
+	Kind     string          `json:"kind,omitempty"`
+	API      *APIProfile     `json:"api,omitempty"`
+	APIQuota *apiquota.Quota `json:"apiQuota,omitempty"`
 }
 
-// ResolvedDisplayName is the alias, else the identity label.
+// ResolvedDisplayName is the alias, else the identity label. An API account
+// without an alias is "<host> ···<key hint>".
 func (a ManagedAccount) ResolvedDisplayName() string {
+	if a.IsAPI() {
+		return firstNonEmpty(a.Alias, a.apiLabel(), a.ID)
+	}
 	return firstNonEmpty(a.Alias, a.Identity.ResolvedDisplayName(), a.ID)
 }
 

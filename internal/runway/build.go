@@ -111,8 +111,12 @@ func (s *Service) codexViewLocked(now time.Time) CodexView {
 		Quota:          s.quota,
 		ResetCredits:   s.credits,
 	}
-	s.quotaViewLocked(&v, now)
-	s.creditsViewLocked(&v)
+	if s.keyModeLocked() {
+		s.keyViewLocked(&v)
+	} else {
+		s.quotaViewLocked(&v, now)
+		s.creditsViewLocked(&v)
+	}
 	s.costViewLocked(&v, now)
 	s.sessionsViewLocked(&v)
 	_ = lc

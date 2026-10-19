@@ -19,6 +19,8 @@ type FloatingMeter struct {
 	Health           Health
 	// Reset is the localized time left until the reset, "" without one.
 	Reset string
+	// ValueText is the balance amount shown instead of the percentage.
+	ValueText string
 }
 
 // FloatingProvider is one provider of the floating window. Without meters,
@@ -41,7 +43,7 @@ func BuildFloating(lc l10n.Localizer, in StatusInputs) FloatingView {
 	for _, p := range in.Prefs.FloatingSelection() {
 		item := FloatingProvider{Provider: p, Name: lc.Text(providerStatusKey(p))}
 		for _, m := range floatingMeters(metersOf(in, p), preferredOf(p)) {
-			fm := FloatingMeter{Label: ShortWindowTitle(lc, m.WindowMinutes), RemainingPercent: m.RemainingPercent, Health: m.Health}
+			fm := FloatingMeter{Label: meterTitle(lc, m), RemainingPercent: m.RemainingPercent, Health: m.Health, ValueText: m.ValueText}
 			if m.HasReset() {
 				fm.Reset = DurationLocalized(m.ResetsAt.Sub(in.Now).Seconds(), lc.Language(), false)
 			}

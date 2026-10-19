@@ -19,7 +19,7 @@
   "hero": {
     "etymology": "Nom formé de <b>Quo</b>ta (quota) + <b>Sparr</b>ow (moineau)",
     "tagline": "Un petit moineau perché dans votre barre de menus, qui veille sur vos quotas Codex, Claude et Grok.",
-    "description": "Une application native de barre de menus et de zone de notification pour macOS, Windows et Linux. Quotas d’abonnement, reset credits, coût équivalent API et sessions locales d’un coup d’œil, avec des comptes séparés pour chaque fournisseur.",
+    "description": "Une application native de barre de menus et de zone de notification pour macOS, Windows et Linux. Quotas d’abonnement, reset credits, coût équivalent API et sessions locales d’un coup d’œil, avec des comptes séparés pour chaque fournisseur. Skills globaux, serveurs MCP et sessions locales se gèrent au même endroit.",
     "download": "Télécharger",
     "downloadFor": "Télécharger pour {os}",
     "source": "Voir sur GitHub",
@@ -51,6 +51,9 @@
       { "title": "Panneau principal épuré", "text": "Masquez les fournisseurs inutilisés du panneau principal ; s’il n’en reste qu’un, les onglets disparaissent." },
       { "title": "Coût équivalent API", "text": "Aujourd’hui, ce cycle, le cycle précédent, ce mois-ci ou une période personnalisée, calculé à partir des journaux locaux." },
       { "title": "Graphiques de tokens", "text": "Utilisation de l’année en carte de chaleur, courbe ou barres, par jour, par semaine ou en cumul." },
+      { "title": "Gestion des skills", "text": "Les skills globaux des trois CLI avec leur origine et leur état de chargement. Activez-les ou désactivez-les, copiez-les vers une autre CLI, réparez liens cassés, imbrications et noms en double, et restaurez depuis la corbeille les skills supprimés." },
+      { "title": "Gestion MCP", "text": "Les serveurs MCP de niveau utilisateur de chaque CLI en résumés expurgés, avec une suppression groupée qui sauvegarde d’abord la configuration." },
+      { "title": "Gestion des sessions", "text": "Parcourez les sessions locales par projet, date ou mot-clé, prévisualisez la conversation et le coût, puis envoyez celles choisies dans la corbeille du système." },
       { "title": "Thèmes et langues", "text": "Apparence claire, sombre ou selon le système, en sept langues." },
       { "title": "Police d’affichage", "text": "Police système ou toute police installée, pour le panneau principal et les réglages." },
       { "title": "Mises à jour et widgets", "text": "Mises à jour intégrées et vérifiées par signature sur les trois plateformes, widgets de bureau sur macOS 14+." },
@@ -75,7 +78,7 @@
       { "title": "Les identifiants restent sur votre machine", "text": "Les copies des comptes gérés sont accessibles au seul propriétaire, et les index de comptes ne contiennent aucun token." },
       { "title": "Aucun token dans les journaux", "text": "Les tokens et clés API n’apparaissent jamais dans les journaux, la sortie de l’autodiagnostic ou les modèles d’issue." },
       { "title": "Coût calculé en local", "text": "Le coût équivalent API vient des journaux de session locaux. Le contenu des sessions n’est jamais envoyé." },
-      { "title": "Écritures prudentes", "text": "Les fichiers de connexion officiels ne changent qu’au rafraîchissement du token ou quand vous confirmez un changement. La réparation des sessions sauvegarde d’abord l’index." }
+      { "title": "Écritures prudentes", "text": "Les fichiers de connexion officiels ne changent qu’au rafraîchissement du token ou quand vous confirmez un changement. L’index des sessions et les configurations de skills et MCP sont sauvegardés avant écriture, et les sessions et skills supprimés passent d’abord par une corbeille." }
     ]
   },
   "download": {

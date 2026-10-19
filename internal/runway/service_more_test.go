@@ -544,11 +544,16 @@ func TestGrokPanelRefreshCoversEveryProvider(t *testing.T) {
 
 type fakeClaude struct {
 	mu     sync.Mutex
+	state  ClaudeState
 	forced []bool
 	local  int
 }
 
-func (c *fakeClaude) State(time.Time) ClaudeState { return ClaudeState{} }
+func (c *fakeClaude) State(time.Time) ClaudeState {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.state
+}
 func (c *fakeClaude) Refresh(_ context.Context, force bool) error {
 	c.mu.Lock()
 	c.forced = append(c.forced, force)

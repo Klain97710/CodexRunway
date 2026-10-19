@@ -8,18 +8,19 @@ import (
 )
 
 func (f *accountForm) closeEditor() {
-	f.mode, f.editID, f.paste, f.apiKey = "", "", "", ""
+	f.mode, f.editID, f.paste = "", "", ""
 	f.alias, f.note, f.switchName, f.editorError = "", "", "", ""
-	f.selection = nil
+	f.selection, f.api, f.switchRelay = nil, apiDraft{}, false
 }
 
 func accountEditorTitle(l l10n.Localizer, f *accountForm) string {
+	if isAPIMode(f.mode) {
+		return apiEditorTitle(l, f.mode)
+	}
 	key := l10n.KeyAccountsAddPaste
 	switch f.mode {
 	case "switch", "claude-switch":
 		key = l10n.KeyAccountsSwitchConfirmTitle
-	case "apikey":
-		key = l10n.KeyAccountsAddAPIKey
 	case "alias":
 		key = l10n.KeyAlias
 	case "note":
@@ -51,7 +52,7 @@ func accountEditor(c *ui.Context, u *settingsUI, f *accountForm) {
 			if PillButton(c, nil, l.Text(l10n.KeyCancel), f.busy).Clicked() {
 				f.closeEditor()
 			}
-			empty := f.mode == "paste" && strings.TrimSpace(f.paste) == "" || f.mode == "apikey" && strings.TrimSpace(f.apiKey) == ""
+			empty := f.mode == "paste" && strings.TrimSpace(f.paste) == "" || apiEditorIncomplete(f)
 			confirm := l.Text(l10n.KeyOk)
 			if f.mode == "switch" || f.mode == "claude-switch" {
 				confirm = l.Text(l10n.KeyAccountsMakeCurrent)
@@ -64,20 +65,63 @@ func accountEditor(c *ui.Context, u *settingsUI, f *accountForm) {
 	if !open && !f.busy {
 		f.closeEditor()
 	}
+	u.apiApplyDialog(c, f)
+}
+
+// apiApplyDialog asks, before saving an edit of the API account in use,
+// whether its config files change now or at the next switch. A modal rather
+// than an alert: three buttons do not fit the alert's width in every language.
+func (u *settingsUI) apiApplyDialog(c *ui.Context, f *accountForm) {
+	if !f.api.askApply {
+		return
+	}
+	l, product := u.L(), "Codex"
+	if isClaudeAPIMode(f.mode) {
+		product = "Claude Code"
+	}
+	ui.Modal(c.Key("api-apply"), &f.api.askApply, func() {
+		ui.Text(c, tx(l, xAPIApplyTitle)).FontSize(17).FontWeight(600)
+		ui.Text(c, tx(l, xAPIApplyMessage, product, product)).FontSize(12)
+		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+			ui.Spacer(c).Grow(1)
+			if PillButton(c, nil, l.Text(l10n.KeyCancel), false).Clicked() {
+				f.api.askApply = false
+			}
+			if PillButton(c, nil, tx(l, xAPISaveOnly), false).Clicked() {
+				f.api.askApply = false
+				u.submitAccountEdit(f, apiApplySaveOnly)
+			}
+			if PillButton(c, nil, tx(l, xAPISaveAndApply), false).Clicked() {
+				f.api.askApply = false
+				u.submitAccountEdit(f, apiApplyWrite)
+			}
+		})
+	}).Width(480)
 }
 
 func accountEditorFields(c *ui.Context, u *settingsUI, f *accountForm) {
 	l := u.L()
+	if isAPIMode(f.mode) {
+		apiAccountFields(c, u, f)
+		return
+	}
 	switch f.mode {
 	case "switch":
 		ui.Text(c, l.Textf(l10n.KeyAccountsSwitchConfirmMessage, f.switchName)).FontSize(12)
+		if f.switchRelay {
+			ui.Text(c, tx(l, xAPIHintCodex)).FontSize(12).TextColor(c.Theme().TextMuted)
+		}
 		ui.Checkbox(c.Key("restart-after-switch"), &f.restartAfterSwitch, l.Text(l10n.KeyAccountsRestartCodexAfterSwitch)).Disabled(!codexRestartSupported || f.busy)
 		if !codexRestartSupported {
 			ui.Text(c, tx(l, xCodexRestartMac)).FontSize(11).TextColor(c.Theme().TextMuted)
 		}
 	case "claude-switch":
 		ui.Text(c, l.Textf(l10n.KeyClaudeSwitchConfirmMessage, f.switchName)).FontSize(12)
-		ui.Text(c, l.Text(l10n.KeyClaudeSwitchRisk)).FontSize(12).TextColor(c.Theme().TextMuted)
+		risk := l.Text(l10n.KeyClaudeSwitchRisk)
+		if f.switchRelay {
+			risk = tx(l, xAPIClaudeSwitchNote)
+		}
+		ui.Text(c, risk).FontSize(12).TextColor(c.Theme().TextMuted)
 	case "paste":
 		hint := l.Text(l10n.KeyAccountsPasteHint)
 		if f.kind == accountKindGrok {
@@ -88,9 +132,6 @@ func accountEditorFields(c *ui.Context, u *settingsUI, f *accountForm) {
 		}
 		ui.Text(c, hint).FontSize(12).TextColor(c.Theme().TextMuted)
 		ui.TextArea(c.Key("acct-paste"), &f.paste).Lines(6, 8).Label(hint).Disabled(f.busy)
-	case "apikey":
-		ui.Text(c, l.Text(l10n.KeyAccountsAPIKeyHint)).FontSize(12).TextColor(c.Theme().TextMuted)
-		ui.TextInput(c.Key("acct-key"), &f.apiKey).Password().Label(l.Text(l10n.KeyAccountsAddAPIKey)).Disabled(f.busy)
 	case "alias":
 		ui.TextInput(c.Key("acct-edit"), &f.alias).Label(l.Text(l10n.KeyAlias)).Disabled(f.busy)
 	case "note":
@@ -99,15 +140,25 @@ func accountEditorFields(c *ui.Context, u *settingsUI, f *accountForm) {
 }
 
 func (u *settingsUI) submitAccountEditor(f *accountForm) {
+	if apiNeedsApplyChoice(f) {
+		f.api.askApply = true
+		return
+	}
+	u.submitAccountEdit(f, apiApplyNone)
+}
+
+func (u *settingsUI) submitAccountEdit(f *accountForm, apply apiApply) {
 	l := u.L()
 	mode, id, kind := f.mode, f.editID, f.kind
-	paste, key, alias, note, restart := f.paste, f.apiKey, f.alias, f.note, f.restartAfterSwitch
+	paste, alias, note, restart := f.paste, f.alias, f.note, f.restartAfterSwitch
+	draft := f.api
 	u.accountEditAct(f, func() (string, bool) {
+		if isAPIMode(mode) {
+			return submitAPIAccount(l, mode, id, alias, draft, apply)
+		}
 		switch mode {
 		case "paste":
 			return pasteAccount(l, kind, paste)
-		case "apikey":
-			return addAPIKey(l, key)
 		case "switch":
 			return rtSwitchCodexResult(l, id, restart)
 		case "claude-switch":

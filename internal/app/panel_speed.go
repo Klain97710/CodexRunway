@@ -25,7 +25,7 @@ const (
 // row to the details page.
 func panelSpeed(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState) {
 	v := snap.Codex
-	busy := snap.Refresh.Has(runway.SectionSpeed) || (snap.Provider == store.ProviderGrok && snap.Grok.Refreshing) || (snap.Provider == store.ProviderClaude && snap.Claude.Refreshing)
+	busy := sectionRefreshing(snap, runway.SectionSpeed)
 	title := tx(l, xSpeedTitle)
 	sectionBlock(c, first, func() {
 		drawSectionHead(c, l, st, sectionSpec{

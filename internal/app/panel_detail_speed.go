@@ -31,6 +31,7 @@ func speedDetail(c *ui.Context, l l10n.Localizer, v runway.CodexView) {
 		return
 	case r.Empty():
 		calloutDim(c, tx(l, xSpeedEmpty)).FontSize(fsBody)
+		speedError(c, v.SpeedError)
 		return
 	}
 	ui.Column(c).Gap(16).Children(func() {

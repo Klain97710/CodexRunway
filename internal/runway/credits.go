@@ -157,6 +157,14 @@ func CreditStatusText(lc l10n.Localizer, status string) string {
 	return lc.Text(l10n.KeyStatusUnknown)
 }
 
+// CreditUpdatedText is ResetCreditUpdatedAt, or "--" before the first reading.
+func CreditUpdatedText(t time.Time, lang l10n.Language, loc *time.Location) string {
+	if t.IsZero() {
+		return "--"
+	}
+	return ResetCreditUpdatedAt(t, lang, loc)
+}
+
 // ExpiryDuration is the remaining time of a credit, "--" when unknown
 // (Swift ResetCreditExpiryPresentation.duration).
 func ExpiryDuration(remaining *float64, lang l10n.Language) string {
@@ -174,6 +182,6 @@ func ExpiryHelp(lc l10n.Localizer, expiry, updatedAt time.Time, loc *time.Locati
 	if !expiry.IsZero() {
 		exp = ResetCreditExpiresAt(expiry, lang, loc)
 	}
-	updated := ResetCreditUpdatedAt(updatedAt, lang, loc)
+	updated := CreditUpdatedText(updatedAt, lang, loc)
 	return exp + "\n" + lc.Text(l10n.KeyLastUpdated) + ": " + updated + "\n" + lc.Text(l10n.KeyResetExpirySummaryHelp)
 }

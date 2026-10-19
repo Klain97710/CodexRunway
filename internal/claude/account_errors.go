@@ -20,6 +20,10 @@ const (
 	ErrorCodeUsage = "usage_failed"
 	// ErrorCodeRefresh is stored when a non-current refresh failed.
 	ErrorCodeRefresh = "refresh_failed"
+	// ErrorCodeAPIUnauthorized is stored when a relay rejected an API key.
+	ErrorCodeAPIUnauthorized = "api_unauthorized"
+	// ErrorCodeAPI is stored for any other failed API balance read.
+	ErrorCodeAPI = "api_failed"
 )
 
 var (

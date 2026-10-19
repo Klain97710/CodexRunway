@@ -25,6 +25,8 @@ public struct RunwayWidgetQuota: Codable, Equatable, Sendable {
     public var usedPercent: Int
     public var remainingPercent: Int
     public var resetsAt: Date?
+    /// API relay balance shown instead of the percentage ("$12.34"); absent on quota windows.
+    public var valueText: String?
 
     public init(
         title: String,
@@ -32,7 +34,8 @@ public struct RunwayWidgetQuota: Codable, Equatable, Sendable {
         source: RunwayWidgetQuotaSource,
         usedPercent: Int,
         remainingPercent: Int,
-        resetsAt: Date?)
+        resetsAt: Date?,
+        valueText: String? = nil)
     {
         self.title = title
         self.windowMinutes = windowMinutes
@@ -40,6 +43,7 @@ public struct RunwayWidgetQuota: Codable, Equatable, Sendable {
         self.usedPercent = max(0, min(100, usedPercent))
         self.remainingPercent = max(0, min(100, remainingPercent))
         self.resetsAt = resetsAt
+        self.valueText = valueText
     }
 }
 
@@ -70,6 +74,8 @@ public struct RunwayWidgetProviderSnapshot: Codable, Equatable, Sendable {
     public var updatedAt: Date?
     public var quota: [RunwayWidgetQuota]
     public var balanceUSD: Decimal?
+    /// Preformatted balance in the site's own unit ("¥12.30"); preferred over balanceUSD.
+    public var balanceText: String?
     public var apiEquivalentCostUSD: Decimal?
     public var tokenSource: RunwayWidgetTokenSource
     public var dailyTokens: [RunwayWidgetDailyTokens]
@@ -85,7 +91,8 @@ public struct RunwayWidgetProviderSnapshot: Codable, Equatable, Sendable {
         apiEquivalentCostUSD: Decimal?,
         tokenSource: RunwayWidgetTokenSource,
         dailyTokens: [RunwayWidgetDailyTokens],
-        resetCredits: RunwayWidgetResetCredits?)
+        resetCredits: RunwayWidgetResetCredits?,
+        balanceText: String? = nil)
     {
         self.provider = provider
         self.availability = availability
@@ -93,6 +100,7 @@ public struct RunwayWidgetProviderSnapshot: Codable, Equatable, Sendable {
         self.updatedAt = updatedAt
         self.quota = Self.sortedQuota(quota)
         self.balanceUSD = balanceUSD
+        self.balanceText = balanceText
         self.apiEquivalentCostUSD = apiEquivalentCostUSD
         self.tokenSource = tokenSource
         self.dailyTokens = dailyTokens.sorted { $0.date < $1.date }

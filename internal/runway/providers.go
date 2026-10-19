@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/licoy/quosparr/internal/alerts"
+	"github.com/licoy/quosparr/internal/apiquota"
 	"github.com/licoy/quosparr/internal/codexapi"
 	"github.com/licoy/quosparr/internal/export"
 	"github.com/licoy/quosparr/internal/sessions"
@@ -55,8 +56,10 @@ type GrokState struct {
 	Cost           *usage.Summary
 	Heatmap        HeatmapData
 	RecentSessions []sessions.Item
-	// Speed is the model speed of the recent Grok sessions, nil until read.
+	// Speed is the model speed of the recent Grok sessions, nil until read;
+	// SpeedError is the error of its last scan.
 	Speed              *speed.Report
+	SpeedError         string
 	ResetCredits       *codexapi.ResetCreditsSnapshot
 	ResetCreditSummary *ResetCreditSummary
 }
@@ -111,7 +114,7 @@ const (
 )
 
 // ClaudeState is the Claude view used by the status bar, widget and panel.
-// It has no reset-credits fields. ExtraUsage is the raw used/limit text.
+// ExtraUsage is the raw used/limit text.
 type ClaudeState struct {
 	Availability   ClaudeAvailability
 	Accounts       AccountsView
@@ -126,12 +129,33 @@ type ClaudeState struct {
 	Cost           *usage.Summary
 	Heatmap        HeatmapData
 	RecentSessions []sessions.Item
-	Speed          *speed.Report
+	// Speed is the model speed of recent Claude sessions; SpeedError is the
+	// error of its last scan.
+	Speed      *speed.Report
+	SpeedError string
 	// ExtraUsage is the unconverted extra-usage line, "" when absent.
 	ExtraUsage string
 	// Gateway is set when settings.json names a gateway env key and a
 	// subscription credential is also present.
 	Gateway bool
+	// API is set when the current account is an API relay account; Plan is
+	// then "API" and Meters holds the balance meter when the relay reports one.
+	API *ClaudeAPIView
+	// ResetCredits are the reset grants as reset credits, nil when the
+	// account takes no part in the reset grant program.
+	ResetCredits       *codexapi.ResetCreditsSnapshot
+	ResetCreditSummary *ResetCreditSummary
+}
+
+// ClaudeAPIView is what the panel shows of a current API relay account. It
+// never holds the key.
+type ClaudeAPIView struct {
+	BaseURL string
+	// Quota is the last balance reading, nil before the first one.
+	Quota *apiquota.Quota
+	// ErrorCode is the stored failure code of the last read ("" when none):
+	// "api_unauthorized" when the relay rejected the key, else "api_failed".
+	ErrorCode string
 }
 
 // ClaudeAccountQuota is the cached usage line of one managed account.
@@ -143,6 +167,9 @@ type ClaudeAccountQuota struct {
 	ResetsAt    time.Time
 	ExtraUsage  string
 	UpdatedAt   time.Time
+	// Balance is "remaining / total" (or the single known amount) of an API
+	// relay account, "" for a subscription account or without a reading.
+	Balance string
 }
 
 // ClaudeProvider is the Claude seam. Locking matches GrokProvider: State must

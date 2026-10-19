@@ -113,4 +113,7 @@ func (rt *liveApp) queryClaudeDetailCost(ctx context.Context, q CostQuery, now t
 func installDetailActions(rt *liveApp, a *PanelActions) {
 	a.QueryCost = rt.queryDetailCost
 	a.RepairSessions = func() { rt.queuePreferences(livePreferenceRequest{repair: true}) }
+	installSkillActions(rt, &a.Skills)
+	installSessionActions(rt, &a.Sessions)
+	installMCPActions(rt, &a.MCP)
 }

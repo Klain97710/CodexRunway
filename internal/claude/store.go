@@ -26,6 +26,7 @@ const (
 // unit tests do not open the macOS keychain. NewStore uses OpenOfficialStore.
 type Store struct {
 	root            string
+	runwayHome      string
 	configDir       string
 	home            string
 	configEnv       string
@@ -39,6 +40,7 @@ type Store struct {
 func NewStore(configDir, runwayHome, home, configEnv, keychainAccount string) *Store {
 	return &Store{
 		root:            filepath.Join(runwayHome, "accounts"),
+		runwayHome:      runwayHome,
 		configDir:       configDir,
 		home:            home,
 		configEnv:       configEnv,
@@ -69,6 +71,15 @@ func DefaultStore() (*Store, error) {
 
 // Root is the accounts directory.
 func (s *Store) Root() string { return s.root }
+
+// runwayHomeDir is the Quosparr data directory that holds accounts/ and
+// backups/. A store built with NewStoreAt derives it from the accounts root.
+func (s *Store) runwayHomeDir() string {
+	if s.runwayHome != "" {
+		return s.runwayHome
+	}
+	return filepath.Dir(s.root)
+}
 
 // ConfigDir is the Claude config directory.
 func (s *Store) ConfigDir() string { return s.configDir }
@@ -172,7 +183,23 @@ func ParseAccountIndex(data []byte) (AccountIndex, error) {
 	if idx.Accounts == nil {
 		idx.Accounts = []ManagedAccount{}
 	}
+	normalizeAPIRows(idx.Accounts)
 	return idx, nil
+}
+
+// normalizeAPIRows brings base URLs saved by earlier versions, which could
+// keep a trailing /v1, to the form written to ANTHROPIC_BASE_URL now. The row
+// is saved in that form with its next change.
+func normalizeAPIRows(rows []ManagedAccount) {
+	for i := range rows {
+		if p := rows[i].API; p != nil {
+			if base, err := NormalizeAPIBaseURL(p.BaseURL); err == nil && base != p.BaseURL {
+				fixed := *p
+				fixed.BaseURL = base
+				rows[i].API = &fixed
+			}
+		}
+	}
 }
 
 func (s *Store) saveIndex(idx AccountIndex) error {
@@ -423,8 +450,12 @@ func (s *Store) credentialIfRefreshable(id string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, ok := idx.Account(id); !ok {
+	acc, ok := idx.Account(id)
+	if !ok {
 		return nil, &AccountNotFoundError{ID: id}
+	}
+	if acc.IsAPI() {
+		return nil, ErrAPIAccount
 	}
 	if idx.CurrentAccountID == id {
 		return nil, ErrCurrentAccountNotRefreshed

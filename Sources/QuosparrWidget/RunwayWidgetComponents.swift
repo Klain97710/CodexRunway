@@ -60,7 +60,7 @@ struct RunwayQuotaRow: View {
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
-                Text("\(quota.remainingPercent)%")
+                Text(quota.valueText ?? "\(quota.remainingPercent)%")
                     .font(.caption.weight(.semibold).monospacedDigit())
             }
             GeometryReader { proxy in

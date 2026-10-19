@@ -3,6 +3,7 @@ package speed
 import (
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,6 +27,24 @@ func TestReadTailShortFileIsWhole(t *testing.T) {
 	}
 }
 
+func TestReadTailEmptyRegularFile(t *testing.T) {
+	data, truncated, err := ReadTail(writeTemp(t, ""), 100)
+	if err != nil || truncated || len(data) != 0 {
+		t.Fatalf("data = %q, truncated = %v, err = %v", data, truncated, err)
+	}
+}
+
+func TestReadTailRejectsNonRegularFiles(t *testing.T) {
+	for name, path := range map[string]string{"directory": t.TempDir(), "device": os.DevNull} {
+		t.Run(name, func(t *testing.T) {
+			data, truncated, err := ReadTail(path, 100)
+			if err == nil || os.IsNotExist(err) || len(data) != 0 || truncated {
+				t.Fatalf("invalid log must fail explicitly: data = %q, truncated = %v, err = %v", data, truncated, err)
+			}
+		})
+	}
+}
+
 func TestReadTailDropsTheCutLine(t *testing.T) {
 	path := writeTemp(t, "first line\nsecond\nthird\n")
 	data, truncated, err := ReadTail(path, 10) // starts inside "second"
@@ -44,6 +63,45 @@ func TestReadTailSingleLongLine(t *testing.T) {
 	data, truncated, err := ReadTail(path, 10)
 	if err != nil || !truncated || len(data) != 0 {
 		t.Fatalf("data = %q, truncated = %v, err = %v", data, truncated, err)
+	}
+}
+
+func TestReadTailAtUsesGivenSnapshot(t *testing.T) {
+	path := writeTemp(t, "one\ntwo\n")
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_APPEND, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.WriteString("future\n"); err != nil {
+		t.Fatal(err)
+	}
+	data, start, truncated, err := ReadTailAt(f, info.Size(), 100)
+	if err != nil || start != 0 || truncated || string(data) != "one\ntwo\n" {
+		t.Fatalf("data = %q, start = %d, truncated = %v, err = %v", data, start, truncated, err)
+	}
+}
+
+func TestReadTailAtRejectsShortSnapshot(t *testing.T) {
+	path := writeTemp(t, "one\ntwo\n")
+	f, err := os.OpenFile(path, os.O_RDWR, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Truncate(4); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, err := ReadTailAt(f, info.Size(), 100); !errors.Is(err, io.ErrUnexpectedEOF) {
+		t.Fatalf("err = %v", err)
 	}
 }
 

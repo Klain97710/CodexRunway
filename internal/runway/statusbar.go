@@ -130,7 +130,7 @@ func ShortestWindowMeter(meters []Meter) (Meter, bool) {
 
 // WithShortTitle retitles a meter with the short window name.
 func WithShortTitle(lc l10n.Localizer, m Meter) Meter {
-	m.Title = ShortWindowTitle(lc, m.WindowMinutes)
+	m.Title = meterTitle(lc, m)
 	return m
 }
 
@@ -139,7 +139,7 @@ func WithShortTitle(lc l10n.Localizer, m Meter) Meter {
 func DualProviderMeters(lc l10n.Localizer, codex, grok []Meter, codexLabel, grokLabel string) []Meter {
 	var out []Meter
 	if m, ok := PrimaryStandardMeter(codex, codexPreferredWindows); ok {
-		m.Title = codexLabel + " · " + ShortWindowTitle(lc, m.WindowMinutes)
+		m.Title = codexLabel + " · " + meterTitle(lc, m)
 		out = append(out, m)
 	}
 	var g Meter
@@ -151,7 +151,7 @@ func DualProviderMeters(lc l10n.Localizer, codex, grok []Meter, codexLabel, grok
 		g, ok = grok[0], true
 	}
 	if ok {
-		g.Title = grokLabel + " · " + ShortWindowTitle(lc, g.WindowMinutes)
+		g.Title = grokLabel + " · " + meterTitle(lc, g)
 		out = append(out, g)
 	}
 	return out
@@ -190,7 +190,7 @@ func GrokStatusText(lc l10n.Localizer, g GrokState, now time.Time) string {
 	if m.HasReset() {
 		return DurationLocalized(m.ResetsAt.Sub(now).Seconds(), lc.Language(), false)
 	}
-	return strconv.Itoa(m.RemainingPercent) + "%"
+	return percentText(m)
 }
 
 // statusProviders is the ordered status-bar selection. An empty custom list
@@ -240,7 +240,7 @@ func ClaudeStatusText(lc l10n.Localizer, g ClaudeState, now time.Time) string {
 	if m.HasReset() {
 		return DurationLocalized(m.ResetsAt.Sub(now).Seconds(), lc.Language(), false)
 	}
-	return strconv.Itoa(m.RemainingPercent) + "%"
+	return percentText(m)
 }
 
 // SelectedStatusText is the status item text for the chosen provider scope.
@@ -353,7 +353,7 @@ func labeledMeter(lc l10n.Localizer, meters []Meter, preferred []int, label stri
 	if !ok {
 		return Meter{}, false
 	}
-	m.Title = label + " · " + ShortWindowTitle(lc, m.WindowMinutes)
+	m.Title = label + " · " + meterTitle(lc, m)
 	return m, true
 }
 
@@ -404,7 +404,7 @@ func BuildStatusBar(lc l10n.Localizer, in StatusInputs) StatusBarView {
 			BatteryDetail: BatteryDetail(m, in.Prefs.StatusBarBatteryDetailStyle, in.Now, lang),
 			MeterText:     MeterCaption(m, in.Prefs.StatusBarMetersDetailStyle, in.Now, lang),
 		})
-		view.TextCaptions = append(view.TextCaptions, RingText(&m)+"%")
+		view.TextCaptions = append(view.TextCaptions, percentText(m))
 	}
 	if len(plan.Meters) == 0 {
 		view.TextCaptions = []string{RingText(nil)}
@@ -421,15 +421,18 @@ func Tooltip(text string, meters []Meter) string {
 	}
 	parts := make([]string, len(meters))
 	for i, m := range meters {
-		parts[i] = m.Title + ": " + strconv.Itoa(m.RemainingPercent) + "%"
+		parts[i] = m.Title + ": " + percentText(m)
 	}
 	return head + "\n" + strings.Join(parts, " · ")
 }
 
-// RingText is the remaining percentage or "--".
+// RingText is the remaining percentage, the balance amount, or "--".
 func RingText(m *Meter) string {
 	if m == nil {
 		return "--"
+	}
+	if m.ValueText != "" {
+		return m.ValueText
 	}
 	return strconv.Itoa(m.RemainingPercent)
 }
@@ -450,13 +453,16 @@ func titled(m Meter, detail string) string {
 
 // CountdownCaption is the caption of the "countdown" style.
 func CountdownCaption(m Meter, now time.Time, lang l10n.Language) string {
+	if m.Balance {
+		return titled(m, percentText(m))
+	}
 	return titled(m, resetCountdown(m, now, lang))
 }
 
 // BatteryDetail is the detail text of the "battery" style.
 func BatteryDetail(m Meter, style store.BatteryDetail, now time.Time, lang l10n.Language) string {
-	if style == store.BatteryDetailRemainingPercent {
-		return strconv.Itoa(m.RemainingPercent) + "%"
+	if style == store.BatteryDetailRemainingPercent || m.Balance {
+		return percentText(m)
 	}
 	return resetCountdown(m, now, lang)
 }
@@ -472,13 +478,15 @@ func MeterDetail(m Meter, style store.MetersDetail, now time.Time, lang l10n.Lan
 	if m.HasReset() {
 		reset = ResetShortLabel(m.ResetsAt, now, nil)
 	}
-	switch style {
-	case store.MetersDetailResetTime:
+	switch {
+	case m.Balance:
+		return percentText(m)
+	case style == store.MetersDetailResetTime:
 		return reset
-	case store.MetersDetailBoth:
-		return strconv.Itoa(m.RemainingPercent) + "% · " + reset
+	case style == store.MetersDetailBoth:
+		return percentText(m) + " · " + reset
 	}
-	return strconv.Itoa(m.RemainingPercent) + "%"
+	return percentText(m)
 }
 
 // MeterCaption is the caption of the "meters" style.

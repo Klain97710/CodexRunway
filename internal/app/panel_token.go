@@ -33,7 +33,7 @@ func panelToken(c *ui.Context, l l10n.Localizer, style store.ChartStyle, snap ru
 	grokView := snap.Provider == store.ProviderGrok
 	claudeView := snap.Provider == store.ProviderClaude
 	heat := snap.Codex.Heatmap
-	refreshing := snap.Refresh.Has(runway.SectionTokenHeatmap) || (grokView && snap.Grok.Refreshing) || (claudeView && snap.Claude.Refreshing)
+	refreshing := sectionRefreshing(snap, runway.SectionTokenHeatmap)
 	sectionBlock(c, first, func() {
 		tokenHeader(c, l, style, heat, !grokView && !claudeView, refreshing, sectionRefresh(acts, runway.SectionTokenHeatmap), st)
 		panelChart(c, l, style, snap.Provider, heat, refreshing, st)
@@ -180,15 +180,6 @@ func panelChart(c *ui.Context, l l10n.Localizer, style store.ChartStyle, provide
 		return
 	}
 	panelTrend(c, l, series, style == store.ChartStyleBar, provider)
-}
-
-// sectionEmptyKey is the empty line of a chart: "Calculating..." while busy,
-// else the given text.
-func sectionEmptyKey(c *ui.Context, l l10n.Localizer, refreshing bool, key l10n.Key) {
-	if refreshing {
-		key = l10n.KeyCalculating
-	}
-	calloutDim(c, l.Text(key))
 }
 
 // heatCellSize is HeatmapLayoutMetrics.make: square cells filling the width

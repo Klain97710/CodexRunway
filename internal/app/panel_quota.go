@@ -49,12 +49,34 @@ func meterTitle(l l10n.Localizer, m runway.Meter, codex bool) string {
 	return m.Title
 }
 
-// panelCodexQuota is the quota section: one row per meter.
-func panelCodexQuota(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState, rs resetSwitch) {
-	refreshing := snap.Refresh.Has(runway.SectionQuota)
+// panelCodexQuota is the quota section: one row per meter and, with
+// showCredits, a nonzero ChatGPT credits balance as the last row.
+func panelCodexQuota(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState, rs resetSwitch, private, showCredits bool) {
+	refreshing := sectionRefreshing(snap, runway.SectionQuota)
 	sectionBlock(c, first, func() {
 		drawSectionHead(c, l, st, sectionSpec{title: l.Text(l10n.KeyQuota), refreshing: refreshing, refresh: sectionRefresh(acts, runway.SectionQuota)})
-		meterRows(c, l, snap.Codex.Meters, refreshing, true, rs)
+		switch v := snap.Codex; {
+		case v.APIKeyMode && v.APIBaseURL != "":
+			panelAPIBalance(c, l, v.APIBaseURL, v.APIBalance, "", refreshing, private)
+		case v.APIKeyMode:
+			dimText(c, l.Text(l10n.KeyAccountsAPIKeyHint)).MaxLines(2)
+		default:
+			meterRows(c, l, v.Meters, refreshing, true, rs)
+			if balance, ok := codexCreditsBalance(snap); ok && showCredits {
+				creditsBalanceRow(c, l, balance)
+			}
+		}
+	})
+}
+
+// creditsBalanceRow is the last line of the Codex quota section: a coin, the
+// label and the amount, without a bar.
+func creditsBalanceRow(c *ui.Context, l l10n.Localizer, balance float64) {
+	t := c.Theme()
+	ui.Row(c).Gap(6).Padding(4, 0, 0, 0).AlignItems(ui.Center).Children(func() {
+		ui.Icon(c, icCoins).Size(13, 13).TextColor(sys(t, sysBlue))
+		ui.Text(c, l.Text(l10n.KeyCreditsBalance)).FontSize(fsCallout).FontWeight(600).Grow(1).Basis(0).SingleLine()
+		ui.Text(c, creditsBalanceAmount(balance)).FontSize(fsCallout).FontWeight(600).FontFeatures("tnum").SingleLine()
 	})
 }
 

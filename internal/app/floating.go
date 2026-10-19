@@ -2,6 +2,8 @@ package app
 
 import (
 	"math"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/egoist/mygo"
@@ -24,9 +26,15 @@ type floatingState struct {
 	overFullScreen bool
 	stopWatch      func()
 	offDisplays    func()
-	// fullScreenHidden is true while another app is full screen.
+	// fullScreenHidden is true while another app is full screen, appHidden
+	// while the app in front hides the window; hidden is whether it is.
 	fullScreenHidden bool
-	drag             floatingDrag
+	appHidden        bool
+	hidden           bool
+	// followKey is the filter and the apps followed, empty when not.
+	followKey  string
+	stopFollow func()
+	drag       floatingDrag
 }
 
 // floatingDrag moves the window from the cursor's screen position, so a
@@ -75,6 +83,7 @@ func (a *App) syncFloating() {
 		// Changed in place: a new window would lose its place.
 		a.setFloatingOverFullScreen(f.OverFullScreen)
 	}
+	a.syncFloatingFollow(f)
 	if w != a.floating.w || h != a.floating.h {
 		a.resizeFloating(w, h)
 	}
@@ -117,6 +126,7 @@ func (a *App) openFloating(prefs store.Preferences, w, h int) {
 	// The opposite of the setting, so that this sets the window up.
 	a.floating.overFullScreen = !f.OverFullScreen
 	a.setFloatingOverFullScreen(f.OverFullScreen)
+	a.syncFloatingFollow(f)
 	a.keepFloatingOnScreen()
 	win.OnClosed(func() {
 		if a.floating.win == win {
@@ -125,6 +135,11 @@ func (a *App) openFloating(prefs store.Preferences, w, h int) {
 		}
 	})
 	a.floating.offDisplays = mygo.Screen.OnDisplaysChanged(a.keepFloatingOnScreen)
+	if a.floating.followKey != "" {
+		// Hidden until the app in front is known.
+		a.floating.appHidden, a.floating.hidden = true, true
+		return
+	}
 	win.ShowInactive()
 }
 
@@ -145,8 +160,60 @@ func (a *App) setFloatingOverFullScreen(over bool) {
 		a.floating.stopWatch = watchFullScreen(a.floatingFullScreen)
 		return
 	}
-	if a.floating.fullScreenHidden {
-		a.floating.fullScreenHidden = false
+	a.floating.fullScreenHidden = false
+	a.showFloatingIfDue()
+}
+
+// floatingFollowKey is what the window follows the app in front by, or
+// empty when it does not.
+func floatingFollowKey(f store.FloatingWindow) string {
+	if f.AppFilter == store.FloatingAppFilterOff || !foregroundSupported() {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString(string(f.AppFilter))
+	for _, app := range f.Apps {
+		b.WriteString("\n" + app.ID + "\x00" + app.Path)
+	}
+	return b.String()
+}
+
+// syncFloatingFollow starts, restarts or stops following the app in front
+// as the filter or the apps change.
+func (a *App) syncFloatingFollow(f store.FloatingWindow) {
+	key := floatingFollowKey(f)
+	if key == a.floating.followKey {
+		return
+	}
+	if a.floating.stopFollow != nil {
+		a.floating.stopFollow()
+		a.floating.stopFollow = nil
+	}
+	a.floating.followKey = key
+	if key == "" {
+		a.floating.appHidden = false
+		a.showFloatingIfDue()
+		return
+	}
+	f.Apps = slices.Clone(f.Apps)
+	a.floating.stopFollow = watchForeground(f, func(visible bool) {
+		a.floating.appHidden = !visible
+		a.showFloatingIfDue()
+	})
+}
+
+// showFloatingIfDue hides the window while another app is full screen or the
+// app in front hides it, and shows it again after.
+func (a *App) showFloatingIfDue() {
+	win := a.floating.win
+	hide := a.floating.fullScreenHidden || a.floating.appHidden
+	if win == nil || hide == a.floating.hidden {
+		return
+	}
+	a.floating.hidden = hide
+	if hide {
+		win.Hide()
+	} else {
 		win.ShowInactive()
 	}
 }
@@ -180,6 +247,9 @@ func (a *App) stopFloatingWatchers() {
 	if a.floating.stopWatch != nil {
 		a.floating.stopWatch()
 	}
+	if a.floating.stopFollow != nil {
+		a.floating.stopFollow()
+	}
 	if a.floating.offDisplays != nil {
 		a.floating.offDisplays()
 	}
@@ -198,16 +268,11 @@ func (a *App) closeFloating() {
 // floatingFullScreen hides the window while another app is full screen
 // (Windows; macOS keeps full-screen apps in Spaces of their own).
 func (a *App) floatingFullScreen(busy bool) {
-	win := a.floating.win
-	if win == nil || busy == a.floating.fullScreenHidden {
+	if a.floating.win == nil {
 		return
 	}
 	a.floating.fullScreenHidden = busy
-	if busy {
-		win.Hide()
-	} else {
-		win.ShowInactive()
-	}
+	a.showFloatingIfDue()
 }
 
 // keepFloatingOnScreen moves the window back into the work area of the

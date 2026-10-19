@@ -12,8 +12,8 @@ import (
 	"github.com/licoy/quosparr/internal/store"
 )
 
-// panelHeader is the fixed header of the main page: the title, the four
-// header buttons, the provider strip, the identity row and the subscription chip.
+// panelHeader is the fixed header of the main page: the title, the header
+// buttons, the provider strip, the identity row and the subscription chip.
 func panelHeader(c *ui.Context, a *App, l l10n.Localizer, prefs store.Preferences, snap runway.Snapshot, acts PanelActions) {
 	grokView := prefs.SelectedProvider == store.ProviderGrok
 	ui.Column(c).Padding(14, 16, 10, 16).Children(func() {
@@ -134,6 +134,18 @@ func panelHeaderButtons(c *ui.Context, a *App, l l10n.Localizer, prefs store.Pre
 		privacy := prefs.AccountPrivacyModeEnabled
 		if privacyButton(c, l, privacy, 26, 24, radiusControl).Clicked() {
 			a.settings.SetAccountPrivacyMode(!privacy)
+		}
+		if a.settings.System().PanelBackground {
+			bg := prefs.MainPanelBackgroundStyle
+			next := pick(bg == store.PanelBackgroundOpaque, store.PanelBackgroundTranslucent, store.PanelBackgroundOpaque)
+			title := l.Text(l10n.KeyMainPanelBackground) + " · " + l.Text(panelBackgroundKey(bg))
+			if toolButton(c, pick(bg == store.PanelBackgroundOpaque, icOpaque, icTranslucent), title, 26, 24, 14, false).Clicked() {
+				a.settings.SetPanelBackground(next)
+			}
+		}
+		floating := prefs.FloatingWindow.Enabled
+		if toggleIconButton(c, icFloating, tx(l, xFloatingEnabled), floating, 26, 24, radiusControl).Clicked() {
+			a.settings.SetFloatingWindow(func(f *store.FloatingWindow) { f.Enabled = !floating })
 		}
 		check := a.opts.Actions.CheckForUpdates
 		if toolButton(c, icCloudDown, l.Text(l10n.KeyCheckForUpdates), 26, 24, 14, check == nil).Clicked() && check != nil {

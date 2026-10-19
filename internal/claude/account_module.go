@@ -5,6 +5,8 @@ import (
 	"errors"
 	"sync"
 	"time"
+
+	"github.com/licoy/quosparr/internal/apiquota"
 )
 
 // CommandKind selects Module.Apply.
@@ -25,6 +27,12 @@ const (
 	CommandReorder
 	// CommandPaste imports a pasted claudeAiOauth document.
 	CommandPaste
+	// CommandAddAPI adds an API relay account from API, APIKey and Alias, or
+	// updates the one with the same base URL and key.
+	CommandAddAPI
+	// CommandUpdateAPI edits the API account ID: Alias and the model fields
+	// of API are replaced; an empty API.BaseURL or APIKey keeps the stored one.
+	CommandUpdateAPI
 )
 
 // Command is one account action.
@@ -36,6 +44,10 @@ type Command struct {
 	Text              string
 	Identity          CredentialIdentity
 	AllowWhileRunning bool
+	// APIKey and API describe an API relay account (CommandAddAPI,
+	// CommandUpdateAPI). The key is written to the managed copy only.
+	APIKey string
+	API    *APIProfile
 }
 
 // AccountState is the library after an operation.
@@ -54,6 +66,9 @@ type Module struct {
 	RunningProcessIDs func(ctx context.Context) ([]int, error)
 	Now               func() time.Time
 	Replacer          OAuthAccountReplacer
+	// APIClient sends API relay balance and model-list requests. Nil uses the
+	// proxied network client of Usage; it never falls back to a direct one.
+	APIClient apiquota.Doer
 
 	mu              sync.Mutex
 	profileKey      string
@@ -131,6 +146,10 @@ func (m *Module) Apply(ctx context.Context, cmd Command) (AccountState, error) {
 		err = m.Store.Reorder(cmd.IDs)
 	case CommandPaste:
 		_, err = m.importPasted(cmd.Text, cmd.Identity)
+	case CommandAddAPI:
+		_, err = m.addAPI(cmd.Alias, apiOrEmpty(cmd.API), cmd.APIKey)
+	case CommandUpdateAPI:
+		_, err = m.updateAPI(cmd.ID, cmd.Alias, apiOrEmpty(cmd.API), cmd.APIKey, true)
 	default:
 		err = errors.New("claude: unknown account command")
 	}
@@ -140,8 +159,27 @@ func (m *Module) Apply(ctx context.Context, cmd Command) (AccountState, error) {
 	return m.state()
 }
 
+func apiOrEmpty(p *APIProfile) APIProfile {
+	if p == nil {
+		return APIProfile{}
+	}
+	return *p
+}
+
+// importOfficial stores the Claude Code login in the library. While an API
+// account is the one in settings.json, the login is stored without becoming
+// current.
 func (m *Module) importOfficial(ctx context.Context) error {
-	login, err := m.syncOfficial(ctx)
+	idx, err := m.Store.LoadIndex()
+	if err != nil {
+		return err
+	}
+	var login officialLogin
+	if _, _, apiActive := m.liveAPIAccount(idx); apiActive {
+		login, err = m.syncOAuth(ctx, idx, false)
+	} else {
+		login, err = m.syncOfficial(ctx)
+	}
 	switch {
 	case err != nil:
 		return err

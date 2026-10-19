@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/codexapi"
 	"github.com/licoy/quosparr/internal/l10n"
 	"github.com/licoy/quosparr/internal/store"
@@ -67,6 +68,23 @@ func cycleWindows(q codexapi.QuotaSnapshot, now time.Time) (full, elapsed usage.
 		return usage.Window{}, usage.Window{}, false
 	}
 	return usage.Window{Start: f.Start, End: f.End}, usage.Window{Start: e.Start, End: e.End}, true
+}
+
+// cycleFor is the cost cycle of the shown credential: the quota's own, or the
+// calendar month for an API key, which has no quota cycle. Its "previous
+// cycle" is the window of the same length before the month.
+func cycleFor(auth codex.Auth, q codexapi.QuotaSnapshot, now time.Time, loc *time.Location) (full, elapsed usage.Window, ok bool) {
+	if auth.IsAPIKey() {
+		full, elapsed = monthWindows(now, loc)
+		return full, elapsed, true
+	}
+	return cycleWindows(q, now)
+}
+
+// monthWindows is the calendar month of now (full) and its elapsed part.
+func monthWindows(now time.Time, loc *time.Location) (full, elapsed usage.Window) {
+	start := usage.ThisMonth(now, loc).Window.Start
+	return usage.Window{Start: start, End: start.In(loc).AddDate(0, 1, 0)}, usage.Window{Start: start, End: now}
 }
 
 // selectedCostRange is the range the user's apiCostSummaryRange asks for

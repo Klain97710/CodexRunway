@@ -68,6 +68,9 @@ func renderClaudeAccounts(c *ui.Context, u *settingsUI, f *accountForm, rt *live
 		if m.Item(l.Text(l10n.KeyClaudeImportCurrent)).Chosen() {
 			u.accountAct(f, "", func() string { return rt.importClaudeOfficial(l) })
 		}
+		if m.Item(tx(l, xAPIAdd)).Chosen() {
+			f.mode = modeClaudeAPIAdd
+		}
 	}, func() string {
 		f.selection = exportAccountSelection(rows)
 		return ""
@@ -105,7 +108,10 @@ func renderClaudeAccountRow(c *ui.Context, u *settingsUI, f *accountForm, rt *li
 		accountSettingsIdentity(c, l, accountIdentityView{account: acc, current: acc.ID == current, privacy: priv, provider: store.ProviderClaude, claudeQuota: quota})
 		ui.MenuButton(c, l.Text(l10n.KeyAccountsActions), func(m *ui.Menu) {
 			if m.Item(l.Text(l10n.KeyAccountsMakeCurrent)).Disabled(acc.ID == current).Chosen() {
-				f.mode, f.editID, f.switchName = "claude-switch", acc.ID, name
+				f.mode, f.editID, f.switchName, f.switchRelay = "claude-switch", acc.ID, name, acc.IsRelay()
+			}
+			if acc.IsRelay() && m.Item(tx(l, xAPIEditMenu)).Chosen() {
+				f.openClaudeAPIEditor(rt, acc.ID)
 			}
 			if m.Item(l.Text(l10n.KeyAccountsMoveUp)).Chosen() {
 				u.accountAct(f, "", func() string { return rt.moveClaude(acc.ID, -1) })
@@ -161,8 +167,8 @@ func accountProviderHeader(c *ui.Context, u *settingsUI, f *accountForm) {
 	l := u.L()
 	ui.Row(c).Children(func() {
 		if ProviderTabs(c.Key("accounts-provider"), &f.kind, f.busy, providerTabLabels(l)...) {
-			f.mode, f.paste, f.apiKey = "", "", ""
-			f.selection = nil
+			f.mode, f.paste = "", ""
+			f.selection, f.api = nil, apiDraft{}
 		}
 	})
 }
@@ -176,16 +182,18 @@ func accountCountTitle(l l10n.Localizer, count int) string {
 }
 
 type accountForm struct {
-	kind                 int
-	mode, editID         string
-	paste, apiKey, alias string
-	note, status         string
-	editorError          string
-	busy                 bool
-	cancel               context.CancelFunc
-	selection            *accountSelection
-	restartAfterSwitch   bool
-	switchName           string
+	kind               int
+	mode, editID       string
+	paste, alias       string
+	note, status       string
+	editorError        string
+	busy               bool
+	cancel             context.CancelFunc
+	selection          *accountSelection
+	restartAfterSwitch bool
+	switchName         string
+	switchRelay        bool
+	api                apiDraft
 }
 
 func accountFormOf(u *settingsUI) *accountForm {
@@ -244,8 +252,8 @@ func renderCodexAccounts(c *ui.Context, u *settingsUI, f *accountForm, rt *liveA
 		if m.Item(l.Text(l10n.KeyAccountsAddFile)).Chosen() {
 			u.previewAccountFiles(f, rt)
 		}
-		if m.Item(l.Text(l10n.KeyAccountsAddAPIKey)).Chosen() {
-			f.mode = "apikey"
+		if m.Item(tx(l, xAPIAdd)).Chosen() {
+			f.mode = modeCodexAPIAdd
 		}
 	}, func() string {
 		f.selection = exportAccountSelection(rows)
@@ -397,8 +405,11 @@ func renderCodexSettingsRow(c *ui.Context, u *settingsUI, f *accountForm, rt *li
 		}
 		ui.MenuButton(c, l.Text(l10n.KeyAccountsActions), func(m *ui.Menu) {
 			if m.Item(l.Text(l10n.KeyAccountsMakeCurrent)).Disabled(current).Chosen() {
-				f.mode, f.editID, f.switchName = "switch", acc.ID, name
+				f.mode, f.editID, f.switchName, f.switchRelay = "switch", acc.ID, name, acc.IsRelay()
 				f.restartAfterSwitch = codexRestartSupported
+			}
+			if acc.AuthMode == codex.AuthModeAPIKey && m.Item(tx(l, xAPIEditMenu)).Chosen() {
+				f.openCodexAPIEditor(rt, acc)
 			}
 			if m.Item(l.Text(l10n.KeyAlias)).Chosen() {
 				f.mode, f.editID, f.alias = "alias", acc.ID, acc.Alias
@@ -533,14 +544,6 @@ func (rt *liveApp) importCodexFiles(l l10n.Localizer) string {
 		return l.Text(l10n.KeyAccountsImportFailed)
 	}
 	return l.Textf(l10n.KeyAccountsImportSucceeded, len(batch.Succeeded))
-}
-
-func (rt *liveApp) addCodexAPIKey(l l10n.Localizer, key string) (string, bool) {
-	if _, err := (&codex.Importer{Store: rt.codex}).ImportAPIKey(key, false); err != nil {
-		return l.Text(l10n.KeyAccountsImportFailed), false
-	}
-	rt.svc.ReloadAccounts()
-	return l.Textf(l10n.KeyAccountsImportSucceeded, 1), true
 }
 
 func (rt *liveApp) exportCodex(l l10n.Localizer, ids []string) (string, bool) {
@@ -803,14 +806,6 @@ func pasteAccount(l l10n.Localizer, kind int, text string) (string, bool) {
 		return rt.claudePasteText(context.Background(), l, text)
 	}
 	return rt.pasteCodex(l, text)
-}
-
-func addAPIKey(l l10n.Localizer, key string) (string, bool) {
-	rt := currentRuntime()
-	if rt == nil {
-		return tx(l, xDetailUnavailable), false
-	}
-	return rt.addCodexAPIKey(l, key)
 }
 
 func saveAccountMeta(l l10n.Localizer, kind int, mode, id, alias, note string) string {

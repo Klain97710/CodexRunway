@@ -29,7 +29,7 @@ func panelBody(c *ui.Context, l l10n.Localizer, prefs store.Preferences, snap ru
 	local := grok || claude
 	first := true
 	for _, m := range store.NormalizeModuleOrder(prefs.MainPanelModuleOrder) {
-		if local && m == store.ModuleResetCredits && !(grok && snap.Grok.ResetCreditSummary != nil) {
+		if local && m == store.ModuleResetCredits && snap.Codex.ResetCreditSummary == nil {
 			continue
 		}
 		if panelModuleOn(m, prefs, local) {
@@ -61,6 +61,8 @@ func panelModuleOn(m store.Module, p store.Preferences, grok bool) bool {
 		return p.ShowsSessionRepairSummary
 	case store.ModuleRecentSessions:
 		return p.ShowsRecentSessions
+	case store.ModuleSkills:
+		return p.ShowsSkills
 	default:
 		return false
 	}
@@ -73,11 +75,11 @@ func panelModule(c *ui.Context, l l10n.Localizer, m store.Module, prefs store.Pr
 	case store.ModuleQuota:
 		switch {
 		case claude:
-			panelClaudeQuota(c, l, snap, acts, first, state, state.resetSwitch(prefs.QuotaResetTimeFormat))
+			panelClaudeQuota(c, l, snap, acts, first, state, state.resetSwitch(prefs.QuotaResetTimeFormat), prefs.AccountPrivacyModeEnabled)
 		case grok:
 			panelGrokQuota(c, l, snap, acts, first, state, state.resetSwitch(prefs.QuotaResetTimeFormat))
 		default:
-			panelCodexQuota(c, l, snap, acts, first, state, state.resetSwitch(prefs.QuotaResetTimeFormat))
+			panelCodexQuota(c, l, snap, acts, first, state, state.resetSwitch(prefs.QuotaResetTimeFormat), prefs.AccountPrivacyModeEnabled, prefs.ShowsCreditsBalance)
 		}
 	case store.ModuleTokenUsage:
 		panelToken(c, l, prefs.TokenUsageChartStyle, snap, acts, first, state)
@@ -95,6 +97,8 @@ func panelModule(c *ui.Context, l l10n.Localizer, m store.Module, prefs store.Pr
 		panelRepair(c, l, snap, acts, first, state)
 	case store.ModuleRecentSessions:
 		panelRecent(c, l, snap, grok || claude, acts, first, state)
+	case store.ModuleSkills:
+		panelSkills(c, l, snap, acts, first, state)
 	}
 }
 
@@ -106,12 +110,34 @@ func sectionRefresh(acts PanelActions, sec runway.Section) func() {
 	return func() { fn(sec) }
 }
 
-// sectionEmpty is the "Calculating..." / "Not loaded" line of a section
-// without data.
+// sectionRefreshing includes the wait for a full refresh to reach a module.
+// Single-section Codex work must not mark another provider as refreshing.
+func sectionRefreshing(snap runway.Snapshot, section runway.Section) bool {
+	if snap.Refresh.All {
+		return true
+	}
+	switch snap.Provider {
+	case store.ProviderGrok:
+		return snap.Grok.Refreshing
+	case store.ProviderClaude:
+		return snap.Claude.Refreshing
+	default:
+		return snap.Refresh.Has(section)
+	}
+}
+
+// sectionEmpty shows a progress indicator while loading, then the idle text.
 func sectionEmpty(c *ui.Context, l l10n.Localizer, refreshing bool) {
-	key := l10n.KeyNotLoaded
+	sectionEmptyKey(c, l, refreshing, l10n.KeyNotLoaded)
+}
+
+func sectionEmptyKey(c *ui.Context, l l10n.Localizer, refreshing bool, key l10n.Key) {
 	if refreshing {
-		key = l10n.KeyCalculating
+		ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+			ui.Spinner(c).Size(14, 14).Label(tx(l, xPanelLoading))
+			calloutDim(c, tx(l, xPanelLoading))
+		})
+		return
 	}
 	calloutDim(c, l.Text(key))
 }

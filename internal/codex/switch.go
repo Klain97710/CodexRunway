@@ -164,7 +164,8 @@ func (sw *Switcher) markReauth(accountID string, cause error) {
 	}
 }
 
-// commit writes the official file, the managed copy and the index as one
+// commit writes the official file, the managed copy, config.toml (the managed
+// provider of a relay account, or its removal) and the index as one
 // all-or-nothing step.
 func (sw *Switcher) commit(accountID string, auth Auth) (SwitchResult, error) {
 	s := sw.Store
@@ -180,6 +181,7 @@ func (sw *Switcher) commit(accountID string, auth Auth) (SwitchResult, error) {
 		takeSnapshot(s.officialAuth),
 		takeSnapshot(s.CredentialPath(accountID)),
 		takeSnapshot(s.IndexPath()),
+		takeConfigSnapshot(s.ConfigPath()),
 	}
 	result, err := sw.commitLocked(accountID, auth)
 	if err == nil {
@@ -201,6 +203,10 @@ func (sw *Switcher) commitLocked(accountID string, auth Auth) (SwitchResult, err
 	if !ok {
 		return SwitchResult{}, &AccountNotFoundError{ID: accountID}
 	}
+	var previous *ManagedAccount
+	if prev, ok := idx.Account(idx.ActiveAccountID); ok {
+		previous = &prev
+	}
 	steps := []struct {
 		stage string
 		run   func() error
@@ -208,6 +214,7 @@ func (sw *Switcher) commitLocked(accountID string, auth Auth) (SwitchResult, err
 		{"official", func() error { return s.writeOfficial(auth, now) }},
 		{"credential", func() error { return s.saveCredential(accountID, auth) }},
 		{"verify", func() error { return s.verifyInstalled(accountID, auth) }},
+		{"config", func() error { return s.applyProviderConfig(acc, previous, now) }},
 		{"index", func() error {
 			acc = acc.WithIdentity(auth, "", now)
 			acc.CachedQuota, acc.LastQuotaAt = nil, nil
@@ -240,11 +247,22 @@ func (s *Store) verifyInstalled(accountID string, auth Auth) error {
 		if err != nil {
 			return err
 		}
-		if !got.Equal(auth) {
+		if !installedMatches(got, auth) {
 			return errors.New("codex: installed credential does not match the target")
 		}
 	}
 	return nil
+}
+
+// installedMatches compares a credential read back from disk with the target.
+// An API key file legitimately keeps the OAuth tokens and last_refresh of the
+// login it replaced (see Auth.MarshalFile), so for a key only the key itself
+// and the API mode count.
+func installedMatches(got, want Auth) bool {
+	if want.IsAPIKey() {
+		return got.IsAPIKey() && got.APIKey() == want.APIKey()
+	}
+	return got.Equal(want)
 }
 
 // fileSnapshot remembers a file's bytes and mode so it can be put back.
@@ -253,6 +271,9 @@ type fileSnapshot struct {
 	data   []byte
 	mode   fs.FileMode
 	exists bool
+	// plain marks a user file such as config.toml: restored with its own mode
+	// and without the owner-only policy of credential files.
+	plain bool
 }
 
 func takeSnapshot(path string) fileSnapshot {
@@ -293,7 +314,7 @@ func (f fileSnapshot) restore() error {
 		return nil
 	}
 	mode := f.mode
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == "windows" && !f.plain {
 		// Windows reports writable files as 0666; those mode bits cannot
 		// select the ACL policy for credential/index rollback.
 		mode = filePerm
@@ -312,7 +333,7 @@ func (f fileSnapshot) verify() error {
 	if err != nil || !bytes.Equal(data, f.data) {
 		return errors.New("codex: restored file differs from the original")
 	}
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == "windows" && !f.plain {
 		return platform.VerifyOwnerOnly(f.path, filePerm)
 	}
 	return nil

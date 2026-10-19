@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -36,7 +37,7 @@ func writeGrokSpeedSession(t *testing.T, home string, now time.Time) {
 		`{"ts":%q,"type":"first_token"}`+"\n"+
 		`{"ts":%q,"type":"turn_ended"}`+"\n",
 		ts(0), ts(1), ts(2), ts(10), ts(13), ts(20))
-	updates := `{"params":{"update":{"sessionUpdate":"turn_completed","usage":{"inputTokens":100,"outputTokens":400,"apiDurationMs":14000,"modelCalls":2}}}}` + "\n"
+	updates := fmt.Sprintf(`{"timestamp":%d,"params":{"update":{"sessionUpdate":"turn_completed","usage":{"inputTokens":100,"outputTokens":400,"apiDurationMs":14000,"modelCalls":2}}}}`+"\n", now.Add(-10*time.Second).Unix())
 	summary := fmt.Sprintf(`{"info":{"id":"speed-one","cwd":"/synthetic"},"generated_title":"Synthetic","current_model_id":"grok-synthetic","reasoning_effort":"high","last_active_at":%q}`,
 		now.UTC().Format(time.RFC3339))
 	for name, content := range map[string]string{"summary.json": summary, "events.jsonl": events, "updates.jsonl": updates} {
@@ -95,10 +96,11 @@ func TestGrokSpeedFollowsThePreference(t *testing.T) {
 	b.reload(false)
 	off := b.prefs.Clone()
 	off.ShowsSpeedAnalysis = false
+	b.speedErr = errors.New("stale speed error")
 	gen := b.generation
 	b.setPreferences(off, nil)
 	b.reload(false)
-	if b.State(time.Now()).Speed != nil || b.generation == gen {
+	if got := b.State(time.Now()); got.Speed != nil || got.SpeedError != "" || b.generation == gen {
 		t.Fatalf("hiding kept the report (generation %d -> %d)", gen, b.generation)
 	}
 	on := off.Clone()
@@ -113,24 +115,84 @@ func TestGrokSpeedFollowsThePreference(t *testing.T) {
 	}
 }
 
-func TestGrokSpeedScanFailureIsNoReportNotAnError(t *testing.T) {
+func TestGrokSpeedScanReturnsErrors(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	p := store.DefaultPreferences()
 	home := t.TempDir()
 	writeGrokSpeedSession(t, home, time.Now())
-	if r := scanGrokSpeed(ctx, grok.SessionScanner{GrokHome: home}, p, time.Now()); r != nil {
-		t.Fatalf("report on a cancelled scan: %+v", r)
+	if r, err := scanGrokSpeed(ctx, grok.SessionScanner{GrokHome: home}, p, time.Now()); r != nil || err == nil {
+		t.Fatalf("cancelled scan report=%+v err=%v", r, err)
 	}
 	scanner := grok.SessionScanner{GrokHome: t.TempDir()}
 	p.ShowsSpeedAnalysis = false
-	if r := scanGrokSpeed(context.Background(), scanner, p, time.Now()); r != nil {
-		t.Fatalf("report while hidden: %+v", r)
+	if r, err := scanGrokSpeed(context.Background(), scanner, p, time.Now()); r != nil || err != nil {
+		t.Fatalf("hidden scan report=%+v err=%v", r, err)
 	}
 	// A home without sessions is an empty report, not a failure.
 	p.ShowsSpeedAnalysis = true
-	if r := scanGrokSpeed(context.Background(), scanner, p, time.Now()); r == nil || !r.Empty() {
-		t.Fatalf("empty home report = %+v", r)
+	if r, err := scanGrokSpeed(context.Background(), scanner, p, time.Now()); err != nil || r == nil || !r.Empty() {
+		t.Fatalf("empty home report=%+v err=%v", r, err)
+	}
+}
+
+func TestGrokSpeedReadFailureKeepsReportAndSurfacesError(t *testing.T) {
+	b := grokSpeedBridge(t, true)
+	if err := b.scanLocal(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	b.reload(false)
+	before := b.State(time.Now())
+	path := filepath.Join(b.mod.Store.OfficialHome(), "sessions", "%2Fsynthetic", "speed-one", "events.jsonl")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(path, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := b.scanLocal(context.Background()); err == nil {
+		t.Fatal("speed read failure was swallowed")
+	}
+	b.reload(false)
+	failed := b.State(time.Now())
+	if failed.Speed != before.Speed || failed.SpeedError == "" || failed.LastError != before.LastError {
+		t.Fatalf("speed=%p want=%p speedError=%q lastError=%q want=%q", failed.Speed, before.Speed, failed.SpeedError, failed.LastError, before.LastError)
+	}
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := b.scanLocal(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	b.reload(false)
+	if got := b.State(time.Now()); got.Speed == nil || got.SpeedError != "" {
+		t.Fatalf("recovered speed=%v error=%q", got.Speed != nil, got.SpeedError)
+	}
+}
+
+func TestGrokInitialSpeedReadFailureSurfacesError(t *testing.T) {
+	b := grokSpeedBridge(t, true)
+	path := filepath.Join(b.mod.Store.OfficialHome(), "sessions", "%2Fsynthetic", "speed-one", "events.jsonl")
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(path, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := b.scanLocal(context.Background()); err == nil {
+		t.Fatal("speed read failure was swallowed")
+	}
+	b.reload(false)
+	got := b.State(time.Now())
+	if got.Speed != nil || got.SpeedError == "" || got.Cost == nil {
+		t.Fatalf("speed=%v speedError=%q cost=%v", got.Speed != nil, got.SpeedError, got.Cost != nil)
 	}
 }
 

@@ -161,8 +161,7 @@ func TestPanelChartClickLatency(t *testing.T) {
 			}
 			t.Logf("tooltip hit box: %+v", r)
 			tt.Move(r.X+r.W/2, r.Y+r.H/2)
-			time.Sleep(650 * time.Millisecond)
-			tt.Frame()
+			tt.Advance(650 * time.Millisecond)
 			if !tt.HasText("474.5K") {
 				t.Fatalf("last-day token count missing from chart tooltip: %q", tt.Texts())
 			}

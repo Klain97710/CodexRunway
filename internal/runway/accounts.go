@@ -3,6 +3,8 @@ package runway
 import (
 	"context"
 	"errors"
+	"slices"
+	"sync"
 
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/codexapi"
@@ -62,17 +64,19 @@ func quotaSummary(q codexapi.QuotaSnapshot) codex.QuotaSummary {
 	return out
 }
 
-// RefreshAllAccountQuotas polls the quota of every managed account.
+// RefreshAllAccountQuotas polls the quota of every managed account. API relay
+// accounts are probed for their balance instead; a plain API key makes no
+// request.
 func (s *Service) RefreshAllAccountQuotas() <-chan struct{} {
-	if s.src.RefreshAccounts == nil {
+	if s.src.RefreshAccounts == nil && !s.relayProbing() {
 		return closedChan()
 	}
-	return s.run(func() { s.refreshAccountsInline(s.root) })
+	return s.run(func() { s.refreshAccountsInline(s.root, "") })
 }
 
-// RefreshAccountQuota polls one managed account.
+// RefreshAccountQuota polls one managed account (a relay account's balance).
 func (s *Service) RefreshAccountQuota(id string) <-chan struct{} {
-	if s.src.RefreshAccount == nil {
+	if s.src.RefreshAccount == nil && !s.relayProbing() {
 		return closedChan()
 	}
 	s.mu.Lock()
@@ -85,8 +89,12 @@ func (s *Service) RefreshAccountQuota(id string) <-chan struct{} {
 	s.publishLocked()
 	s.mu.Unlock()
 	return s.run(func() {
-		res := s.src.RefreshAccount(s.root, id)
-		s.applyAccountResults([]codexapi.QuotaRefreshResult{res}, epoch)
+		if acc, ok := s.relayAccount(id); ok {
+			s.probeRelayAccount(s.root, acc)
+		} else if s.src.RefreshAccount != nil {
+			res := s.src.RefreshAccount(s.root, id)
+			s.applyAccountResults([]codexapi.QuotaRefreshResult{res}, epoch)
+		}
 		s.mu.Lock()
 		delete(s.refreshingIDs, id)
 		s.publishLocked()
@@ -94,8 +102,10 @@ func (s *Service) RefreshAccountQuota(id string) <-chan struct{} {
 	})
 }
 
-func (s *Service) refreshAccountsInline(ctx context.Context) {
-	if s.src.RefreshAccounts == nil {
+// refreshAccountsInline polls every account; skipRelay is a relay account the
+// caller probes itself.
+func (s *Service) refreshAccountsInline(ctx context.Context, skipRelay string) {
+	if s.src.RefreshAccounts == nil && !s.relayProbing() {
 		return
 	}
 	s.mu.Lock()
@@ -110,11 +120,21 @@ func (s *Service) refreshAccountsInline(ctx context.Context) {
 		ids = append(ids, a.ID)
 		s.refreshingIDs[a.ID] = true
 	}
+	relays := slices.DeleteFunc(s.relayAccountsLocked(), func(a codex.ManagedAccount) bool { return a.ID == skipRelay })
 	s.publishLocked()
 	s.mu.Unlock()
 
-	results := s.src.RefreshAccounts(ctx)
-	s.applyAccountResults(results, epoch)
+	// Relay balances are probed alongside the OAuth quotas; a plain API key
+	// is in neither and makes no request.
+	var probed sync.WaitGroup
+	if len(relays) > 0 {
+		probed.Add(1)
+		go func() { defer probed.Done(); s.probeRelayAccounts(ctx, relays) }()
+	}
+	if s.src.RefreshAccounts != nil {
+		s.applyAccountResults(s.src.RefreshAccounts(ctx), epoch)
+	}
+	probed.Wait()
 
 	s.mu.Lock()
 	s.accountsBusy = false

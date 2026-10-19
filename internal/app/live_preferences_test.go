@@ -137,7 +137,9 @@ func TestLiveRefreshUsesLatestUICostRange(t *testing.T) {
 	g := newGrokBridge(nil, p, nil)
 	svc := runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}, Preferences: p, Grok: g, Sources: runway.Sources{
 		LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) {
-			return codex.APIKeyAuth("synthetic-test"), nil
+			// An OAuth login: an API key login has a calendar-month cycle of
+			// its own and would scan the old range first.
+			return codex.Auth{AuthMode: "chatgpt", Tokens: codex.Tokens{AccessToken: "synthetic-test", AccountID: "synthetic"}}, nil
 		},
 		FetchQuota: func(context.Context, codexapi.Auth) (codexapi.QuotaSnapshot, error) {
 			return codexapi.QuotaSnapshot{}, nil

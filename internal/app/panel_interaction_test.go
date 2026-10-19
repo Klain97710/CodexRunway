@@ -150,11 +150,11 @@ func TestAccountMenuOpensEditorAndCancelClearsSensitiveDraft(t *testing.T) {
 		t.Fatalf("alias editor did not open: %#v", f)
 	}
 	f.paste = "sensitive draft"
-	f.apiKey = "sensitive key"
+	f.api.key = "sensitive key"
 	if err := tt.Click(u.L().Text(l10n.KeyCancel)); err != nil {
 		t.Fatal(err)
 	}
-	if f.mode != "" || f.paste != "" || f.apiKey != "" {
+	if f.mode != "" || f.paste != "" || f.api.key != "" {
 		t.Fatal("cancel retained sensitive draft")
 	}
 }

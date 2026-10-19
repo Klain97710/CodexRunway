@@ -118,7 +118,9 @@ func TestLiveUIActionsReturnDuringBackgroundHistoryRead(t *testing.T) {
 			if err := syscall.Mkfifo(path, 0600); err != nil {
 				t.Fatal(err)
 			}
-			auth := codex.APIKeyAuth("synthetic-local-test")
+			// An OAuth login: an API key login skips the quota estimate, which
+			// would never open the history pipe.
+			auth := codex.Auth{AuthMode: "chatgpt", Tokens: codex.Tokens{AccessToken: "synthetic-local-test", AccountID: "synthetic"}}
 			g := newGrokBridge(nil, p, nil)
 			svc := runway.New(runway.Options{Features: personal.Features{Grok: true, Claude: true}, Preferences: p, Grok: g, EstimateHistoryPath: path, Sources: runway.Sources{
 				LoadValidAuth: func(context.Context, bool, *codex.Auth) (codex.Auth, error) { return auth, nil },

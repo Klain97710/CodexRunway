@@ -18,8 +18,12 @@ func (m *Module) reload(id string) (ManagedAccount, error) {
 }
 
 func (m *Module) refreshAccount(ctx context.Context, id string, force bool) error {
-	if _, err := m.reload(id); err != nil {
+	acc, err := m.reload(id)
+	if err != nil {
 		return err
+	}
+	if acc.IsAPI() {
+		return m.refreshAPI(ctx, acc, force)
 	}
 	idx, err := m.Store.LoadIndex()
 	if err != nil {

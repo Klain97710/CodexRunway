@@ -168,6 +168,8 @@ func netCredentials(c *ProxyCredentials) *netx.Credentials {
 func OpenFolder(path string) { openFolder(path) }
 
 type liveApp struct {
+	home           string
+	features       personal.Features
 	preferenceWork livePreferenceWork
 	svc            *runway.Service
 	codex          *codex.Store
@@ -293,6 +295,7 @@ func newRuntime(opts BackgroundOptions) *liveApp {
 		SystemLanguages: langs,
 	})
 	rt := &liveApp{
+		home: home, features: opts.Features,
 		svc: svc, codex: codexStore, grokMod: mod, grok: bridge, claudeMod: cmod, claudeB: cbridge, reset: reset,
 		repo: repo, widgets: widgets, dispatch: dispatch, widgetDispatch: widgetUI, alertDispatch: alertUI, version: opts.Version, langs: langs,
 	}
@@ -660,12 +663,14 @@ type grokBridge struct {
 	mu         sync.Mutex
 	onChange   func()
 	state      runway.GrokState
+	refreshes  int
 	lc         l10n.Localizer
 	prefs      store.Preferences
 	local      *grok.SessionUsageSummary
 	localRange store.CostRange
 	localErr   error
 	speed      *speed.Report
+	speedErr   error
 	generation uint64
 	refreshMu  sync.Mutex
 	scanMu     sync.Mutex
@@ -689,6 +694,8 @@ func (g *grokBridge) State(now time.Time) runway.GrokState {
 }
 
 func (g *grokBridge) Refresh(ctx context.Context) error {
+	g.changeRefreshing(1)
+	defer g.changeRefreshing(-1)
 	g.refreshMu.Lock()
 	defer g.refreshMu.Unlock()
 	if ctx.Err() != nil {
@@ -703,6 +710,8 @@ func (g *grokBridge) Refresh(ctx context.Context) error {
 
 // RefreshLocal rescans the local Grok sessions without touching the quota.
 func (g *grokBridge) RefreshLocal(ctx context.Context) error {
+	g.changeRefreshing(1)
+	defer g.changeRefreshing(-1)
 	g.scanMu.Lock()
 	defer g.scanMu.Unlock()
 	if ctx.Err() != nil {
@@ -731,6 +740,7 @@ func (g *grokBridge) setPreferences(p store.Preferences, langs []string) {
 	}
 	if speedChanged && !p.ShowsSpeedAnalysis {
 		g.speed = nil
+		g.speedErr = nil
 	}
 	if rangeChanged {
 		g.state.Cost = nil
@@ -750,6 +760,7 @@ func (g *grokBridge) reload(notify bool) {
 	g.mu.Unlock()
 	next := buildGrokState(mod, lc)
 	g.mu.Lock()
+	next.Refreshing = g.refreshes > 0
 	g.relabelLocked(&next)
 	applyGrokLocal(&next, g.local)
 	if g.prefs.ShowsSpeedAnalysis {
@@ -773,11 +784,15 @@ func (g *grokBridge) reload(notify bool) {
 // before the language changed; preferences themselves never reread the index.
 func (g *grokBridge) relabelLocked(st *runway.GrokState) {
 	st.LastError = grokErrorText(g.lc, st.Availability)
+	st.SpeedError = ""
 	if snap, ok := st.Detail.(*grok.BillingSnapshot); ok {
 		st.Meters = grokMeters(g.lc, *snap, st.UpdatedAt)
 	}
 	if g.localErr != nil {
 		st.LastError = g.lc.Text(l10n.KeyStatusError) + ": " + g.localErr.Error()
+	}
+	if g.prefs.ShowsSpeedAnalysis && g.speedErr != nil {
+		st.SpeedError = g.speedErr.Error()
 	}
 }
 
@@ -1009,7 +1024,12 @@ func meterQuota(m runway.Meter) export.WidgetQuota {
 		t := m.ResetsAt
 		reset = &t
 	}
-	return export.NewWidgetQuota(m.Title, mins, src, m.UsedPercent, m.RemainingPercent, reset)
+	q := export.NewWidgetQuota(m.Title, mins, src, m.UsedPercent, m.RemainingPercent, reset)
+	if m.ValueText != "" {
+		v := m.ValueText
+		q.ValueText = &v
+	}
+	return q
 }
 
 type resetBridge struct {

@@ -48,9 +48,11 @@ func (a *App) claudeAccountCard(c *ui.Context, l l10n.Localizer, prefs store.Pre
 		case acc.RequiresReauth:
 			accountStatusLine(c, l.Text(l10n.KeyClaudeReauthRequired), sys(c.Theme(), sysRed))
 		case acc.LastError != "":
-			accountStatusLine(c, acc.LastError, sys(c.Theme(), sysOrange))
+			accountStatusLine(c, privateSiteText(priv, acc.LastError, acc.APIBaseURL), sys(c.Theme(), sysOrange))
 		}
-		if hasQuota && quota.Title != "" {
+		if acc.IsRelay() {
+			apiBalanceBlock(c, l, acc.APIQuota, current)
+		} else if hasQuota && quota.Title != "" {
 			accountMeter(c, l, claudeAccountMeter(quota, current))
 		} else {
 			calloutDim(c, l.Text(l10n.KeyClaudeNoQuotaData)).FontSize(fsCaption)
@@ -80,7 +82,9 @@ func (a *App) claudeCardHeader(c *ui.Context, l l10n.Localizer, acc codex.Manage
 				if current {
 					runwayTagPadded(c, l.Text(l10n.KeyAccountsCurrent), toneGreen, 1, 5)
 				}
-				if q.Plan != "" {
+				if acc.IsRelay() {
+					apiTierBadge(c, l)
+				} else if q.Plan != "" {
 					tierBadgePadded(c, claudeTierLook(t, claude.TierResolve(q.Plan)), q.Plan, 1, 5)
 				}
 				if acc.Email != "" && acc.Email != name {
@@ -109,7 +113,7 @@ func (a *App) claudeCardActions(c *ui.Context, l l10n.Localizer, acc codex.Manag
 		open := st.switchID == acc.ID
 		id := acc.ID
 		confirmPopover(c, l, tick, &open, l.Text(l10n.KeyAccountsSwitchConfirmTitle),
-			l.Textf(l10n.KeyClaudeSwitchConfirmMessage, name)+"\n\n"+l.Text(l10n.KeyClaudeSwitchRisk),
+			l.Textf(l10n.KeyClaudeSwitchConfirmMessage, name)+"\n\n"+claudeSwitchNote(l, acc),
 			l.Text(l10n.KeyAccountsMakeCurrent), nil, func() {
 				a.accountsRun("", func() string { return ac.ClaudeSwitch(id) })
 			})
@@ -148,4 +152,12 @@ func (a *App) claudeManagement(c *ui.Context, l l10n.Localizer, acc codex.Manage
 			st.deleteID = ""
 		}
 	})
+}
+
+// claudeSwitchNote is the warning under a switch confirmation.
+func claudeSwitchNote(l l10n.Localizer, acc codex.ManagedAccount) string {
+	if acc.IsRelay() {
+		return tx(l, xAPIClaudeSwitchNote)
+	}
+	return l.Text(l10n.KeyClaudeSwitchRisk)
 }

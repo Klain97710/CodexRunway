@@ -31,6 +31,25 @@ func (m *Module) switchLocked(ctx context.Context, id string, allowWhileRunning 
 	if err := m.runningBlocked(ctx, allowWhileRunning); err != nil {
 		return err
 	}
+	idx, err := m.Store.LoadIndex()
+	if err != nil {
+		return err
+	}
+	target, ok := idx.Account(id)
+	if !ok {
+		return &AccountNotFoundError{ID: id}
+	}
+	if target.IsAPI() {
+		return m.switchToAPI(ctx, idx, target)
+	}
+	if prev, key, live, isAPI := m.currentAPI(idx); isAPI {
+		return m.switchFromAPI(ctx, id, prev, key, live)
+	}
+	return m.switchToOAuth(ctx, id)
+}
+
+// switchToOAuth installs a subscription account as the Claude Code login.
+func (m *Module) switchToOAuth(ctx context.Context, id string) error {
 	if _, err := m.syncOfficial(ctx); err != nil {
 		return err
 	}

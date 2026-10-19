@@ -239,6 +239,13 @@ func (a Auth) MarshalFile(existing []byte) ([]byte, error) {
 	for k, v := range a.fileObject() {
 		merged[k] = v
 	}
+	if !a.IsAPIKey() && a.OpenAIAPIKey == nil {
+		// A login replacing an API key must not leave that key behind: the
+		// key may belong to a relay and older Codex versions prefer it.
+		if _, held := merged["OPENAI_API_KEY"]; held {
+			merged["OPENAI_API_KEY"] = json.RawMessage("null")
+		}
+	}
 	if !a.IsAPIKey() {
 		merged["tokens"] = a.keepSameLoginTokenFields(previousTokens, merged["tokens"])
 	}

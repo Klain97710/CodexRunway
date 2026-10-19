@@ -32,6 +32,8 @@ func accountSettingsIdentity(c *ui.Context, l l10n.Localizer, v accountIdentityV
 			}
 			if v.provider == store.ProviderCodex {
 				tierBadgePadded(c, codexTierLook(c.Theme(), acc.Tier()), l.Text(accountTierKey(acc.Tier())), 1, 5)
+			} else if acc.IsRelay() {
+				apiTierBadge(c, l)
 			} else if v.grokQuota != nil && v.grokQuota.Plan != "" {
 				kind := grok.TierResolve(v.grokQuota.Plan)
 				tierBadgePadded(c, grokTierLook(c.Theme(), kind), kind.DisplayName(), 1, 5)
@@ -64,9 +66,21 @@ func accountSettingsStatus(c *ui.Context, l l10n.Localizer, v accountIdentityVie
 		}
 		ui.Text(c, l.Text(key)).FontSize(11).TextColor(c.Theme().Danger)
 	case acc.LastError != "":
-		ui.Text(c, accountDiagnosticText(acc.LastError, v.privacy)).FontSize(11).TextColor(sys(c.Theme(), sysOrange)).MaxLines(2).Tooltip(accountDiagnosticText(acc.LastError, v.privacy))
+		diag := privateSiteText(v.privacy, acc.LastError, acc.APIBaseURL)
+		ui.Text(c, diag).FontSize(11).TextColor(sys(c.Theme(), sysOrange)).MaxLines(2).Tooltip(diag)
+	case acc.IsRelay():
+		if text := apiBalanceSummary(l, acc.APIQuota); text != "" {
+			dimText(c, text).MaxLines(2)
+		}
 	case v.provider == store.ProviderClaude && v.claudeQuota != nil:
 		q := v.claudeQuota
+		if q.Title == "" {
+			dimText(c, l.Text(l10n.KeyClaudeNoQuotaData))
+			if q.ExtraUsage != "" {
+				dimText(c, q.ExtraUsage)
+			}
+			return
+		}
 		percent := fmt.Sprintf("%d%% %s", max(0, min(100, 100-q.UsedPercent)), l.Text(l10n.KeyLeft))
 		text := accountUpdatedSummary(l, percent, q.UpdatedAt)
 		if q.ExtraUsage != "" {

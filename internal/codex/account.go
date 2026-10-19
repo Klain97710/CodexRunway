@@ -3,9 +3,12 @@ package codex
 import (
 	"encoding/json"
 	"errors"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/licoy/quosparr/internal/apiquota"
 )
 
 // AuthMode is how a managed account signs in.
@@ -235,7 +238,20 @@ type ManagedAccount struct {
 	RequiresReauth        bool
 	LastError             string
 	CachedQuota           *CachedAccountQuota
-	extra                 object
+	// APIBaseURL, APIModel and APIQuota describe an API relay account (an API
+	// key used against a third-party site): the normalized OpenAI-compatible
+	// base URL (ending /v1), the model written to config.toml, and the cached
+	// balance. All are empty for OAuth and plain OpenAI key accounts. APIQuota
+	// holds no secrets.
+	APIBaseURL string
+	APIModel   string
+	APIQuota   *apiquota.Quota
+	extra      object
+}
+
+// IsRelay reports an API key account bound to a third-party base URL.
+func (a ManagedAccount) IsRelay() bool {
+	return a.AuthMode == AuthModeAPIKey && a.APIBaseURL != ""
 }
 
 // ResolvedDisplayName is the name to show: alias, display name, email,
@@ -319,26 +335,62 @@ func NewManagedAccount(id string, auth Auth, sortIndex int, alias, note, quotaPl
 }
 
 func newAPIKeyAccount(id string, auth Auth, sortIndex int, alias, note, quotaPlan string, now time.Time) ManagedAccount {
-	fingerprint := APIKeyFingerprint(auth.APIKey())
-	accountID := "api-" + fingerprint
+	accountID := "api-" + APIKeyFingerprint(auth.APIKey())
 	if id == "" {
 		id = accountID
-	}
-	tail := []rune(fingerprint)
-	if len(tail) > 4 {
-		tail = tail[len(tail)-4:]
 	}
 	return ManagedAccount{
 		ID:          id,
 		SortIndex:   sortIndex,
 		AuthMode:    AuthModeAPIKey,
 		AccountID:   accountID,
-		DisplayName: "API ···" + string(tail),
+		DisplayName: apiAccountName(accountID, ""),
 		Alias:       alias,
 		Note:        note,
 		PlanType:    firstNonEmpty(quotaPlan, auth.PlanType, "api"),
 		CreatedAt:   now,
 	}
+}
+
+// apiAccountName is the default name of an API key row: "API ···<last 4 of the
+// key fingerprint>", or "<host> ···<last 4>" for a relay. accountID is the
+// "api-<fingerprint>" value.
+func apiAccountName(accountID, baseURL string) string {
+	tail := []rune(strings.TrimPrefix(accountID, "api-"))
+	if len(tail) > 4 {
+		tail = tail[len(tail)-4:]
+	}
+	label := "API"
+	if u, err := url.Parse(baseURL); err == nil && baseURL != "" && u.Hostname() != "" {
+		label = u.Hostname()
+	}
+	return label + " ···" + string(tail)
+}
+
+// withRelayProfile returns a with the relay profile set; an empty base URL
+// makes it a plain API key account again. The balance cache is dropped when
+// the base URL changes. The generated display name follows the profile; an
+// alias, stored separately, still wins at display time.
+func (a ManagedAccount) withRelayProfile(baseURL, model string) ManagedAccount {
+	c := a
+	if baseURL != a.APIBaseURL {
+		c.APIQuota = nil
+	}
+	c.APIBaseURL, c.APIModel = baseURL, ""
+	if baseURL != "" {
+		c.APIModel = model
+	}
+	c.DisplayName = apiAccountName(a.AccountID, baseURL)
+	return c
+}
+
+// ApplyAPIQuota caches a relay balance reading. It does not touch the error
+// state of the account: a failed probe is a property of the site, not of the
+// credential.
+func (a ManagedAccount) ApplyAPIQuota(q apiquota.Quota) ManagedAccount {
+	c := a
+	c.APIQuota = &q
+	return c
 }
 
 // WithIdentity refreshes the identity fields from auth while keeping the
@@ -356,6 +408,12 @@ func (a ManagedAccount) WithIdentity(auth Auth, quotaPlan string, now time.Time)
 	c.WorkspaceName = firstNonEmpty(rebuilt.WorkspaceName, a.WorkspaceName)
 	if a.Alias == "" {
 		c.DisplayName = rebuilt.DisplayName
+		if rebuilt.AuthMode == AuthModeAPIKey {
+			c.DisplayName = apiAccountName(rebuilt.AccountID, a.APIBaseURL)
+		}
+	}
+	if rebuilt.AuthMode != AuthModeAPIKey {
+		c.APIBaseURL, c.APIModel, c.APIQuota = "", "", nil
 	}
 	c.PlanType = firstNonEmpty(quotaPlan, rebuilt.PlanType, a.PlanType)
 	c.SubscriptionExpiresAt = rebuilt.SubscriptionExpiresAt
@@ -414,6 +472,11 @@ func (a ManagedAccount) MarshalJSON() ([]byte, error) {
 	if a.CachedQuota != nil {
 		b.set("cachedQuota", a.CachedQuota)
 	}
+	b.str("apiBaseURL", a.APIBaseURL)
+	b.str("apiModel", a.APIModel)
+	if a.APIQuota != nil {
+		b.set("apiQuota", a.APIQuota)
+	}
 	return encodeValue(b.o)
 }
 
@@ -445,6 +508,15 @@ func (a *ManagedAccount) UnmarshalJSON(data []byte) error {
 		LastQuotaAt:           r.optTime("lastQuotaAt"),
 		RequiresReauth:        r.reqBool("requiresReauth"),
 		LastError:             r.optString("lastError"),
+		APIBaseURL:            r.optString("apiBaseURL"),
+		APIModel:              r.optString("apiModel"),
+	}
+	if raw, ok := r.raw("apiQuota"); ok {
+		// A cache is never worth failing the whole index for: drop a damaged one.
+		var q apiquota.Quota
+		if err := json.Unmarshal(raw, &q); err == nil && q.Status != "" {
+			acc.APIQuota = &q
+		}
 	}
 	if raw, ok := r.raw("cachedQuota"); ok {
 		var q CachedAccountQuota

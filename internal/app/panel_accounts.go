@@ -231,6 +231,10 @@ func (a *App) codexDeleteConfirm(c *ui.Context, l l10n.Localizer, anchor ui.Elem
 
 // codexQuotaBlock is the meters of a card, or what stands in for them.
 func codexQuotaBlock(c *ui.Context, l l10n.Localizer, acc codex.ManagedAccount, current bool) {
+	if acc.IsRelay() {
+		apiBalanceBlock(c, l, acc.APIQuota, current)
+		return
+	}
 	if q := acc.CachedQuota; q != nil {
 		ui.Column(c).Gap(8).Children(func() {
 			for _, row := range q.MeterRows() {

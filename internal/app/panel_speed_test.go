@@ -159,7 +159,7 @@ func TestPanelSpeedLoadingErrorAndEmptyStates(t *testing.T) {
 		snap := speedSnapshot(nil)
 		snap.Refresh.Sections = []runway.Section{runway.SectionSpeed}
 		_, tt := speedPanel(t, nil, snap, PanelActions{})
-		if !hasExact(tt, l.Text(l10n.KeyCalculating)) {
+		if !hasExact(tt, tx(l, xPanelLoading)) {
 			t.Fatalf("texts %q", tt.Texts())
 		}
 	})
@@ -167,7 +167,7 @@ func TestPanelSpeedLoadingErrorAndEmptyStates(t *testing.T) {
 		snap := speedSnapshot(nil)
 		snap.Grok = runway.GrokState{Refreshing: true}
 		_, tt := speedPanel(t, func(p *store.Preferences) { p.SelectedProvider = store.ProviderGrok }, snap, PanelActions{})
-		if !hasExact(tt, l.Text(l10n.KeyCalculating)) {
+		if !hasExact(tt, tx(l, xPanelLoading)) {
 			t.Fatalf("texts %q", tt.Texts())
 		}
 	})
@@ -251,6 +251,14 @@ func TestPanelSpeedDetailEmptyAndErrorStates(t *testing.T) {
 			}
 		})
 	}
+	snap := speedSnapshot(&speed.Report{})
+	snap.Codex.SpeedError = "sessions folder unreadable"
+	a, tt := speedPanel(t, nil, snap, PanelActions{})
+	a.panelState.detail = store.ModuleSpeedAnalysis
+	tt.Frame()
+	if !hasExact(tt, tx(l, xSpeedEmpty)) || !hasExact(tt, snap.Codex.SpeedError) {
+		t.Fatalf("empty report detail dropped its error; texts %q", tt.Texts())
+	}
 }
 
 func TestPanelSpeedGrokDetailUsesGrokReport(t *testing.T) {
@@ -261,6 +269,21 @@ func TestPanelSpeedGrokDetailUsesGrokReport(t *testing.T) {
 	tt.Frame()
 	if !tt.HasText("gpt-4.1") || tt.HasText("codex-only-model") {
 		t.Fatalf("Grok detail does not show the Grok report; texts %q", tt.Texts())
+	}
+}
+
+func TestProviderSpeedErrorsFollowTheSelectedProvider(t *testing.T) {
+	l := l10n.New(l10n.English)
+	snap := speedSnapshot(nil)
+	snap.Grok.SpeedError = "grok sessions unreadable"
+	snap.Claude.SpeedError = "claude sessions unreadable"
+	snap.Provider = store.ProviderGrok
+	if got := providerView(l, snap, store.CostRangeCurrent).SpeedError; got != snap.Grok.SpeedError {
+		t.Fatalf("Grok speed error = %q", got)
+	}
+	snap.Provider = store.ProviderClaude
+	if got := providerView(l, snap, store.CostRangeCurrent).SpeedError; got != snap.Claude.SpeedError {
+		t.Fatalf("Claude speed error = %q", got)
 	}
 }
 
@@ -283,6 +306,9 @@ func TestPanelSpeedClaudeHidesTTFT(t *testing.T) {
 	}
 	if !hasExact(tt, "36") || !tt.HasText(tx(l, xSpeedInfoNoTTFT)) {
 		t.Fatalf("Claude speed detail misses the rate or the note; texts %q", tt.Texts())
+	}
+	if !tt.HasText(tx(l, xSpeedInfoOutput)) {
+		t.Fatalf("Claude speed detail misses its end-to-end timing formula; texts %q", tt.Texts())
 	}
 }
 

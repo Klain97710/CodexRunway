@@ -2,8 +2,10 @@ package runway
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/licoy/quosparr/internal/apiquota"
 	"github.com/licoy/quosparr/internal/export"
 	"github.com/licoy/quosparr/internal/export/swiftjson"
 	"github.com/licoy/quosparr/internal/personal"
@@ -20,7 +22,12 @@ func widgetQuota(m Meter) export.WidgetQuota {
 	if m.Source == SourceModelSpecific {
 		src = export.QuotaModelSpecific
 	}
-	return export.NewWidgetQuota(m.Title, mins, src, m.UsedPercent, m.RemainingPercent, timePtr(m.ResetsAt))
+	q := export.NewWidgetQuota(m.Title, mins, src, m.UsedPercent, m.RemainingPercent, timePtr(m.ResetsAt))
+	if m.ValueText != "" {
+		v := m.ValueText
+		q.ValueText = &v
+	}
+	return q
 }
 
 func widgetDailyTokens(m map[string]int64) []export.DailyTokens {
@@ -43,7 +50,8 @@ func floatDecimal(f float64) *swiftjson.Decimal {
 func codexWidgetProvider(c CodexView) export.ProviderSnapshot {
 	p := export.ProviderSnapshot{Provider: export.ProviderCodex, TokenSource: export.TokensThisMac}
 	switch {
-	case c.Quota != nil:
+	case c.Quota != nil, c.APIKeyMode:
+		// An API key has no quota to wait for; its balance, if any, is below.
 		p.Availability = export.Available
 	case c.Authenticated:
 		p.Availability = export.Unavailable
@@ -60,6 +68,7 @@ func codexWidgetProvider(c CodexView) export.ProviderSnapshot {
 			p.BalanceUSD = floatDecimal(*c.Quota.CreditsBalance)
 		}
 	}
+	setAPIBalance(&p, c.APIBalance)
 	for _, m := range c.Meters {
 		p.Quota = append(p.Quota, widgetQuota(m))
 	}
@@ -76,6 +85,22 @@ func codexWidgetProvider(c CodexView) export.ProviderSnapshot {
 		p.ResetCredits = &r
 	}
 	return export.NewProviderSnapshot(p)
+}
+
+// setAPIBalance puts an API relay balance on the provider: the text in the
+// site's own unit, and the number only when that unit is US dollars.
+func setAPIBalance(p *export.ProviderSnapshot, q *apiquota.Quota) {
+	if q == nil {
+		return
+	}
+	text := APIBalanceText(*q)
+	if text == "" {
+		return
+	}
+	p.BalanceText = &text
+	if !q.Unlimited && q.Remaining != nil && (q.Unit == "" || strings.EqualFold(q.Unit, apiquota.UnitUSD)) {
+		p.BalanceUSD = floatDecimal(*q.Remaining)
+	}
 }
 
 // grokWidgetProvider is the Grok block: the provider's own block, or an

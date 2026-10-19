@@ -91,7 +91,7 @@ func rawInt64(raw json.RawMessage) (int64, bool) {
 
 // rejectTokenKeys reports an error when data contains credential key names.
 func rejectTokenKeys(data []byte) error {
-	if bytes.Contains(data, []byte(`"accessToken"`)) || bytes.Contains(data, []byte(`"refreshToken"`)) {
+	if bytes.Contains(data, []byte(`"accessToken"`)) || bytes.Contains(data, []byte(`"refreshToken"`)) || bytes.Contains(data, []byte(`"apiKey"`)) {
 		return errors.New("claude: account index must not contain tokens")
 	}
 	return nil

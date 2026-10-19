@@ -25,6 +25,8 @@ type usageRecord struct {
 	sessionID string
 	at        time.Time
 	hasTime   bool
+	firstAt   time.Time
+	hasFirst  bool
 	parent    time.Time
 	hasParent bool
 	model     string
@@ -84,7 +86,9 @@ func (s SessionScanner) collect(ctx context.Context, limit int, since time.Time)
 		part, ok := s.Cache.get(file)
 		if !ok {
 			part = newScanSink(file.path)
-			part.readFile(ctx, file.path, file.mtime)
+			if err := part.readFile(ctx, file.path, file.mtime); err != nil {
+				return nil, err
+			}
 			if err := ctx.Err(); err != nil {
 				return nil, err
 			}
@@ -146,11 +150,11 @@ func walkProjects(ctx context.Context, root string) ([]sessionFile, error) {
 	}
 	var files []sessionFile
 	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return nil
-		}
 		if ctx.Err() != nil {
 			return ctx.Err()
+		}
+		if err != nil {
+			return err
 		}
 		if d.IsDir() {
 			if path != root && excludedSessionDir(d.Name()) {
@@ -163,7 +167,7 @@ func walkProjects(ctx context.Context, root string) ([]sessionFile, error) {
 		}
 		info, err := d.Info()
 		if err != nil {
-			return nil
+			return err
 		}
 		files = append(files, sessionFile{path: path, size: info.Size(), mtime: info.ModTime()})
 		return nil
@@ -183,31 +187,32 @@ func excludedSessionDir(name string) bool {
 // readFile parses one log. The context is checked every few thousand lines
 // so a cancelled refresh does not finish a large file. A last line without a
 // newline may still be being written; it is not counted as malformed.
-func (sink *scanSink) readFile(ctx context.Context, path string, mtime time.Time) {
+func (sink *scanSink) readFile(ctx context.Context, path string, mtime time.Time) error {
 	f, err := os.Open(path)
 	if err != nil {
-		sink.bad++
-		return
+		return err
 	}
 	defer f.Close()
 	br := bufio.NewReader(f)
 	var parent time.Time
 	var hasParent bool
 	for n := 1; ; n++ {
-		if n%4096 == 0 && ctx.Err() != nil {
-			return
+		if n%4096 == 0 {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
 		}
 		line, tooLong, err := readLogicalLine(br, maxJSONLLine)
+		if err != nil && err != io.EOF {
+			return err
+		}
 		if tooLong {
 			sink.bad++
 		} else if len(bytes.TrimSpace(line)) > 0 {
 			sink.consume(line, mtime, &parent, &hasParent, err == io.EOF)
 		}
 		if err != nil {
-			if err != io.EOF {
-				sink.bad++
-			}
-			return
+			return nil
 		}
 	}
 }
@@ -314,7 +319,8 @@ func (sink *scanSink) consume(line []byte, mtime time.Time, parent *time.Time, h
 		return
 	}
 	rec := usageRecord{
-		sessionID: sessionID, at: at, hasTime: hasTime, parent: *parent, hasParent: *hasParent,
+		sessionID: sessionID, at: at, hasTime: hasTime, firstAt: at, hasFirst: hasTime,
+		parent: *parent, hasParent: *hasParent,
 		model: NormalizeModel(row.Message.Model), effort: strings.TrimSpace(row.Effort),
 		parts: parts, tier: speedTier(row.Message.Usage.Speed), geo: geoOf(row),
 		toolUse: strings.TrimSpace(row.Message.StopReason) == "tool_use" || bytes.Contains(row.Message.Content, []byte(`"type":"tool_use"`)),
@@ -462,8 +468,8 @@ func (sink *scanSink) keep(rec usageRecord, requestID string) {
 	sink.keepKey(key, rec)
 }
 
-// keepKey stores one record per message. The fullest line wins, and the
-// message asked for a tool when any of its lines did.
+// keepKey stores one record per message. The fullest line wins, the earliest
+// assistant line supplies request timing, and tool use is merged across lines.
 func (sink *scanSink) keepKey(key string, rec usageRecord) {
 	prev, ok := sink.kept[key]
 	if !ok {
@@ -472,9 +478,40 @@ func (sink *scanSink) keepKey(key string, rec usageRecord) {
 		return
 	}
 	toolUse := prev.toolUse || rec.toolUse
+	firstAt, hasFirst, parent, hasParent := earliestRequest(prev, rec)
 	if preferRecord(rec, prev) {
 		prev = rec
 	}
 	prev.toolUse = toolUse
+	prev.firstAt, prev.hasFirst = firstAt, hasFirst
+	prev.parent, prev.hasParent = parent, hasParent
 	sink.kept[key] = prev
+}
+
+func earliestRequest(a, b usageRecord) (time.Time, bool, time.Time, bool) {
+	switch {
+	case a.hasFirst && b.hasFirst && a.firstAt.Before(b.firstAt):
+		return a.firstAt, true, a.parent, a.hasParent
+	case a.hasFirst && b.hasFirst && b.firstAt.Before(a.firstAt):
+		return b.firstAt, true, b.parent, b.hasParent
+	case a.hasFirst && b.hasFirst:
+		parent, ok := earliestKnownTime(a.parent, a.hasParent, b.parent, b.hasParent)
+		return a.firstAt, true, parent, ok
+	case a.hasFirst:
+		return a.firstAt, true, a.parent, a.hasParent
+	case b.hasFirst:
+		return b.firstAt, true, b.parent, b.hasParent
+	default:
+		return time.Time{}, false, time.Time{}, false
+	}
+}
+
+func earliestKnownTime(a time.Time, hasA bool, b time.Time, hasB bool) (time.Time, bool) {
+	if !hasA {
+		return b, hasB
+	}
+	if !hasB || a.Before(b) {
+		return a, true
+	}
+	return b, true
 }

@@ -100,10 +100,9 @@ func TestPanelMetallicBadgeActuallyAnimates(t *testing.T) {
 		ui.Row(c).Padding(10).Children(func() { tierBadge(c, codexTierLook(c.Theme(), codex.TierPro200), "Pro 200") })
 	}, 150, 45)
 	before := append([]byte(nil), tt.Image().Pix...)
-	deadline := time.Now().Add(4 * time.Second)
-	for time.Now().Before(deadline) {
-		time.Sleep(50 * time.Millisecond)
-		tt.Frame()
+	deadline := tt.Now().Add(4 * time.Second)
+	for tt.Now().Before(deadline) {
+		tt.Advance(50 * time.Millisecond)
 		if !bytes.Equal(before, tt.Image().Pix) {
 			return
 		}
@@ -117,8 +116,7 @@ func TestPanelMetallicBadgeRespectsReduceMotion(t *testing.T) {
 	}, 150, 45)
 	tt.SetPreferences(ui.Preferences{ReduceMotion: true})
 	before := append([]byte(nil), tt.Image().Pix...)
-	time.Sleep(100 * time.Millisecond)
-	tt.Frame()
+	tt.Advance(100 * time.Millisecond)
 	if !bytes.Equal(before, tt.Image().Pix) {
 		t.Fatal("badge animated with Reduce Motion enabled")
 	}

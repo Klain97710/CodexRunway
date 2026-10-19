@@ -118,6 +118,9 @@ func (u *settingsUI) cancelAccountTask() {
 	if u.accounts != nil && u.accounts.cancel != nil {
 		u.accounts.cancel()
 	}
+	if u.skills != nil {
+		u.skills.cancelTasks()
+	}
 }
 
 func (u *settingsUI) startGrokLogin(f *accountForm, rt *liveApp) {

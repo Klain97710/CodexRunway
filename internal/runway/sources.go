@@ -5,9 +5,11 @@ import (
 	"errors"
 	"time"
 
+	"github.com/licoy/quosparr/internal/apiquota"
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/codexapi"
 	"github.com/licoy/quosparr/internal/export/swiftjson"
+	"github.com/licoy/quosparr/internal/netx"
 	"github.com/licoy/quosparr/internal/sessions"
 	"github.com/licoy/quosparr/internal/speed"
 	"github.com/licoy/quosparr/internal/usage"
@@ -85,6 +87,13 @@ type Sources struct {
 	RecordAuth        func(auth codex.Auth, quotaPlan string, now time.Time) error
 	OfficialUsability func(now time.Time) (codex.Usability, bool)
 
+	// FetchAPIQuota (optional) probes the balance of an API relay site; it
+	// never fails, the outcome is in Quota.Status. LoadAPIKey (optional) reads
+	// the API key of a managed account for it. Both are needed to poll relay
+	// accounts other than the current login; the key must never be logged.
+	FetchAPIQuota func(ctx context.Context, baseURL, apiKey string) apiquota.Quota
+	LoadAPIKey    func(id string) (string, error)
+
 	// SwitchAccount installs a managed account as the official login.
 	SwitchAccount func(ctx context.Context, id string) (codex.SwitchResult, error)
 	// RefreshAccounts / RefreshAccount poll the quota of managed accounts.
@@ -154,9 +163,11 @@ func NewLiveSources(cfg LiveConfig) Sources {
 			idx, _, err := cfg.Store.SyncFromOfficialAuth(now)
 			return idx, err
 		},
-		LoadIndex:   cfg.Store.LoadIndex,
-		SaveAccount: cfg.Store.UpdateMetadata,
-		RecordAuth:  l.recordAuth,
+		LoadIndex:     cfg.Store.LoadIndex,
+		SaveAccount:   cfg.Store.UpdateMetadata,
+		RecordAuth:    l.recordAuth,
+		FetchAPIQuota: l.fetchAPIQuota,
+		LoadAPIKey:    l.loadAPIKey,
 		OfficialUsability: func(now time.Time) (codex.Usability, bool) {
 			a, err := cfg.Store.LoadOfficialAuth()
 			if err != nil {
@@ -332,6 +343,29 @@ func (l *live) fetchProfile(ctx context.Context, a codexapi.Auth) (usage.Profile
 		days[d] = int64(n)
 	}
 	return usage.ProfileTokenUsage{DailyTokens: days, StatsAsOf: p.StatsAsOf, GeneratedAt: p.GeneratedAt}, nil
+}
+
+// fetchAPIQuota probes a relay site through the proxied client. There is no
+// direct fallback: a broken proxy setting is reported, never bypassed.
+func (l *live) fetchAPIQuota(ctx context.Context, baseURL, apiKey string) apiquota.Quota {
+	now := l.Now()
+	client, err := netx.ClientFor(ctx, netx.WithoutCookies)
+	if err != nil {
+		return apiquota.Quota{Status: apiquota.StatusError, Error: err.Error(), FetchedAt: now}
+	}
+	return apiquota.Probe(ctx, client, baseURL, apiKey, now)
+}
+
+// loadAPIKey reads the API key of a managed account.
+func (l *live) loadAPIKey(id string) (string, error) {
+	auth, err := l.Store.LoadCredential(id)
+	if err != nil {
+		return "", err
+	}
+	if !auth.IsAPIKey() || auth.APIKey() == "" {
+		return "", codex.ErrInvalidCredential
+	}
+	return auth.APIKey(), nil
 }
 
 func (l *live) scanCost(ctx context.Context, q []usage.Query, at time.Time, p usage.RefreshPolicy, progress *usage.ProgressReporter) (map[string]usage.Summary, error) {

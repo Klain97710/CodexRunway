@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -117,6 +118,21 @@ func expiryBadge(c *ui.Context, l l10n.Localizer, expiresAt, now time.Time) {
 			ui.Text(c, remaining).FontSize(fsCaption).FontWeight(500).FontFeatures("tnum").TextColor(dataInk).NoWrap().Shrink(0)
 		})
 	})
+}
+
+// codexCreditsBalance returns the ChatGPT credits balance from the Codex
+// quota snapshot when the usage payload exposed one. A zero balance is
+// hidden so plans without credits do not show an empty chip.
+func codexCreditsBalance(snap runway.Snapshot) (float64, bool) {
+	q := snap.Codex.Quota
+	if q == nil || q.CreditsBalance == nil || *q.CreditsBalance == 0 {
+		return 0, false
+	}
+	return *q.CreditsBalance, true
+}
+
+func creditsBalanceAmount(balance float64) string {
+	return fmt.Sprintf("%.2f", balance)
 }
 
 // countdownRing draws the remaining fraction of the billing month as a tiny

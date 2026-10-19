@@ -1,4 +1,4 @@
-// Package arm64 holds the pinned Windows ARM64 SQLite runtime from mygo v0.4.8.
+// Package arm64 holds the pinned Windows ARM64 SQLite runtime from mygo v0.5.5.
 package arm64
 
 import _ "embed"

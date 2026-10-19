@@ -24,6 +24,8 @@ func (a *App) panelView(c *ui.Context) {
 	a.syncPanelAccount(snap, prefs)
 	a.panelState.setChartStyle = func(s store.ChartStyle) { a.settings.SetTokenUsageChartStyle(s) }
 	a.panelState.setResetTimeFormat = func(f store.ResetTimeFormat) { a.settings.SetQuotaResetTimeFormat(f) }
+	a.panelState.syncSkills = a.syncSkills
+	a.panelState.refreshSkills = a.startSkillsQuery
 	ui.Column(c).Fill().Background(t.Background).Children(func() {
 		if a.panelState.detail != "" {
 			a.panelDetailPage(c, l, prefs, snap, acts)
@@ -49,10 +51,7 @@ func (a *App) syncPanelContext(prefs store.Preferences) {
 
 // syncPanelAccount cancels detail work when the account or its state generation changed.
 func (a *App) syncPanelAccount(snap runway.Snapshot, prefs store.Preferences) {
-	account := snap.Accounts.ActiveID
-	if prefs.SelectedProvider == store.ProviderGrok {
-		account = snap.Grok.Accounts.ActiveID
-	}
+	account := activePanelAccount(snap, prefs.SelectedProvider)
 	generation := activePanelGeneration(snap, prefs.SelectedProvider)
 	if a.panelState.account != account || a.panelState.accountGeneration != generation {
 		a.cancelPanelDetails()

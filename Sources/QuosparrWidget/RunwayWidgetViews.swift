@@ -58,7 +58,7 @@ struct RunwayOverviewWidgetView: View {
                     HStack(spacing: 14) {
                         extra(l10n.text(.widgetCost), runwayMoney(provider.apiEquivalentCostUSD) ?? "—")
                         extra(l10n.text(.tokens), runwayCompactNumber(provider.tokenTotal(limit: 30)))
-                        extra(l10n.text(.widgetBalance), runwayMoney(provider.balanceUSD) ?? "—")
+                        extra(l10n.text(.widgetBalance), provider.balanceText ?? runwayMoney(provider.balanceUSD) ?? "—")
                         if let resets = provider.resetCredits {
                             extra(l10n.text(.widgetResetCredits), "\(resets.availableCount)")
                         }
@@ -204,10 +204,10 @@ struct RunwayMetricWidgetView: View {
     private func metricValue(_ provider: RunwayWidgetProviderSnapshot) -> String {
         guard provider.availability == .available else { return "—" }
         return switch entry.metric {
-        case .remainingQuota: provider.primaryQuota.map { "\($0.remainingPercent)%" } ?? "—"
+        case .remainingQuota: provider.primaryQuota.map { $0.valueText ?? "\($0.remainingPercent)%" } ?? "—"
         case .apiEquivalentCost: runwayMoney(provider.apiEquivalentCostUSD) ?? "—"
         case .tokenCount: runwayCompactNumber(provider.tokenTotal(limit: 30))
-        case .balance: runwayMoney(provider.balanceUSD) ?? "—"
+        case .balance: provider.balanceText ?? runwayMoney(provider.balanceUSD) ?? "—"
         }
     }
 

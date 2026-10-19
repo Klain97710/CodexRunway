@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/licoy/quosparr/internal/platform"
 )
 
 // Chat-proxy identity headers. The values match the local Grok CLI.
@@ -85,7 +87,9 @@ func defaultClientVersion() string {
 func readGrokVersion() string {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	out, err := exec.CommandContext(ctx, "grok", "--no-auto-update", "--version").Output()
+	cmd := exec.CommandContext(ctx, "grok", "--no-auto-update", "--version")
+	platform.HideConsoleWindow(cmd)
+	out, err := cmd.Output()
 	if err != nil {
 		return fallbackClientVersion
 	}

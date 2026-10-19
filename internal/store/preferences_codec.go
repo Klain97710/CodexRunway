@@ -81,6 +81,8 @@ func readPreferences(r *reader) Preferences {
 	p.QuotaResetTimeFormat = readResetTimeFormat(r, "quotaResetTimeFormat")
 	p.ProxyTestURL = readProxyTestURL(r, "proxyTestURL")
 	p.ShowsSpeedAnalysis = r.bool("showsSpeedAnalysis", p.ShowsSpeedAnalysis)
+	p.ShowsCreditsBalance = r.bool("showsCreditsBalance", p.ShowsCreditsBalance)
+	p.ShowsSkills = r.bool("showsSkills", p.ShowsSkills)
 	p.FloatingWindow = readFloatingWindow(r, "floatingWindow")
 	p.PanelProviders = readPanelProviders(r, "panelProviders")
 	return p
@@ -137,6 +139,12 @@ func (p Preferences) omitGoOnlyDefaults(m fields) {
 	if p.ShowsSpeedAnalysis {
 		delete(m, "showsSpeedAnalysis")
 	}
+	if p.ShowsCreditsBalance {
+		delete(m, "showsCreditsBalance")
+	}
+	if p.ShowsSkills {
+		delete(m, "showsSkills")
+	}
 	order := wireModuleOrder(p.MainPanelModuleOrder)
 	if len(order) == len(p.MainPanelModuleOrder) {
 		return
@@ -147,20 +155,21 @@ func (p Preferences) omitGoOnlyDefaults(m fields) {
 }
 
 // goOnlyModules are the modules the Swift app has no case for.
-var goOnlyModules = []Module{ModuleSpeedAnalysis}
+var goOnlyModules = []Module{ModuleSpeedAnalysis, ModuleSkills}
 
 // wireModuleOrder is the order as written: a Go-only module that
 // NormalizeModuleOrder would put at its place again is left out, so the Swift
 // app, which drops module names it does not know, still sees the order it
 // wrote. A module the user moved elsewhere stays in.
 func wireModuleOrder(order []Module) []Module {
+	full := order
 	for _, m := range goOnlyModules {
 		at := slices.Index(order, m)
 		if at < 0 {
 			continue
 		}
 		rest := slices.Delete(slices.Clone(order), at, at+1)
-		if slices.Equal(NormalizeModuleOrder(rest), order) {
+		if slices.Equal(NormalizeModuleOrder(rest), full) {
 			order = rest
 		}
 	}

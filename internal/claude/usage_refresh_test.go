@@ -73,7 +73,7 @@ func TestParseUsageLimitsAndFlat(t *testing.T) {
 func TestUsageClientHeadersAndStatus(t *testing.T) {
 	var sawQuery bool
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.RawQuery != "" || strings.Contains(r.URL.RequestURI(), "skip_spend") {
+		if r.URL.RawQuery != "cedar_ember=1" || strings.Contains(r.URL.RequestURI(), "skip_spend") {
 			sawQuery = true
 		}
 		wantUA := "claude-cli/2.1.299 (external, cli)"

@@ -15,6 +15,9 @@ type officialLogin struct {
 	ID    string
 	Data  []byte
 	Known bool
+	// API is set when settings.json names a managed API account: the OAuth
+	// login was not looked at and ID is that account.
+	API bool
 }
 
 // Sync makes the library follow the Claude Code login: a login of a known
@@ -32,9 +35,34 @@ func (m *Module) syncOfficial(ctx context.Context) (officialLogin, error) {
 	if err != nil {
 		return officialLogin{}, err
 	}
+	// An API account in settings.json outranks the subscription login: it is
+	// what Claude Code uses. A relay the library does not know yet is added
+	// first; the subscription login is not imported or overwritten then.
+	if idx, err = m.importAPISettings(idx); err != nil {
+		return officialLogin{}, err
+	}
+	if login, ok, err := m.followAPISettings(idx); ok || err != nil {
+		return login, err
+	}
+	// settings.json holds no managed API account any more (the env was removed
+	// by hand): an API account the index still calls current is stale, and the
+	// library goes back to following the subscription login.
+	if cur, found := idx.Account(idx.CurrentAccountID); found && cur.IsAPI() {
+		if err := m.Store.SetCurrentAccountID("", m.now()); err != nil {
+			return officialLogin{}, err
+		}
+		idx.CurrentAccountID = ""
+	}
+	return m.syncOAuth(ctx, idx, true)
+}
+
+// syncOAuth reads the Claude Code subscription login. follow makes the login
+// current (and clears the current id when there is none); without it the login
+// is only stored.
+func (m *Module) syncOAuth(ctx context.Context, idx AccountIndex, follow bool) (officialLogin, error) {
 	data, err := m.Store.LoadOfficial(ctx)
 	if errors.Is(err, ErrNotLoggedIn) {
-		if idx.CurrentAccountID != "" {
+		if follow && idx.CurrentAccountID != "" {
 			if err := m.Store.SetCurrentAccountID("", m.now()); err != nil {
 				return officialLogin{}, err
 			}
@@ -56,7 +84,7 @@ func (m *Module) syncOfficial(ctx context.Context) (officialLogin, error) {
 		return officialLogin{ID: id, Data: data, Known: true}, nil
 	}
 	acc, err := m.Store.Upsert(data, identity, UpsertOptions{
-		MakeCurrent: true, PreserveRefreshFailure: id == idx.CurrentAccountID, Now: m.now(),
+		MakeCurrent: follow, PreserveRefreshFailure: id == idx.CurrentAccountID, Now: m.now(),
 	})
 	if err != nil {
 		return officialLogin{}, err

@@ -50,13 +50,16 @@ type WidgetQuota struct {
 	UsedPercent      int         `json:"usedPercent"`
 	RemainingPercent int         `json:"remainingPercent"`
 	ResetsAt         *time.Time  `json:"resetsAt,omitempty"`
+	// ValueText is the balance amount of an API relay row, shown instead of
+	// the percentage.
+	ValueText *string `json:"valueText,omitempty"`
 }
 
 func clamp(v, lo, hi int) int { return max(lo, min(hi, v)) }
 
 // NewWidgetQuota clamps both percentages to 0..100.
 func NewWidgetQuota(title string, windowMinutes *int, source QuotaSource, used, remaining int, resetsAt *time.Time) WidgetQuota {
-	return WidgetQuota{title, windowMinutes, source, clamp(used, 0, 100), clamp(remaining, 0, 100), resetsAt}
+	return WidgetQuota{title, windowMinutes, source, clamp(used, 0, 100), clamp(remaining, 0, 100), resetsAt, nil}
 }
 
 // DailyTokens is the token count of one day ("2026-08-06").
@@ -81,12 +84,15 @@ func NewResetCredits(available, expiring int) ResetCredits {
 
 // ProviderSnapshot is everything a widget shows about one provider.
 type ProviderSnapshot struct {
-	Provider             Provider           `json:"provider"`
-	Availability         Availability       `json:"availability"`
-	Plan                 *string            `json:"plan,omitempty"`
-	UpdatedAt            *time.Time         `json:"updatedAt,omitempty"`
-	Quota                []WidgetQuota      `json:"quota"`
-	BalanceUSD           *swiftjson.Decimal `json:"balanceUSD,omitempty"`
+	Provider     Provider           `json:"provider"`
+	Availability Availability       `json:"availability"`
+	Plan         *string            `json:"plan,omitempty"`
+	UpdatedAt    *time.Time         `json:"updatedAt,omitempty"`
+	Quota        []WidgetQuota      `json:"quota"`
+	BalanceUSD   *swiftjson.Decimal `json:"balanceUSD,omitempty"`
+	// BalanceText is the preformatted API relay balance in its own unit;
+	// the widget prefers it over BalanceUSD.
+	BalanceText          *string            `json:"balanceText,omitempty"`
 	APIEquivalentCostUSD *swiftjson.Decimal `json:"apiEquivalentCostUSD,omitempty"`
 	TokenSource          TokenSource        `json:"tokenSource"`
 	DailyTokens          []DailyTokens      `json:"dailyTokens"`

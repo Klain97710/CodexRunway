@@ -66,7 +66,12 @@ func floatingText(p *ui.Painter, s string, f ui.Font, x, cy, maxW float32, c ui.
 	p.Glyphs(ui.Shape(s, f), x, cy-(m.Ascent+m.Descent)/2+m.Ascent, c)
 }
 
-func percentText(m runway.FloatingMeter) string { return strconv.Itoa(m.RemainingPercent) + "%" }
+func percentText(m runway.FloatingMeter) string {
+	if m.ValueText != "" {
+		return m.ValueText
+	}
+	return strconv.Itoa(m.RemainingPercent) + "%"
+}
 
 func floatingProviderIcon(p *ui.Painter, prov store.Provider, r ui.Rect, k floatingInk) {
 	switch prov {
@@ -281,6 +286,9 @@ func ringsCaption(item runway.FloatingProvider) string {
 	parts := make([]string, len(item.Meters))
 	for i, m := range item.Meters {
 		parts[i] = strconv.Itoa(m.RemainingPercent)
+		if m.ValueText != "" {
+			parts[i] = m.ValueText
+		}
 	}
 	return strings.Join(parts, " · ")
 }

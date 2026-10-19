@@ -83,6 +83,13 @@ func (s *Service) resolveCost(ctx context.Context, local *usage.Summary, r usage
 	if local != nil && local.IsDisplayableCost() {
 		return *local, nil
 	}
+	if auth.IsAPIKey() {
+		// No online analytics exist for an API key: the local logs are all.
+		if local != nil {
+			return *local, nil
+		}
+		return usage.Summary{}, ErrUsageUnavailable
+	}
 	s.reportProgress(usage.ProgressFetchingOnline())
 	sum, err := s.src.FetchDailyUsage(ctx, apiAuth(auth), r.APIStartDate, r.APIEndDate, r.Window, now)
 	if stopped(ctx, err) && (err != nil || ctx.Err() != nil) {
@@ -154,7 +161,7 @@ func (s *Service) scanCostAndHeatmap(ctx context.Context, quota codexapi.QuotaSn
 	s.mu.Unlock()
 
 	var fullP, elapsedP *usage.Window
-	if f, e, ok := cycleWindows(quota, now); ok {
+	if f, e, ok := cycleFor(auth, quota, now, loc); ok {
 		fullP, elapsedP = &f, &e
 	}
 	s.mu.Lock()
@@ -301,6 +308,9 @@ func (s *Service) heatmapStep(ctx context.Context, auth codex.Auth, gen uint64, 
 	}) {
 		return context.Canceled
 	}
+	if auth.IsAPIKey() {
+		return nil // no account-wide series exists for an API key
+	}
 	s.reportProgress(usage.ProgressFetchingOnline())
 	prof, err := s.src.FetchProfileTokens(ctx, apiAuth(auth))
 	if err != nil && stopped(ctx, err) {
@@ -358,15 +368,34 @@ func (s *Service) refreshCostNow(ctx context.Context, policy usage.RefreshPolicy
 	if err != nil {
 		return
 	}
-	// The cycle comes from the quota on hand; the quota interface is only
-	// asked when there is none yet.
+	q, ok := s.cycleQuota(ctx, auth, gen)
+	if !ok {
+		return
+	}
+	s.scanCostAndHeatmap(ctx, q, auth, gen, policy, true, false)
+	s.mu.Lock()
+	if s.isCurrentLocked(auth, gen) {
+		s.lastCostDone, s.lastCostCycle, s.lastErr = s.now(), cycleOf(q), ""
+		s.publishLocked()
+	}
+	s.mu.Unlock()
+}
+
+// cycleQuota is the quota the cost cycle comes from: the one on hand, else a
+// fetched one. An API key has no quota (and no request is made): its cost uses
+// the calendar month. ok is false when the cost refresh must stop.
+func (s *Service) cycleQuota(ctx context.Context, auth codex.Auth, gen uint64) (codexapi.QuotaSnapshot, bool) {
+	if auth.IsAPIKey() {
+		return codexapi.QuotaSnapshot{}, true
+	}
 	s.mu.Lock()
 	cached := s.quota
 	s.mu.Unlock()
-	var q codexapi.QuotaSnapshot
 	if cached != nil {
-		q = *cached
-	} else if q, err = s.src.FetchQuota(ctx, apiAuth(auth)); err != nil {
+		return *cached, true
+	}
+	q, err := s.src.FetchQuota(ctx, apiAuth(auth))
+	if err != nil {
 		if !stopped(ctx, err) {
 			s.fail(&auth, gen, err, func() {
 				text := s.errTextLocked(err)
@@ -378,17 +407,9 @@ func (s *Service) refreshCostNow(ctx context.Context, policy usage.RefreshPolicy
 				s.lastErr = text
 			})
 		}
-		return
-	} else if !s.apply(auth, gen, func() { s.quota, s.quotaErr, s.statusFail = &q, "", false }) {
-		return
+		return q, false
 	}
-	s.scanCostAndHeatmap(ctx, q, auth, gen, policy, true, false)
-	s.mu.Lock()
-	if s.isCurrentLocked(auth, gen) {
-		s.lastCostDone, s.lastCostCycle, s.lastErr = s.now(), cycleOf(q), ""
-		s.publishLocked()
-	}
-	s.mu.Unlock()
+	return q, s.apply(auth, gen, func() { s.quota, s.quotaErr, s.statusFail = &q, "", false })
 }
 
 // RefreshTokenHeatmap rescans the token usage chart alone. It can be
@@ -605,6 +626,12 @@ func (s *Service) ResolvePreviousCycleRange(ctx context.Context) (usage.CostRang
 // and falling back to the last 7 days when the quota has no cycle.
 func (s *Service) ensureCycleWindows(ctx context.Context, now time.Time) (full, elapsed usage.Window, err error) {
 	s.mu.Lock()
+	if s.keyModeLocked() {
+		f, e := monthWindows(now, s.opts.Location)
+		s.fullWindow = &f
+		s.mu.Unlock()
+		return f, e, nil
+	}
 	if s.quota != nil {
 		if f, e, ok := cycleWindows(*s.quota, now); ok {
 			s.fullWindow = &f
@@ -618,6 +645,13 @@ func (s *Service) ensureCycleWindows(ctx context.Context, now time.Time) (full, 
 	auth, gen, err := s.loadValidAuth(ctx, true)
 	if err != nil {
 		return usage.Window{}, usage.Window{}, err
+	}
+	if auth.IsAPIKey() {
+		f, e := monthWindows(now, s.opts.Location)
+		s.mu.Lock()
+		s.fullWindow = &f
+		s.mu.Unlock()
+		return f, e, nil
 	}
 	q, err := s.src.FetchQuota(ctx, apiAuth(auth))
 	if err != nil {

@@ -59,6 +59,7 @@ func (u *settingsUI) floatingPage(c *ui.Context) {
 				set(func(f *store.FloatingWindow) { f.OverFullScreen = v })
 			}
 		})
+		u.floatingAppRows(c, row, f, ro)
 	})
 }
 

@@ -40,8 +40,12 @@ const (
 // single-instance lock keeps writers apart.
 type Store struct {
 	root         string
+	runwayHome   string
 	officialAuth string
 	mu           sync.Mutex
+
+	// failpoint, set by tests, fails a named stage of a multi-file operation.
+	failpoint func(stage string) error
 }
 
 // NewStore returns a store keeping accounts in <runwayHome>/accounts and
@@ -49,6 +53,7 @@ type Store struct {
 func NewStore(codexHome, runwayHome string) *Store {
 	return &Store{
 		root:         filepath.Join(runwayHome, "accounts"),
+		runwayHome:   runwayHome,
 		officialAuth: filepath.Join(codexHome, authFileName),
 	}
 }
@@ -346,6 +351,9 @@ type UpsertOptions struct {
 	MakeActive bool
 	// Alias and Note replace the stored values when non-nil.
 	Alias, Note *string
+	// Relay sets the API relay profile of an API key account (base URL
+	// already normalized). Nil keeps the profile of an existing row.
+	Relay *RelayProfile
 	// Now is the clock; zero means time.Now().
 	Now time.Time
 }
@@ -389,7 +397,14 @@ func (s *Store) upsert(auth Auth, opt UpsertOptions) (ManagedAccount, error) {
 		acc.UserID = firstNonEmpty(acc.UserID, existing.UserID)
 		acc.SubjectID = firstNonEmpty(acc.SubjectID, existing.SubjectID)
 		acc.WorkspaceName = firstNonEmpty(acc.WorkspaceName, existing.WorkspaceName)
+		if acc.AuthMode == AuthModeAPIKey && existing.AuthMode == AuthModeAPIKey {
+			acc = acc.withRelayProfile(existing.APIBaseURL, existing.APIModel)
+			acc.APIQuota = existing.APIQuota
+		}
 		// Stale meters and errors go so the row refreshes after a re-import.
+	}
+	if opt.Relay != nil && acc.AuthMode == AuthModeAPIKey {
+		acc = acc.withRelayProfile(opt.Relay.BaseURL, opt.Relay.Model)
 	}
 	if err := s.saveCredential(acc.ID, auth); err != nil {
 		return ManagedAccount{}, err
@@ -553,6 +568,9 @@ func (s *Store) SyncFromOfficialAuth(now time.Time) (AccountIndex, OfficialStatu
 		if err == nil {
 			idx, err = s.loadIndex()
 		}
+	}
+	if err == nil {
+		err = s.adoptRelayConfig(&idx, official)
 	}
 	return idx, OfficialSynced, err
 }

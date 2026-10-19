@@ -16,7 +16,7 @@ const grokInstallGuideURL = "https://docs.x.ai/build/overview"
 // details behind the info button, or the empty state of the CLI.
 func panelGrokQuota(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts PanelActions, first *bool, st *panelState, rs resetSwitch) {
 	g := snap.Grok
-	refreshing := g.Refreshing || snap.Refresh.Has(runway.SectionQuota)
+	refreshing := sectionRefreshing(snap, runway.SectionQuota)
 	spec := sectionSpec{title: l.Text(l10n.KeyGrokIncludedQuota), refreshing: refreshing, refresh: sectionRefresh(acts, runway.SectionQuota)}
 	if len(g.Meters) > 0 {
 		spec.info = &sectionInfo{id: "grok-billing", help: l.Text(l10n.KeyGrokBillingPeriod), body: grokBillingBody(c, l, st, g)}
@@ -24,7 +24,11 @@ func panelGrokQuota(c *ui.Context, l l10n.Localizer, snap runway.Snapshot, acts 
 	sectionBlock(c, first, func() {
 		drawSectionHead(c, l, st, spec)
 		if len(g.Meters) == 0 {
-			grokEmptyState(c, l, g)
+			if refreshing && g.Availability == runway.GrokLoading {
+				sectionEmpty(c, l, true)
+			} else {
+				grokEmptyState(c, l, g)
+			}
 			return
 		}
 		ui.Column(c).Gap(12).Children(func() {

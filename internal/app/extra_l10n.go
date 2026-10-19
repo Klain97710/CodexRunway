@@ -14,96 +14,118 @@ import (
 type textKey string
 
 const (
-	xAccountCount              textKey = "accountCount"
-	xAccountCountOne           textKey = "accountCountOne"
-	xPrivacyDisplaySection     textKey = "privacyDisplaySection"
-	xPrivacyDisplayDescription textKey = "privacyDisplayDescription"
-	xProvider                  textKey = "provider"
-	xProviderDescription       textKey = "providerDescription"
-	xPanelHeight               textKey = "panelHeight"
-	xPanelHeightHint           textKey = "panelHeightDescription"
-	xMacOnly                   textKey = "settingMacOnly"
-	xWidgetMac14               textKey = "settingWidgetMac14"
-	xSettingsUnreadable        textKey = "settingsUnreadableTitle"
-	xSettingsReadOnly          textKey = "settingsReadOnlyNote"
-	xProxyBlocked              textKey = "proxyBlockedNote"
-	xSettingsSaveFailed        textKey = "settingsSaveFailed"
-	xAccountsComingSoon        textKey = "accountsComingSoon"
-	xTrayUnavailable           textKey = "trayUnavailable"
-	xLinuxDesktopDependencies  textKey = "linuxDesktopDependencies"
-	xLinuxReleaseUnreadable    textKey = "linuxReleaseUnreadable"
-	xPanelPlaceholder          textKey = "panelPlaceholder"
-	xNotAvailableYet           textKey = "notAvailableYet"
-	xProxyLocalSaveWarning     textKey = "proxyPasswordNotStored"
-	xThemeColor                textKey = "themeColor"
-	xColorBrown                textKey = "themeColorBrown"
-	xColorBlue                 textKey = "themeColorBlue"
-	xColorPurple               textKey = "themeColorPurple"
-	xColorPink                 textKey = "themeColorPink"
-	xColorRed                  textKey = "themeColorRed"
-	xColorOrange               textKey = "themeColorOrange"
-	xColorYellow               textKey = "themeColorYellow"
-	xColorGreen                textKey = "themeColorGreen"
-	xColorGraphite             textKey = "themeColorGraphite"
-	xColorCustom               textKey = "themeColorCustom"
-	xFloatingSection           textKey = "floatingWindowSection"
-	xFloatingEnabled           textKey = "floatingWindow"
-	xFloatingEnabledHint       textKey = "floatingWindowDescription"
-	xFloatingStyle             textKey = "floatingWindowStyle"
-	xFloatingStyleCapsule      textKey = "floatingWindowStyleCapsule"
-	xFloatingStyleCard         textKey = "floatingWindowStyleCard"
-	xFloatingStyleRings        textKey = "floatingWindowStyleRings"
-	xFloatingStyleBattery      textKey = "floatingWindowStyleBattery"
-	xFloatingProviders         textKey = "floatingWindowProviders"
-	xFloatingOpacity           textKey = "floatingWindowOpacity"
-	xFloatingLocked            textKey = "floatingWindowLocked"
-	xFloatingLockedHint        textKey = "floatingWindowLockedDescription"
-	xFloatingFullScreen        textKey = "floatingWindowOverFullScreen"
-	xFloatingFullScreenHint    textKey = "floatingWindowOverFullScreenDescription"
-	xFloatingHide              textKey = "floatingWindowHide"
-	xFloatingWayland           textKey = "floatingWindowWayland"
-	xDisplayFont               textKey = "displayFont"
-	xDisplayFontHint           textKey = "displayFontDescription"
-	xDisplayFontDefault        textKey = "displayFontDefault"
-	xPanelProviders            textKey = "mainPanelProviders"
-	xPanelProvidersHint        textKey = "mainPanelProvidersDescription"
-	xPanelProvidersAll         textKey = "mainPanelProvidersAll"
-	xResetTimeFormat           textKey = "quotaResetTimeFormat"
-	xResetTimeFormatHint       textKey = "quotaResetTimeFormatDescription"
-	xResetTimeRelative         textKey = "quotaResetTimeRelative"
-	xResetTimeExact            textKey = "quotaResetTimeExact"
-	xProxyTestURL              textKey = "networkProxyTestURL"
-	xProxyTestURLInvalid       textKey = "networkProxyTestURLInvalid"
-	xSpeedTitle                textKey = "speedAnalysis"
-	xSpeedModuleDescription    textKey = "speedAnalysisDescription"
-	xSpeedInfoTTFT             textKey = "speedAnalysisInfoTTFT"
-	xSpeedInfoNoTTFT           textKey = "speedAnalysisInfoNoTTFT"
-	xSpeedInfoOutput           textKey = "speedAnalysisInfoOutput"
-	xSpeedInfoSource           textKey = "speedAnalysisInfoSource"
-	xSpeedTTFT                 textKey = "speedAnalysisTTFT"
-	xSpeedOutput               textKey = "speedAnalysisOutput"
-	xSpeedModel                textKey = "speedAnalysisModel"
-	xSpeedCalls                textKey = "speedAnalysisCalls"
-	xSpeedByModel              textKey = "speedAnalysisByModel"
-	xSpeedBasis                textKey = "speedAnalysisBasis"
-	xSpeedBasisOne             textKey = "speedAnalysisBasisOne"
-	xSpeedLatest               textKey = "speedAnalysisLatest"
-	xSpeedEmpty                textKey = "speedAnalysisEmpty"
-	xSpeedRange                textKey = "speedAnalysisRange"
-	xSpeedTierFast             textKey = "speedAnalysisTierFast"
-	xSpeedTierStandard         textKey = "speedAnalysisTierStandard"
-	xSpeedInfoTier             textKey = "speedAnalysisInfoTier"
-	xLegacyRunningTitle        textKey = "legacyRunningTitle"
-	xLegacyRunningDetail       textKey = "legacyRunningDetail"
-	xLegacyRunningManual       textKey = "legacyRunningManual"
-	xLegacyQuitAndContinue     textKey = "legacyQuitAndContinue"
-	xLegacyQuitFailed          textKey = "legacyQuitFailed"
+	xAccountCount                 textKey = "accountCount"
+	xAccountCountOne              textKey = "accountCountOne"
+	xPrivacyDisplaySection        textKey = "privacyDisplaySection"
+	xPrivacyDisplayDescription    textKey = "privacyDisplayDescription"
+	xProvider                     textKey = "provider"
+	xProviderDescription          textKey = "providerDescription"
+	xPanelHeight                  textKey = "panelHeight"
+	xPanelLoading                 textKey = "panelLoading"
+	xPanelHeightHint              textKey = "panelHeightDescription"
+	xMacOnly                      textKey = "settingMacOnly"
+	xWidgetMac14                  textKey = "settingWidgetMac14"
+	xSettingsUnreadable           textKey = "settingsUnreadableTitle"
+	xSettingsReadOnly             textKey = "settingsReadOnlyNote"
+	xProxyBlocked                 textKey = "proxyBlockedNote"
+	xSettingsSaveFailed           textKey = "settingsSaveFailed"
+	xAccountsComingSoon           textKey = "accountsComingSoon"
+	xTrayUnavailable              textKey = "trayUnavailable"
+	xLinuxDesktopDependencies     textKey = "linuxDesktopDependencies"
+	xLinuxReleaseUnreadable       textKey = "linuxReleaseUnreadable"
+	xPanelPlaceholder             textKey = "panelPlaceholder"
+	xNotAvailableYet              textKey = "notAvailableYet"
+	xProxyLocalSaveWarning        textKey = "proxyPasswordNotStored"
+	xThemeColor                   textKey = "themeColor"
+	xColorBrown                   textKey = "themeColorBrown"
+	xColorBlue                    textKey = "themeColorBlue"
+	xColorPurple                  textKey = "themeColorPurple"
+	xColorPink                    textKey = "themeColorPink"
+	xColorRed                     textKey = "themeColorRed"
+	xColorOrange                  textKey = "themeColorOrange"
+	xColorYellow                  textKey = "themeColorYellow"
+	xColorGreen                   textKey = "themeColorGreen"
+	xColorGraphite                textKey = "themeColorGraphite"
+	xColorCustom                  textKey = "themeColorCustom"
+	xFloatingSection              textKey = "floatingWindowSection"
+	xFloatingEnabled              textKey = "floatingWindow"
+	xFloatingEnabledHint          textKey = "floatingWindowDescription"
+	xFloatingStyle                textKey = "floatingWindowStyle"
+	xFloatingStyleCapsule         textKey = "floatingWindowStyleCapsule"
+	xFloatingStyleCard            textKey = "floatingWindowStyleCard"
+	xFloatingStyleRings           textKey = "floatingWindowStyleRings"
+	xFloatingStyleBattery         textKey = "floatingWindowStyleBattery"
+	xFloatingProviders            textKey = "floatingWindowProviders"
+	xFloatingOpacity              textKey = "floatingWindowOpacity"
+	xFloatingLocked               textKey = "floatingWindowLocked"
+	xFloatingLockedHint           textKey = "floatingWindowLockedDescription"
+	xFloatingFullScreen           textKey = "floatingWindowOverFullScreen"
+	xFloatingFullScreenHint       textKey = "floatingWindowOverFullScreenDescription"
+	xFloatingHide                 textKey = "floatingWindowHide"
+	xFloatingWayland              textKey = "floatingWindowWayland"
+	xFloatingAppFilter            textKey = "floatingWindowAppFilter"
+	xFloatingAppFilterHint        textKey = "floatingWindowAppFilterDescription"
+	xFloatingAppFilterOff         textKey = "floatingWindowAppFilterOff"
+	xFloatingAppFilterAllow       textKey = "floatingWindowAppFilterAllow"
+	xFloatingAppFilterBlock       textKey = "floatingWindowAppFilterBlock"
+	xFloatingAppFilterAllowHint   textKey = "floatingWindowAppFilterAllowDescription"
+	xFloatingAppFilterBlockHint   textKey = "floatingWindowAppFilterBlockDescription"
+	xFloatingAppFilterUnsupported textKey = "floatingWindowAppFilterUnsupported"
+	xFloatingApps                 textKey = "floatingWindowApps"
+	xFloatingAppsNone             textKey = "floatingWindowAppsNone"
+	xFloatingAppsCount            textKey = "floatingWindowAppsCount"
+	xFloatingChooseApps           textKey = "floatingWindowChooseApps"
+	xFloatingAppsTitle            textKey = "floatingWindowAppsTitle"
+	xFloatingAppsSearch           textKey = "floatingWindowAppsSearch"
+	xFloatingAppsAddFile          textKey = "floatingWindowAppsAddFile"
+	xFloatingAppsEmpty            textKey = "floatingWindowAppsEmpty"
+	xFloatingAppsLoadFailed       textKey = "floatingWindowAppsLoadFailed"
+	xFloatingAppsNotApp           textKey = "floatingWindowAppsNotApp"
+	xDisplayFont                  textKey = "displayFont"
+	xDisplayFontHint              textKey = "displayFontDescription"
+	xDisplayFontDefault           textKey = "displayFontDefault"
+	xPanelProviders               textKey = "mainPanelProviders"
+	xPanelProvidersHint           textKey = "mainPanelProvidersDescription"
+	xPanelProvidersAll            textKey = "mainPanelProvidersAll"
+	xResetTimeFormat              textKey = "quotaResetTimeFormat"
+	xResetTimeFormatHint          textKey = "quotaResetTimeFormatDescription"
+	xShowCreditsBalance           textKey = "showCreditsBalance"
+	xShowCreditsBalanceHint       textKey = "showCreditsBalanceDescription"
+	xResetTimeRelative            textKey = "quotaResetTimeRelative"
+	xResetTimeExact               textKey = "quotaResetTimeExact"
+	xProxyTestURL                 textKey = "networkProxyTestURL"
+	xProxyTestURLInvalid          textKey = "networkProxyTestURLInvalid"
+	xSpeedTitle                   textKey = "speedAnalysis"
+	xSpeedModuleDescription       textKey = "speedAnalysisDescription"
+	xSpeedInfoTTFT                textKey = "speedAnalysisInfoTTFT"
+	xSpeedInfoNoTTFT              textKey = "speedAnalysisInfoNoTTFT"
+	xSpeedInfoOutput              textKey = "speedAnalysisInfoOutput"
+	xSpeedInfoSource              textKey = "speedAnalysisInfoSource"
+	xSpeedTTFT                    textKey = "speedAnalysisTTFT"
+	xSpeedOutput                  textKey = "speedAnalysisOutput"
+	xSpeedModel                   textKey = "speedAnalysisModel"
+	xSpeedCalls                   textKey = "speedAnalysisCalls"
+	xSpeedByModel                 textKey = "speedAnalysisByModel"
+	xSpeedBasis                   textKey = "speedAnalysisBasis"
+	xSpeedBasisOne                textKey = "speedAnalysisBasisOne"
+	xSpeedLatest                  textKey = "speedAnalysisLatest"
+	xSpeedEmpty                   textKey = "speedAnalysisEmpty"
+	xSpeedRange                   textKey = "speedAnalysisRange"
+	xSpeedTierFast                textKey = "speedAnalysisTierFast"
+	xSpeedTierStandard            textKey = "speedAnalysisTierStandard"
+	xSpeedInfoTier                textKey = "speedAnalysisInfoTier"
+	xLegacyRunningTitle           textKey = "legacyRunningTitle"
+	xLegacyRunningDetail          textKey = "legacyRunningDetail"
+	xLegacyRunningManual          textKey = "legacyRunningManual"
+	xLegacyQuitAndContinue        textKey = "legacyQuitAndContinue"
+	xLegacyQuitFailed             textKey = "legacyQuitFailed"
 )
 
 // extraTexts is indexed by textKey, then by position in l10n.Languages():
 // English, Simplified Chinese, Traditional Chinese, Korean, Japanese,
 // Russian, French.
 var extraTexts = map[textKey][7]string{
+	xPanelLoading: {"Loading…", "加载中…", "載入中…", "불러오는 중…", "読み込み中…", "Загрузка…", "Chargement…"},
 	xThemeColor: {
 		"Theme color", "主题颜色", "主題顏色", "테마 색상", "テーマカラー", "Цвет темы", "Couleur du thème",
 	},
@@ -191,6 +213,78 @@ var extraTexts = map[textKey][7]string{
 		"В Wayland рабочий стол может не позволять приложениям оставаться поверх других окон или выбирать их положение",
 		"Sous Wayland, le bureau peut empêcher les apps de rester au premier plan ou de choisir la position de leurs fenêtres",
 	},
+	xFloatingAppFilter: {
+		"Show by app in front", "按前台应用显示", "依前景 App 顯示", "앞에 있는 앱에 따라 표시", "前面のアプリに応じて表示", "Показ по активному приложению", "Afficher selon l’app au premier plan",
+	},
+	xFloatingAppFilterHint: {
+		"Show or hide the floating window by the app in front",
+		"根据前台应用显示或隐藏悬浮窗",
+		"依前景 App 顯示或隱藏浮動視窗",
+		"앞에 있는 앱에 따라 플로팅 창을 표시하거나 숨깁니다",
+		"前面にあるアプリに応じてフローティングウインドウを表示または非表示にします",
+		"Показывать или скрывать плавающее окно в зависимости от активного приложения",
+		"Affiche ou masque la fenêtre flottante selon l’app au premier plan",
+	},
+	xFloatingAppFilterOff:   {"Off", "关闭", "關閉", "끔", "オフ", "Выкл.", "Désactivé"},
+	xFloatingAppFilterAllow: {"Allow list", "白名单", "白名單", "허용 목록", "許可リスト", "Белый список", "Liste d’autorisation"},
+	xFloatingAppFilterBlock: {"Block list", "黑名单", "黑名單", "차단 목록", "ブロックリスト", "Чёрный список", "Liste de blocage"},
+	xFloatingAppFilterAllowHint: {
+		"Shows only while a listed app is in front, and always on the desktop",
+		"仅名单中的应用位于前台时显示，桌面上始终显示",
+		"僅名單中的 App 位於前景時顯示，桌面上一律顯示",
+		"목록에 있는 앱이 앞에 있을 때만 표시하며, 데스크톱에서는 항상 표시합니다",
+		"リストのアプリが前面にあるときだけ表示し、デスクトップでは常に表示します",
+		"Показывается, только пока активно приложение из списка, и всегда — на рабочем столе",
+		"S’affiche seulement quand une app de la liste est au premier plan, et toujours sur le bureau",
+	},
+	xFloatingAppFilterBlockHint: {
+		"Hides while a listed app is in front, and always shows on the desktop",
+		"名单中的应用位于前台时隐藏，桌面上始终显示",
+		"名單中的 App 位於前景時隱藏，桌面上一律顯示",
+		"목록에 있는 앱이 앞에 있으면 숨기며, 데스크톱에서는 항상 표시합니다",
+		"リストのアプリが前面にあるときは隠し、デスクトップでは常に表示します",
+		"Скрывается, пока активно приложение из списка, и всегда показывается на рабочем столе",
+		"Se masque quand une app de la liste est au premier plan, et s’affiche toujours sur le bureau",
+	},
+	xFloatingAppFilterUnsupported: {
+		"This desktop does not tell apps which app is in front (as on Wayland), so this is unavailable",
+		"当前桌面（如 Wayland）不向应用提供前台应用信息，此功能不可用",
+		"目前的桌面（如 Wayland）不向 App 提供前景 App 資訊，此功能無法使用",
+		"이 데스크톱(Wayland 등)은 앞에 있는 앱을 알려 주지 않아 사용할 수 없습니다",
+		"このデスクトップ（Wayland など）は前面のアプリを知らせないため、利用できません",
+		"Этот рабочий стол (например, Wayland) не сообщает приложениям, какое приложение активно, поэтому функция недоступна",
+		"Ce bureau (comme Wayland) n’indique pas aux apps laquelle est au premier plan, cette option n’est donc pas disponible",
+	},
+	xFloatingApps:     {"Apps", "应用名单", "App 名單", "앱 목록", "アプリのリスト", "Приложения", "Apps"},
+	xFloatingAppsNone: {"No apps chosen", "尚未选择应用", "尚未選擇 App", "선택한 앱 없음", "アプリが選択されていません", "Приложения не выбраны", "Aucune app choisie"},
+	xFloatingAppsCount: {
+		"%@ apps", "已选 %@ 个应用", "已選 %@ 個 App", "앱 %@개", "%@ 個のアプリ", "Приложений: %@", "%@ apps",
+	},
+	xFloatingChooseApps: {"Choose Apps…", "选择应用…", "選擇 App…", "앱 선택…", "アプリを選択…", "Выбрать приложения…", "Choisir des apps…"},
+	xFloatingAppsTitle:  {"Choose apps", "选择应用", "選擇 App", "앱 선택", "アプリを選択", "Выбор приложений", "Choisir des apps"},
+	xFloatingAppsSearch: {"Search apps", "搜索应用", "搜尋 App", "앱 검색", "アプリを検索", "Поиск приложений", "Rechercher des apps"},
+	xFloatingAppsAddFile: {
+		"Add from File…", "从文件添加…", "從檔案加入…", "파일에서 추가…", "ファイルから追加…", "Добавить из файла…", "Ajouter depuis un fichier…",
+	},
+	xFloatingAppsEmpty: {"No matching apps", "没有匹配的应用", "沒有符合的 App", "일치하는 앱 없음", "一致するアプリはありません", "Нет подходящих приложений", "Aucune app correspondante"},
+	xFloatingAppsLoadFailed: {
+		"Couldn’t list the installed apps. You can still add them from files",
+		"无法列出已安装的应用，仍可从文件添加",
+		"無法列出已安裝的 App，仍可從檔案加入",
+		"설치된 앱 목록을 불러오지 못했습니다. 파일에서 추가할 수는 있습니다",
+		"インストール済みのアプリを一覧にできませんでした。ファイルからは追加できます",
+		"Не удалось получить список установленных приложений. Их можно добавить из файлов",
+		"Impossible de lister les apps installées. Vous pouvez toujours les ajouter depuis des fichiers",
+	},
+	xFloatingAppsNotApp: {
+		"Some of the files are not apps and were skipped",
+		"部分文件不是应用，已跳过",
+		"部分檔案不是 App，已略過",
+		"일부 파일은 앱이 아니어서 건너뛰었습니다",
+		"アプリではないファイルがあったため、スキップしました",
+		"Некоторые файлы не являются приложениями и были пропущены",
+		"Certains fichiers ne sont pas des apps et ont été ignorés",
+	},
 	xDisplayFont: {
 		"Display font", "显示字体", "顯示字體", "표시 글꼴", "表示フォント", "Шрифт интерфейса", "Police d’affichage",
 	},
@@ -228,6 +322,18 @@ var extraTexts = map[textKey][7]string{
 		"メインパネルでリセット時刻をクリックしても切り替えられます。",
 		"Нажмите на время сброса в главной панели, чтобы переключить.",
 		"Cliquez sur l’heure de réinit. dans le panneau principal pour basculer.",
+	},
+	xShowCreditsBalance: {
+		"Show Credits balance", "显示 Credits 余额", "顯示 Credits 餘額", "크레딧 잔액 표시", "クレジット残高を表示", "Показывать баланс кредитов", "Afficher le solde de crédits",
+	},
+	xShowCreditsBalanceHint: {
+		"Show the ChatGPT credits balance at the end of the quota section when available.",
+		"在配额末尾显示账户的 ChatGPT Credits 余额（可用时）。",
+		"在配額末尾顯示帳戶的 ChatGPT Credits 餘額（可用時）。",
+		"사용 가능한 경우 할당량 섹션 끝에 ChatGPT 크레딧 잔액을 표시합니다.",
+		"利用可能な場合、クォータ欄の末尾に ChatGPT クレジット残高を表示します。",
+		"Показывать баланс кредитов ChatGPT в конце раздела квот при наличии.",
+		"Affiche le solde de crédits ChatGPT à la fin de la section des quotas le cas échéant.",
 	},
 	xResetTimeRelative: {"Relative time", "相对时间", "相對時間", "상대 시간", "相対時間", "Относительное время", "Temps relatif"},
 	xResetTimeExact:    {"Exact time", "精准时间", "精準時間", "정확한 시간", "正確な時刻", "Точное время", "Heure exacte"},
@@ -274,22 +380,22 @@ var extraTexts = map[textKey][7]string{
 		"Ces journaux n’indiquent pas l’heure du premier jeton : le TTFT n’est pas affiché et la vitesse de sortie est mesurée depuis la requête, attente comprise.",
 	},
 	xSpeedInfoOutput: {
-		"Output speed is the output tokens (reasoning included) divided by the time they took to stream.",
-		"输出速率：输出 token（含思考）除以流式输出所用的时间。",
-		"輸出速率：輸出 token（含思考）除以串流輸出所用的時間。",
-		"출력 속도는 출력 토큰(추론 포함)을 스트리밍에 걸린 시간으로 나눈 값입니다.",
-		"出力速度は、出力トークン（推論を含む）をストリーミングにかかった時間で割った値です。",
-		"Скорость вывода — число выходных токенов (с рассуждением), делённое на время потоковой передачи.",
-		"Vitesse de sortie : jetons de sortie (raisonnement inclus) divisés par la durée du flux.",
+		"Output speed is output tokens (reasoning included) divided by streaming time when first-token timing exists; otherwise it uses end-to-end request time, wait included.",
+		"输出速率为输出 token（含思考）除以耗时；有首字计时时使用流式输出时间，否则使用包含等待的端到端请求时间。",
+		"輸出速率為輸出 token（含思考）除以耗時；有首字計時時使用串流輸出時間，否則使用包含等待的端到端請求時間。",
+		"출력 속도는 출력 토큰(추론 포함)을 소요 시간으로 나눈 값입니다. 첫 토큰 시간이 있으면 스트리밍 시간을, 없으면 대기를 포함한 요청의 전체 시간을 사용합니다.",
+		"出力速度は出力トークン（推論を含む）を所要時間で割った値です。最初のトークン時刻がある場合はストリーミング時間を、ない場合は待ち時間を含むリクエスト全体の時間を使います。",
+		"Скорость вывода — число выходных токенов с рассуждением, делённое на длительность. При наличии времени первого токена используется время потока, иначе — полное время запроса с ожиданием.",
+		"La vitesse de sortie correspond aux jetons produits, raisonnement inclus, divisés par la durée. Avec l’heure du premier jeton, elle utilise la durée du flux ; sinon, la durée complète de la requête, attente comprise.",
 	},
 	xSpeedInfoSource: {
-		"Measured from timestamps in the local CLI logs, so network latency and queueing are included. Results are grouped by model and reasoning effort; for Grok the effort is set per session.",
-		"根据本机 CLI 日志中的时间戳测得，包含网络延迟与排队时间。按模型与思考等级分组；Grok 的思考等级以会话为单位。",
-		"根據本機 CLI 記錄中的時間戳記測得，包含網路延遲與排隊時間。按模型與思考等級分組；Grok 的思考等級以工作階段為單位。",
-		"로컬 CLI 로그의 타임스탬프로 측정하므로 네트워크 지연과 대기 시간이 포함됩니다. 모델과 추론 수준별로 묶으며, Grok의 추론 수준은 세션 단위입니다.",
-		"ローカル CLI ログのタイムスタンプから計測するため、ネットワーク遅延や待機時間を含みます。モデルと推論レベルごとに集計し、Grok の推論レベルはセッション単位です。",
-		"Измерено по меткам времени в локальных логах CLI, поэтому включает сетевые задержки и очередь. Группировка по модели и уровню рассуждения; у Grok уровень задаётся на сессию.",
-		"Mesuré d’après les horodatages des journaux CLI locaux : latence réseau et file d’attente comprises. Regroupé par modèle et niveau de raisonnement ; pour Grok, le niveau est défini par session.",
+		"Measured from timestamps in the local CLI logs, so network latency and queueing are included. For Grok, TPS includes only turns with complete first-token timing for every model call and a unique completion match; reasoning effort is set per session.",
+		"根据本机 CLI 日志中的时间戳测得，包含网络延迟与排队时间；Grok 的 TPS 仅统计每次模型调用都有完整首字计时且完成记录配对唯一的回合，思考等级以会话为单位。",
+		"根據本機 CLI 記錄中的時間戳記測得，包含網路延遲與排隊時間；Grok 的 TPS 僅統計每次模型呼叫都有完整首字計時且完成記錄配對唯一的回合，思考等級以工作階段為單位。",
+		"로컬 CLI 로그의 타임스탬프로 측정하므로 네트워크 지연과 대기 시간이 포함됩니다. Grok TPS는 모든 모델 호출의 첫 토큰 시간이 완전하고 완료 기록이 하나로 명확히 대응되는 턴만 집계하며, 추론 수준은 세션 단위입니다.",
+		"ローカル CLI ログのタイムスタンプから計測するため、ネットワーク遅延や待機時間を含みます。Grok の TPS は、すべてのモデル呼び出しで最初のトークン時刻が揃い、完了記録との対応が一意なターンだけを集計し、推論レベルはセッション単位です。",
+		"Измерено по меткам времени в локальных логах CLI, поэтому учитывает сетевые задержки и очередь. Для Grok TPS рассчитывается только для ходов с полным временем первого токена каждого вызова модели и однозначно сопоставленной записью завершения; уровень рассуждения задаётся на сессию.",
+		"Mesuré d’après les horodatages des journaux CLI, avec la latence réseau et la file d’attente. Pour Grok, le TPS ne compte que les tours où chaque appel de modèle a un délai de premier jeton complet et une correspondance d’achèvement unique ; le niveau de raisonnement est défini par session.",
 	},
 	xSpeedTTFT:   {"TTFT", "首字", "首字", "첫 토큰", "TTFT", "TTFT", "TTFT"},
 	xSpeedOutput: {"Output", "输出", "輸出", "출력", "出力", "Вывод", "Sortie"},

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/licoy/quosparr/internal/claude"
@@ -27,30 +28,33 @@ func (g *claudeBridge) scanLocal(ctx context.Context) error {
 	}
 	scanner := claude.SessionScanner{ConfigDir: g.mod.Store.ConfigDir(), Home: g.mod.Store.HomeDir(), Location: time.Local, Cache: &g.sessions}
 	local, err := scanner.Scan(ctx, opts)
-	report := scanClaudeSpeed(ctx, scanner, p, now)
+	report, speedErr := scanClaudeSpeed(ctx, scanner, p, now)
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if gen != g.generation || ctx.Err() != nil {
 		return ctx.Err()
 	}
 	g.localErr = err
-	g.speed = report
 	if err == nil {
 		g.local = &local
 		g.localRange = p.APICostSummaryRange
 	}
-	return err
+	g.speedErr = speedErr
+	if speedErr == nil {
+		g.speed = report
+	}
+	return errors.Join(err, speedErr)
 }
 
-func scanClaudeSpeed(ctx context.Context, scanner claude.SessionScanner, p store.Preferences, now time.Time) *speed.Report {
+func scanClaudeSpeed(ctx context.Context, scanner claude.SessionScanner, p store.Preferences, now time.Time) (*speed.Report, error) {
 	if !p.ShowsSpeedAnalysis {
-		return nil
+		return nil, nil
 	}
 	report, err := scanner.ScanSpeed(ctx, now)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return &report
+	return &report, nil
 }
 
 // claudeCostWindow is the current cycle when a 7-day window has resets_at:

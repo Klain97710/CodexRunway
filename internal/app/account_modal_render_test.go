@@ -23,7 +23,7 @@ func TestExportAccountModalReview(t *testing.T) {
 		if dark {
 			appearance = "dark"
 		}
-		for _, mode := range []string{"paste", "apikey", "alias", "note", "switch"} {
+		for _, mode := range []string{"paste", modeCodexAPIAdd, modeClaudeAPIAdd, "alias", "note", "switch"} {
 			f := accountFormOf(u)
 			f.mode, f.alias, f.note, f.switchName = mode, "Personal", "工作账号", "Personal"
 			tt.Frame()

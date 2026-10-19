@@ -348,6 +348,11 @@ func (u *settingsUI) moduleConfig(c *ui.Context, m store.Module, p store.Prefere
 				s.SetShowsModelSpecificQuotaUsage(v)
 			}
 		})
+		line(tx(l, xShowCreditsBalance), tx(l, xShowCreditsBalanceHint), func() {
+			if v, ok := toggle(c, "credits-balance", tx(l, xShowCreditsBalance), p.ShowsCreditsBalance, ro); ok {
+				s.SetShowsCreditsBalance(v)
+			}
+		})
 		line(tx(l, xResetTimeFormat), tx(l, xResetTimeFormatHint), func() {
 			if v, ok := choose(c, "reset-time-format", tx(l, xResetTimeFormat), p.QuotaResetTimeFormat, store.ResetTimeFormats(),
 				func(v store.ResetTimeFormat) string { return resetTimeFormatName(l, v) }, ro); ok {

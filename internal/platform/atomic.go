@@ -12,6 +12,10 @@ import (
 // perm; a directory it creates is 0700. On failure the original file is left
 // untouched and the temporary file is removed.
 func WriteFileAtomic(path string, data []byte, perm fs.FileMode) error {
+	return writeFileAtomic(path, data, perm, nil)
+}
+
+func writeFileAtomic(path string, data []byte, perm fs.FileMode, beforeReplace func() error) error {
 	dir := filepath.Dir(path)
 	private := perm.Perm()&0o077 == 0
 	_, statErr := os.Stat(dir)
@@ -57,6 +61,11 @@ func WriteFileAtomic(path string, data []byte, perm fs.FileMode) error {
 		// the original credential untouched. Same-volume replacement keeps
 		// the temporary file's already protected security descriptor.
 		if err := VerifyOwnerOnly(name, perm); err != nil {
+			return err
+		}
+	}
+	if beforeReplace != nil {
+		if err := beforeReplace(); err != nil {
 			return err
 		}
 	}

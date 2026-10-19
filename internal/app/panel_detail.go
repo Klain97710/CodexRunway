@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/licoy/quosparr/internal/codexapi"
 	"github.com/licoy/quosparr/internal/l10n"
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/speed"
@@ -12,7 +13,8 @@ import (
 	"github.com/licoy/quosparr/internal/usage"
 )
 
-// providerView reuses Codex display widgets with the same typed Grok data.
+// providerView reuses Codex display widgets with the same typed Grok and
+// Claude data.
 func providerView(l l10n.Localizer, snap runway.Snapshot, displayRange store.CostRange) runway.CodexView {
 	if snap.Provider == store.ProviderClaude {
 		return claudeAsCodexView(l, snap.Claude, displayRange)
@@ -21,7 +23,7 @@ func providerView(l l10n.Localizer, snap runway.Snapshot, displayRange store.Cos
 		return snap.Codex
 	}
 	g := snap.Grok
-	v := runway.CodexView{Meters: g.Meters, Heatmap: g.Heatmap, DisplayedCost: g.Cost, DisplayedRange: displayRange, Cost: g.Cost, ResetCredits: g.ResetCredits, ResetCreditSummary: g.ResetCreditSummary, RecentSessions: g.RecentSessions, Speed: g.Speed}
+	v := runway.CodexView{Meters: g.Meters, Heatmap: g.Heatmap, DisplayedCost: g.Cost, DisplayedRange: displayRange, Cost: g.Cost, ResetCredits: g.ResetCredits, ResetCreditSummary: g.ResetCreditSummary, RecentSessions: g.RecentSessions, Speed: g.Speed, SpeedError: g.SpeedError}
 	if g.Cost != nil {
 		d := runway.DisplayCost(l, *g.Cost, displayRange, "", time.Now())
 		v.CostText, v.CostSubtitle, v.CostLines = d.Text, d.Subtitle, d.Lines
@@ -33,13 +35,22 @@ func providerView(l l10n.Localizer, snap runway.Snapshot, displayRange store.Cos
 }
 
 func claudeAsCodexView(l l10n.Localizer, g runway.ClaudeState, displayRange store.CostRange) runway.CodexView {
-	v := runway.CodexView{Meters: g.Meters, Heatmap: g.Heatmap, DisplayedCost: g.Cost, DisplayedRange: displayRange, Cost: g.Cost, RecentSessions: g.RecentSessions, Speed: withoutTTFT(g.Speed)}
+	v := runway.CodexView{Meters: g.Meters, Heatmap: g.Heatmap, DisplayedCost: g.Cost, DisplayedRange: displayRange, Cost: g.Cost, ResetCredits: g.ResetCredits, ResetCreditSummary: g.ResetCreditSummary, RecentSessions: g.RecentSessions, Speed: withoutTTFT(g.Speed), SpeedError: g.SpeedError}
 	if g.Cost != nil {
 		d := runway.DisplayCost(l, *g.Cost, displayRange, "", time.Now())
 		v.CostText, v.CostSubtitle, v.CostLines = d.Text, d.Subtitle, d.Lines
 		if claudePartialCost(*g.Cost) {
 			v.CostLines = append(v.CostLines, runway.DetailLine{Value: l.Text(l10n.KeyClaudePartialUnpriced)})
 		}
+	}
+	if g.ResetCredits != nil {
+		v.CreditDetails = runway.CreditDetails(l, *g.ResetCredits)
+	} else {
+		// The module stays on the panel for every Claude account; without
+		// reset grants it counts zero.
+		empty := codexapi.ResetCreditsSnapshot{Credits: []codexapi.ResetCredit{}, UpdatedAt: g.UpdatedAt}
+		sum := runway.SummarizeCredits(empty)
+		v.ResetCredits, v.ResetCreditSummary = &empty, &sum
 	}
 	return v
 }

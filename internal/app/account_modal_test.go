@@ -9,7 +9,7 @@ import (
 )
 
 func TestAccountEditorIsOverlayAndEscapeClearsDraft(t *testing.T) {
-	for _, mode := range []string{"paste", "apikey", "alias", "note", "switch"} {
+	for _, mode := range []string{"paste", modeCodexAPIAdd, modeClaudeAPIAdd, "alias", "note", "switch"} {
 		t.Run(mode, func(t *testing.T) {
 			e := newEnv(t, nil)
 			if err := e.s.Load(); err != nil {
@@ -25,7 +25,7 @@ func TestAccountEditorIsOverlayAndEscapeClearsDraft(t *testing.T) {
 				})
 			}, 700, 550)
 			before, _ := tt.Find("Account row")
-			f.mode, f.paste, f.apiKey, f.alias, f.note = mode, "draft", "draft-key", "draft alias", "draft note"
+			f.mode, f.paste, f.api.key, f.alias, f.note = mode, "draft", "draft-key", "draft alias", "draft note"
 			tt.Frame()
 			after, _ := tt.Find("Account row")
 			if after != before {
@@ -35,7 +35,7 @@ func TestAccountEditorIsOverlayAndEscapeClearsDraft(t *testing.T) {
 				t.Fatal("modal controls missing")
 			}
 			tt.Key(0, ui.KeyEscape)
-			if f.mode != "" || f.paste != "" || f.apiKey != "" || f.alias != "" || f.note != "" {
+			if f.mode != "" || f.paste != "" || f.api.key != "" || f.alias != "" || f.note != "" {
 				t.Fatal("closing modal retained form draft")
 			}
 		})

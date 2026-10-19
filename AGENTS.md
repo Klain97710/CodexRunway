@@ -4,13 +4,13 @@
 
 - This branch migrates the Klain97710 CodexRunway edition onto upstream Quosparr Go + mygo/ui. It is not an accepted daily replacement yet.
 - Follow `docs/superpowers/plans/2026-10-14-quosparr-migration-validation.md`; retain Swift stable code on `personal/legacy-swift` and keep `personal/main` stable until acceptance.
-- Upstream synchronized through `07ca0fe4f7d39c8c12e0e3ddc98d9ecadf41b76c` (v1.2.0 plus website changes) on 2026-10-15; source build is 0.2.0/2003. The user explicitly requested local replacement on 2026-10-15; build 2003 is now installed and its normal launch verified.
+- Upstream synchronized through `21947ff00f4b3b3beb01af7bc8373a09c7bca79b` (v1.6.2 plus website changes) on 2026-10-19; source build is 0.2.0/2004. The user explicitly requested local replacement on 2026-10-15; build 2003 is now installed and its normal launch verified.
 - User-required behavior: Codex only; no Grok/Claude runtime or reset reactions; remaining-quota tray columns `5h | bar | %`, `7d | bar | %`; Pro hides standard 5h in the tray only; action-only context menu. Floating windows, provider lists and deep links must also respect the production feature gate.
 - Work sequentially in the main agent. No subagents. Independent read-only tools may run in parallel.
 
 ## Architecture and compatibility
 
-- Go 1.27.1 and mygo v0.4.8 are pinned in go.mod. Do not combine dependency upgrades with this migration or add a frontend framework.
+- Go 1.27.1 and mygo v0.5.5 are pinned in go.mod. The 2026-10-19 upstream sync requires the new native UI APIs and SQLite runtime. Avoid unrelated dependency upgrades and do not add a frontend framework.
 - Main app: Go + native mygo/ui; macOS 13+ (user-approved 2026-10-14; macOS 12 stays on Swift). Swift WidgetKit and bridge remain under Sources/QuosparrWidget*; Widget requires macOS 14+.
 - Keep LSUIElement, old app identity, URL scheme, Widget kinds, Keychain service, preference domain, data directory and lock for replacement builds. Source/module names may remain upstream names.
 - Centralize personal configuration in internal/personal and mygo.json (product version source). Developer builds require a separate identity and explicitly marked sandbox.
@@ -24,6 +24,7 @@
 - The user-authorized local install now runs Go 0.2.0/2003; verified 2002 and original Swift app/data/preferences backups are retained outside Git. Preserve both rollback points. No real auth in failure tests; no system proxy/DNS changes on this host.
 - Production application data remains ~/.codex-runway; credential directories 0700, auth files and snapshots 0600, atomic writes. Acquire the legacy-compatible single lock before migrations or writes; skip upstream directory renaming when source and destination coincide.
 - Official Codex auth changes are limited to legitimate OAuth refresh or user-requested account switching. Non-current account refresh only writes the managed copy; reject stale writes after external switch/logout.
+- Skill, MCP and session management must use the same provider feature gates. Skill scans use the injected home, never a fallback to the host home. Only explicit user actions may modify Codex skills/MCP or recycle sessions; keep confirmations and backups.
 - Session repair only edits session_index.jsonl after backup; never delete session directories.
 - Development packages disable updates, login items, system credential access and real notifications. Retained Grok and Claude code requires explicit test opt-in, never a user setting. The synthetic sandbox also owns CLAUDE_CONFIG_DIR.
 

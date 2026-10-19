@@ -49,6 +49,45 @@ type FloatingWindow struct {
 	// OverFullScreen keeps the window on screen while another app is full
 	// screen; otherwise it steps aside.
 	OverFullScreen bool `json:"overFullScreen,omitempty"`
+	// AppFilter shows or hides the window by the app in front, from Apps.
+	AppFilter FloatingAppFilter `json:"appFilter,omitempty"`
+	Apps      []FloatingApp     `json:"apps,omitempty"`
+}
+
+// FloatingAppFilter is how the app in front shows or hides the floating
+// window. The desktop in front always shows it.
+type FloatingAppFilter string
+
+// FloatingAppFilter values.
+const (
+	FloatingAppFilterOff FloatingAppFilter = ""
+	// FloatingAppFilterAllow shows the window only while a listed app is
+	// in front.
+	FloatingAppFilterAllow FloatingAppFilter = "allow"
+	// FloatingAppFilterBlock hides the window while a listed app is in
+	// front.
+	FloatingAppFilterBlock FloatingAppFilter = "block"
+)
+
+// FloatingAppFilters returns every valid FloatingAppFilter.
+func FloatingAppFilters() []FloatingAppFilter {
+	return []FloatingAppFilter{FloatingAppFilterOff, FloatingAppFilterAllow, FloatingAppFilterBlock}
+}
+
+// Valid reports whether v is a known value.
+func (v FloatingAppFilter) Valid() bool { return slices.Contains(FloatingAppFilters(), v) }
+
+// MaxFloatingApps is how many apps the list keeps.
+const MaxFloatingApps = 64
+
+// FloatingApp is an app of the floating window's list. ID is what the system
+// knows it by: its bundle identifier on macOS (or its path), its
+// AppUserModelID, known-folder path or executable on Windows, and its
+// desktop file ID or executable on Linux. Path, where it is, draws its icon.
+type FloatingApp struct {
+	ID   string `json:"id"`
+	Name string `json:"name,omitempty"`
+	Path string `json:"path,omitempty"`
 }
 
 // OpacityPercent is the opacity in percent, 100 for the default.
@@ -61,6 +100,7 @@ func (f FloatingWindow) OpacityPercent() int {
 
 func (f FloatingWindow) clone() FloatingWindow {
 	f.Providers = slices.Clone(f.Providers)
+	f.Apps = slices.Clone(f.Apps)
 	return f
 }
 
@@ -80,6 +120,30 @@ func (f *FloatingWindow) normalize() {
 	if f.Opacity == MaxFloatingOpacity {
 		f.Opacity = 0
 	}
+	if !f.AppFilter.Valid() {
+		f.AppFilter = FloatingAppFilterOff
+	}
+	f.Apps = canonicalFloatingApps(f.Apps)
+}
+
+// canonicalFloatingApps drops apps without an ID and repeated IDs, up to
+// MaxFloatingApps.
+func canonicalFloatingApps(apps []FloatingApp) []FloatingApp {
+	var out []FloatingApp
+	seen := map[string]bool{}
+	for _, a := range apps {
+		if a.ID == "" || seen[a.ID] || len(out) == MaxFloatingApps {
+			continue
+		}
+		seen[a.ID] = true
+		out = append(out, a)
+	}
+	return out
+}
+
+// HasApp reports whether the list has the app of id.
+func (f FloatingWindow) HasApp(id string) bool {
+	return slices.ContainsFunc(f.Apps, func(a FloatingApp) bool { return a.ID == id })
 }
 
 // FloatingSelection is what the floating window shows: the chosen

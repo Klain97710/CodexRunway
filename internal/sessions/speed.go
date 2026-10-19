@@ -13,8 +13,7 @@ import (
 
 // ScanSpeed reads the model speed samples of the newest speed.SessionLimit
 // sessions active within speed.Window before now, newest first. Only the end
-// of each file is read, and a file that cannot be read is skipped; the error
-// is returned only when no session could be read, or the context ended.
+// of each file is read; a file that cannot be read fails the scan.
 func (s Scanner) ScanSpeed(ctx context.Context, now time.Time) ([]speed.Session, error) {
 	index, err := readIndex(s.CodexHome)
 	if err != nil {
@@ -25,7 +24,6 @@ func (s Scanner) ScanSpeed(ctx context.Context, now time.Time) ([]speed.Session,
 		titles[e.ID] = e.ThreadName
 	}
 	var result []speed.Session
-	var firstErr error
 	for _, c := range speedCandidates(s.CodexHome, now) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -35,17 +33,11 @@ func (s Scanner) ScanSpeed(ctx context.Context, now time.Time) ([]speed.Session,
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
 			}
-			if firstErr == nil {
-				firstErr = err
-			}
-			continue
+			return nil, err
 		}
 		if session != nil {
 			result = append(result, *session)
 		}
-	}
-	if len(result) == 0 && firstErr != nil {
-		return nil, firstErr
 	}
 	sort.SliceStable(result, func(i, j int) bool { return result[i].UpdatedAt.After(result[j].UpdatedAt) })
 	return result[:min(len(result), speed.SessionLimit)], nil
@@ -96,14 +88,28 @@ func (s Scanner) readSpeedSession(ctx context.Context, path string, titles map[s
 
 // scanSpeedFile reads the speed samples out of the end of one rollout file.
 func scanSpeedFile(ctx context.Context, path string) ([]speed.Sample, error) {
-	data, _, err := speed.ReadTail(path, speed.TailBytes)
+	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
 		return nil, err
 	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	data, start, _, err := speed.ReadTailAt(f, info.Size(), speed.TailBytes)
+	if err != nil {
+		return nil, err
+	}
 	var c speedCursor
+	if start > 0 {
+		if err := restoreSpeedContext(ctx, f, start, &c); err != nil {
+			return nil, err
+		}
+	}
 	err = speed.EachLine(ctx, data, c.line)
 	return c.samples, err
 }

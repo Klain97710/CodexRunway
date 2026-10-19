@@ -16,6 +16,7 @@ import (
 	"github.com/licoy/quosparr/internal/export"
 	"github.com/licoy/quosparr/internal/export/swiftjson"
 	"github.com/licoy/quosparr/internal/l10n"
+	"github.com/licoy/quosparr/internal/platform"
 	"github.com/licoy/quosparr/internal/runway"
 	"github.com/licoy/quosparr/internal/speed"
 	"github.com/licoy/quosparr/internal/store"
@@ -26,12 +27,14 @@ type claudeBridge struct {
 	mu         sync.Mutex
 	onChange   func()
 	state      runway.ClaudeState
+	refreshes  int
 	lc         l10n.Localizer
 	prefs      store.Preferences
 	local      *claude.SessionUsageSummary
 	localRange store.CostRange
 	localErr   error
 	speed      *speed.Report
+	speedErr   error
 	generation uint64
 	gateway    bool
 	refreshMu  sync.Mutex
@@ -47,15 +50,22 @@ func newClaudeBridge(mod *claude.Module, prefs store.Preferences, langs []string
 	return b
 }
 
-func (g *claudeBridge) State(time.Time) runway.ClaudeState {
+func (g *claudeBridge) State(now time.Time) runway.ClaudeState {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	st := g.state
+	if snap, ok := st.Detail.(*claude.UsageSnapshot); ok && snap.ResetGrants != nil && snap.ResetGrants.Shown() {
+		c := snap.ResetGrants.CodexSnapshot(now, st.UpdatedAt)
+		sum := runway.SummarizeCredits(c)
+		st.ResetCredits, st.ResetCreditSummary = &c, &sum
+	}
 	st.Widget = claudeWidget(st)
 	return st
 }
 
 func (g *claudeBridge) Refresh(ctx context.Context, force bool) error {
+	g.changeRefreshing(1)
+	defer g.changeRefreshing(-1)
 	g.refreshMu.Lock()
 	defer g.refreshMu.Unlock()
 	if ctx.Err() != nil {
@@ -75,6 +85,8 @@ func (g *claudeBridge) Refresh(ctx context.Context, force bool) error {
 
 // RefreshLocal rescans the local Claude sessions without touching the usage.
 func (g *claudeBridge) RefreshLocal(ctx context.Context) error {
+	g.changeRefreshing(1)
+	defer g.changeRefreshing(-1)
 	g.scanMu.Lock()
 	defer g.scanMu.Unlock()
 	if ctx.Err() != nil {
@@ -103,6 +115,7 @@ func (g *claudeBridge) setPreferences(p store.Preferences, langs []string) {
 	}
 	if speedChanged && !p.ShowsSpeedAnalysis {
 		g.speed = nil
+		g.speedErr = nil
 	}
 	if rangeChanged {
 		g.state.Cost = nil
@@ -122,6 +135,7 @@ func (g *claudeBridge) reload(notify bool) {
 	g.mu.Unlock()
 	next := buildClaudeState(mod, lc, gateway)
 	g.mu.Lock()
+	next.Refreshing = g.refreshes > 0
 	g.relabelLocked(&next)
 	applyClaudeLocal(&next, g.local)
 	if g.prefs.ShowsSpeedAnalysis {
@@ -142,13 +156,21 @@ func (g *claudeBridge) reload(notify bool) {
 }
 
 func (g *claudeBridge) relabelLocked(st *runway.ClaudeState) {
-	st.LastError = claudeErrorText(g.lc, st.Availability)
-	if snap, ok := st.Detail.(*claude.UsageSnapshot); ok {
-		st.Meters = claudeMeters(g.lc, *snap, st.UpdatedAt)
-		st.ExtraUsage = claudeExtraLine(snap.Extra)
+	st.SpeedError = ""
+	if st.API != nil {
+		relabelClaudeAPI(g.lc, st)
+	} else {
+		st.LastError = claudeErrorText(g.lc, st.Availability)
+		if snap, ok := st.Detail.(*claude.UsageSnapshot); ok {
+			st.Meters = claudeMeters(g.lc, *snap, st.UpdatedAt)
+			st.ExtraUsage = claudeExtraLine(snap.Extra)
+		}
 	}
 	if g.localErr != nil {
 		st.LastError = g.lc.Text(l10n.KeyStatusError) + ": " + g.localErr.Error()
+	}
+	if g.prefs.ShowsSpeedAnalysis && g.speedErr != nil {
+		st.SpeedError = g.speedErr.Error()
 	}
 }
 
@@ -183,6 +205,9 @@ func buildClaudeState(mod *claude.Module, lc l10n.Localizer, gateway bool) runwa
 	if !ok {
 		st.LastError = lc.Text(l10n.KeyClaudeNotLoggedIn)
 		return st
+	}
+	if acc.IsAPI() {
+		return buildClaudeAPIState(st, lc, acc)
 	}
 	st.Accounts.Display = codex.AccountDisplay{
 		Authenticated: !acc.RequiresReauth, AccountID: acc.ID,
@@ -328,6 +353,11 @@ func claudeSidebarAccount(lc l10n.Localizer, account claude.ManagedAccount) code
 	if account.LastError != "" {
 		row.LastError = claudeErrorCodeText(lc, account.LastError)
 	}
+	if account.IsAPI() && account.API != nil {
+		// The shared account rows read a relay from these codex fields.
+		row.AuthMode, row.APIBaseURL, row.APIModel = codex.AuthModeAPIKey, account.API.BaseURL, account.API.Model
+		row.APIQuota = account.APIQuota
+	}
 	return row
 }
 
@@ -341,6 +371,10 @@ func claudeErrorCodeText(lc l10n.Localizer, code string) string {
 		return lc.Text(l10n.KeyClaudeRateLimited)
 	case claude.ErrorCodeUsageParse:
 		return lc.Text(l10n.KeyClaudeUsageParseFailed)
+	case claude.ErrorCodeAPIUnauthorized:
+		return tx(lc, xAPIKeyRejected)
+	case claude.ErrorCodeAPI:
+		return tx(lc, xAPIBalanceFailed)
 	default:
 		return lc.Text(l10n.KeyStatusError)
 	}
@@ -349,6 +383,12 @@ func claudeErrorCodeText(lc l10n.Localizer, code string) string {
 func claudeAccountQuotas(lc l10n.Localizer, accounts []claude.ManagedAccount) map[string]runway.ClaudeAccountQuota {
 	out := map[string]runway.ClaudeAccountQuota{}
 	for _, account := range accounts {
+		if account.IsAPI() {
+			if q, ok := claudeAPIAccountQuota(lc, account); ok {
+				out[account.ID] = q
+			}
+			continue
+		}
 		if len(account.CachedQuota) == 0 {
 			continue
 		}
@@ -397,6 +437,9 @@ func claudeWidget(st runway.ClaudeState) *export.ProviderSnapshot {
 	for _, m := range st.Meters {
 		p.Quota = append(p.Quota, meterQuota(m))
 	}
+	if st.API != nil && st.API.Quota != nil {
+		applyClaudeAPIBalance(&p, *st.API.Quota)
+	}
 	for day, tokens := range st.Heatmap.Local {
 		p.DailyTokens = append(p.DailyTokens, export.NewDailyTokens(day, int(tokens)))
 	}
@@ -405,6 +448,10 @@ func claudeWidget(st runway.ClaudeState) *export.ProviderSnapshot {
 		if err == nil {
 			p.APIEquivalentCostUSD = &d
 		}
+	}
+	if st.ResetCreditSummary != nil {
+		r := export.NewResetCredits(st.ResetCreditSummary.AvailableCount, st.ResetCreditSummary.ExpiringCount)
+		p.ResetCredits = &r
 	}
 	out := export.NewProviderSnapshot(p)
 	return &out
@@ -429,6 +476,7 @@ func claudeCLIVersion(configDir string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, exe, "--version")
+	platform.HideConsoleWindow(cmd)
 	cmd.Env = append(os.Environ(), "CLAUDE_CONFIG_DIR="+configDir)
 	out, err := cmd.Output()
 	if err != nil {
@@ -529,10 +577,9 @@ func (rt *liveApp) switchClaude(l l10n.Localizer, id string) string {
 	if rt.claudeMod == nil {
 		return l.Text(l10n.KeyClaudeNotLoggedIn)
 	}
-	if _, err := rt.claudeMod.Apply(context.Background(), claude.Command{Kind: claude.CommandSwitch, ID: id, AllowWhileRunning: true}); err != nil {
+	if err := rt.switchClaudeAccount(context.Background(), id); err != nil {
 		return claudePublicError(l, err)
 	}
-	rt.claudeB.reload(true)
 	return ""
 }
 
@@ -589,6 +636,9 @@ func (rt *liveApp) refreshClaudeAll(ctx context.Context) string {
 }
 
 func claudePublicError(l l10n.Localizer, err error) string {
+	if text := apiErrorText(l, err); text != "" {
+		return text
+	}
 	var current *claude.CurrentAccountCannotBeRemovedError
 	switch {
 	case errors.As(err, &current):

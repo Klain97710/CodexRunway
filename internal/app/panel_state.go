@@ -18,11 +18,15 @@ type panelState struct {
 	accountGeneration uint64
 	cost              panelCostState
 	accounts          accountsState
+	skills            panelSkillsState
 	info              string // id of the open (i) popover
 	// setChartStyle saves the chart style; panelView points it at Settings.
 	setChartStyle func(store.ChartStyle)
 	// setResetTimeFormat persists the reset timestamp display mode.
 	setResetTimeFormat func(store.ResetTimeFormat)
+	// syncSkills and refreshSkills scan the skills; panelView points them at App.
+	syncSkills    func(PanelActions)
+	refreshSkills func(PanelActions)
 }
 
 // detailAccounts is the multi-account page. It is not a module, but it is

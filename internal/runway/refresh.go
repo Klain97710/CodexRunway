@@ -608,7 +608,12 @@ func (s *Service) refreshNow(ctx context.Context, policy usage.RefreshPolicy, lo
 	auth, gen, err := s.loadValidAuth(ctx, false)
 	// Account polling starts once the current credential is recorded, and
 	// also when loading it failed.
-	s.spawn(func() { s.refreshAccountsInline(s.root) })
+	// The current relay account is probed by this refresh itself.
+	skip := ""
+	if err == nil && auth.IsAPIKey() {
+		skip = s.currentRelayID()
+	}
+	s.spawn(func() { s.refreshAccountsInline(s.root, skip) })
 
 	var remote error
 	if err != nil {
@@ -623,6 +628,8 @@ func (s *Service) refreshNow(ctx context.Context, policy usage.RefreshPolicy, lo
 		s.mu.Unlock()
 		remote = err
 		gen = start
+	} else if auth.IsAPIKey() {
+		s.refreshKeyMode(ctx, auth, gen, policy, local)
 	} else {
 		remote = s.refreshLegs(ctx, auth, gen, policy, prefs, local)
 	}
@@ -843,7 +850,7 @@ func (s *Service) fetchCreditsStep(ctx context.Context, auth codex.Auth, gen uin
 
 // loadEstimate fetches the analytics rows and computes the quota estimate.
 func (s *Service) loadEstimate(ctx context.Context, auth codex.Auth, gen uint64, quota codexapi.QuotaSnapshot) {
-	if !s.enter(SectionQuotaEstimate) {
+	if auth.IsAPIKey() || !s.enter(SectionQuotaEstimate) {
 		return
 	}
 	defer s.leaveAccount(gen, SectionQuotaEstimate)
@@ -967,6 +974,11 @@ func (s *Service) refreshQuotaNow(ctx context.Context) {
 		s.leaveAccount(busyEpoch, SectionQuota)
 		return
 	}
+	if auth.IsAPIKey() {
+		s.refreshKeyQuota(ctx, auth, gen)
+		s.leaveAccount(busyEpoch, SectionQuota)
+		return
+	}
 	q, err := s.src.FetchQuota(ctx, apiAuth(auth))
 	if err != nil {
 		if !stopped(ctx, err) {
@@ -1012,7 +1024,7 @@ func (s *Service) refreshCreditsNow(ctx context.Context) {
 	}
 	defer s.leaveAccount(busyEpoch, SectionResetCredits)
 	auth, gen, err := s.loadValidAuth(ctx, true)
-	if err != nil {
+	if err != nil || auth.IsAPIKey() {
 		return
 	}
 	c, err := s.src.FetchResetCredits(ctx, apiAuth(auth))
@@ -1038,7 +1050,7 @@ func (s *Service) refreshCreditsNow(ctx context.Context) {
 // RefreshQuotaEstimate refreshes the quota estimate alone.
 func (s *Service) RefreshQuotaEstimate() <-chan struct{} {
 	s.mu.Lock()
-	skip := !s.prefs.ShowsQuotaEstimateSummary || s.allBusy || s.busy[SectionQuotaEstimate]
+	skip := !s.prefs.ShowsQuotaEstimateSummary || s.allBusy || s.busy[SectionQuotaEstimate] || s.keyModeLocked()
 	s.mu.Unlock()
 	if skip {
 		return closedChan()
@@ -1053,6 +1065,9 @@ func (s *Service) refreshEstimateNow(ctx context.Context) {
 		if !stopped(ctx, err) {
 			s.fail(nil, start, err, func() { s.estErr = s.errTextLocked(err) })
 		}
+		return
+	}
+	if auth.IsAPIKey() {
 		return
 	}
 	s.mu.Lock()

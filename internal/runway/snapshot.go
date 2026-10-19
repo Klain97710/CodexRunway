@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/licoy/quosparr/internal/alerts"
+	"github.com/licoy/quosparr/internal/apiquota"
 	"github.com/licoy/quosparr/internal/codex"
 	"github.com/licoy/quosparr/internal/codexapi"
 	"github.com/licoy/quosparr/internal/estimate"
@@ -76,6 +77,14 @@ type CodexView struct {
 	Generation uint64
 
 	Authenticated bool
+	// APIKeyMode is true while the Codex login is an API key: there is no
+	// ChatGPT quota, reset credits or estimate then, only the local usage.
+	// APIBaseURL is the relay site of that key ("" for a plain OpenAI key) and
+	// APIBalance the cached balance reading of the site (nil without one).
+	// Meters then holds the balance meter, if any.
+	APIKeyMode bool
+	APIBaseURL string
+	APIBalance *apiquota.Quota
 	// StatusText is the status item text; the *Text fields are one-line
 	// summaries and the *Lines fields the detail rows of each section.
 	StatusText         string

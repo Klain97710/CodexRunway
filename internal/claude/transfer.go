@@ -13,7 +13,8 @@ type Exporter struct {
 }
 
 // Export reads the managed credentials of ids. Missing accounts are skipped
-// and named in Failures. The pack uses provider "claude".
+// and named in Failures, and so are API relay accounts, whose keys are never
+// exported. The pack uses provider "claude".
 func (e Exporter) Export(ids []string, now time.Time) (codex.ExportResult, error) {
 	if len(ids) == 0 {
 		return codex.ExportResult{}, codex.ErrEmptySelection
@@ -28,6 +29,11 @@ func (e Exporter) Export(ids []string, now time.Time) (codex.ExportResult, error
 		meta, ok := idx.Account(id)
 		if !ok {
 			failures = append(failures, id+": account not found")
+			continue
+		}
+		if meta.IsAPI() {
+			// API keys stay on this Mac: they are not part of an account pack.
+			failures = append(failures, meta.ResolvedDisplayName()+": API accounts are not exported")
 			continue
 		}
 		credential, err := e.Store.LoadCredentialData(id)

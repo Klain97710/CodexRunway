@@ -57,6 +57,11 @@ type Meter struct {
 	Health         Health
 	MarkerPercents []int
 	Projection     *BurnProjection
+	// ValueText replaces the percentage in captions ("$12.34"); set on the
+	// balance meter of an API relay account.
+	ValueText string
+	// Balance marks that meter: it has no window and keeps its own title.
+	Balance bool
 }
 
 // HasReset reports whether the meter knows its reset time.

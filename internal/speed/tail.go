@@ -3,11 +3,12 @@ package speed
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"os"
 )
 
-// ReadTail returns the last limit bytes of the file. When the file is longer,
+// ReadTail returns the last limit bytes of a regular file. When the file is longer,
 // the cut first line is dropped and truncated is true, so every line returned
 // is whole.
 func ReadTail(path string, limit int64) (data []byte, truncated bool, err error) {
@@ -16,30 +17,46 @@ func ReadTail(path string, limit int64) (data []byte, truncated bool, err error)
 		return nil, false, err
 	}
 	defer f.Close()
-	size, err := f.Seek(0, io.SeekEnd)
+	info, err := f.Stat()
 	if err != nil {
 		return nil, false, err
 	}
-	start := max(size-limit, 0)
+	// A zero-byte read never reaches the OS, so it cannot reject a directory
+	// or device whose reported size is zero (notably directories on Windows).
+	if !info.Mode().IsRegular() {
+		return nil, false, &os.PathError{Op: "read", Path: path, Err: errors.New("not a regular file")}
+	}
+	data, _, truncated, err = ReadTailAt(f, info.Size(), limit)
+	return data, truncated, err
+}
+
+// ReadTailAt reads a tail bounded by a caller-supplied file size. start is the
+// offset of the first returned byte, which lets callers inspect only metadata
+// before the tail using the same open file and snapshot boundary.
+func ReadTailAt(r io.ReaderAt, size, limit int64) (data []byte, start int64, truncated bool, err error) {
+	start = max(size-limit, 0)
 	// With a cut, one byte more is read to tell a cut at a line start from a
 	// cut inside a line.
 	from := max(start-1, 0)
 	data = make([]byte, size-from)
-	n, err := f.ReadAt(data, from)
+	n, err := r.ReadAt(data, from)
 	if err != nil && err != io.EOF {
-		return nil, false, err
+		return nil, 0, false, err
+	}
+	if n != len(data) {
+		return nil, 0, false, io.ErrUnexpectedEOF
 	}
 	data = data[:n]
 	if start == 0 {
-		return data, false, nil
+		return data, 0, false, nil
 	}
-	if data[0] == '\n' {
-		return data[1:], true, nil
+	if len(data) > 0 && data[0] == '\n' {
+		return data[1:], from + 1, true, nil
 	}
 	if i := bytes.IndexByte(data, '\n'); i >= 0 {
-		return data[i+1:], true, nil
+		return data[i+1:], from + int64(i) + 1, true, nil
 	}
-	return nil, true, nil // one line longer than the limit
+	return nil, from + int64(n), true, nil // one line longer than the limit
 }
 
 // cancelCheckLines is how many lines pass between two checks of the context.

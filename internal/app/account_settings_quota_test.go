@@ -19,7 +19,7 @@ func TestSettingsQuotaUsesMainBranchSummaries(t *testing.T) {
 	reset := now.Add(6 * time.Hour)
 	acc := codex.ManagedAccount{ID: "one", DisplayName: "Personal", Email: "personal@example.com", CachedQuota: &codex.CachedAccountQuota{PrimaryUsedPercent: 49, PrimaryResetsAt: &reset, UpdatedAt: now}}
 	q := runway.GrokAccountQuota{Plan: "SuperGrok", UsedPercent: 49, ResetsAt: reset, IncludedUSD: "$73.50 / $150.00", UpdatedAt: now}
-	cq := runway.ClaudeAccountQuota{Plan: "Max 20x", UsedPercent: 49, ResetsAt: reset, ExtraUsage: "10 / 1234 USD", UpdatedAt: now}
+	cq := runway.ClaudeAccountQuota{Plan: "Max 20x", Title: l.Text(l10n.KeyFiveHourUsage), UsedPercent: 49, ResetsAt: reset, ExtraUsage: "10 / 1234 USD", UpdatedAt: now}
 	for _, provider := range store.Providers() {
 		v := accountIdentityView{account: acc, current: true, provider: provider, grokQuota: &q, claudeQuota: &cq}
 		tt := ui.NewTester(func(c *ui.Context) {
@@ -45,6 +45,30 @@ func TestSettingsQuotaUsesMainBranchSummaries(t *testing.T) {
 		if tt.HasText(want) {
 			t.Fatal("stale quota is still shown instead of reauthentication warning")
 		}
+	}
+}
+
+func TestClaudeSettingsQuotaWithoutWindowDoesNotShowFullQuota(t *testing.T) {
+	l := l10n.New(l10n.English)
+	for _, extra := range []string{"", "10 / 1234 USD"} {
+		t.Run(extra, func(t *testing.T) {
+			v := accountIdentityView{
+				provider:    store.ProviderClaude,
+				claudeQuota: &runway.ClaudeAccountQuota{Plan: "Pro", ExtraUsage: extra, UpdatedAt: time.Now()},
+			}
+			tt := ui.NewTester(func(c *ui.Context) { accountSettingsStatus(c, l, v) }, 520, 220)
+			if tt.HasText("100%") || !tt.HasText(l.Text(l10n.KeyClaudeNoQuotaData)) {
+				t.Fatalf("missing quota shown as full: %q", tt.Texts())
+			}
+			if extra != "" && !tt.HasText(extra) {
+				t.Fatalf("extra usage was hidden: %q", tt.Texts())
+			}
+			v.claudeQuota.Title = l.Text(l10n.KeyFiveHourUsage)
+			tt.Frame()
+			if !tt.HasText("100%") || tt.HasText(l.Text(l10n.KeyClaudeNoQuotaData)) {
+				t.Fatalf("valid zero usage must show full quota: %q", tt.Texts())
+			}
+		})
 	}
 }
 

@@ -158,6 +158,8 @@ type Service struct {
 	accountMessage string
 	refreshingIDs  map[string]bool
 	accountsBusy   bool
+	// probes are the relay accounts whose balance is being probed (by id).
+	probes map[string]bool
 
 	lastErr string
 
@@ -224,6 +226,7 @@ func New(o Options) *Service {
 		busy:           map[Section]bool{},
 		standalone:     map[uint64]accountTask{},
 		refreshingIDs:  map[string]bool{},
+		probes:         map[string]bool{},
 		detailFlight:   map[string]*flight{},
 		schedule:       NewSchedule(),
 		widgetSchedule: NewSchedule(),

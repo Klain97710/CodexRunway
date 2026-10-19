@@ -273,17 +273,17 @@ func TestPersistenceFailureIsReportedWithoutLosingTheAuthError(t *testing.T) {
 	}
 }
 
-// snapshotAll captures the three files a switch commits.
+// snapshotAll captures the files a switch commits.
 func snapshotAll(f switchFixture, id string) map[string][]byte {
 	out := map[string][]byte{}
-	for _, p := range []string{f.store.OfficialAuthPath(), f.store.CredentialPath(id), f.store.IndexPath()} {
+	for _, p := range []string{f.store.OfficialAuthPath(), f.store.CredentialPath(id), f.store.IndexPath(), f.store.ConfigPath()} {
 		out[p], _ = os.ReadFile(p)
 	}
 	return out
 }
 
 func TestSwitchRollsBackOnEveryCommitStage(t *testing.T) {
-	for _, stage := range []string{"official", "credential", "verify", "index"} {
+	for _, stage := range []string{"official", "credential", "verify", "config", "index"} {
 		t.Run(stage, func(t *testing.T) {
 			f := newSwitchFixture(t, false, false)
 			before := snapshotAll(f, f.target.ID)
