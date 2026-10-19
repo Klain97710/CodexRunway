@@ -10,6 +10,6 @@
 - 旧 Swift 版使用原个人 Sparkle 签名链；Go 版使用独立 mygo 签名与个人更新源。
 - 产品版本 0.2.0，构建号 2004，Go 主程序支持 macOS 13+，Widget 要求 14+；macOS 12 请继续使用 Swift 稳定版。提供 arm64/x86_64 隔离验收候选。
 
-首次隔离覆盖前，退出旧版并整组备份应用、偏好和数据。回退时恢复匹配的 Swift 应用和合成数据快照；不要用过期 OAuth 备份覆盖已旋转的真实令牌。此前已安装的 2003 与完整迁移验收状态见[迁移验证报告](../development/quosparr-migration-validation.md)；2004 源码同步与自动化结果见[同步记录](../development/upstream-sync-2026-10-19.md)。
+首次隔离覆盖前，退出旧版并整组备份应用、偏好和数据。回退时恢复匹配的 Swift 应用和合成数据快照；不要用过期 OAuth 备份覆盖已旋转的真实令牌。本机已安装的 2004 与完整迁移验收状态见[迁移验证报告](../development/quosparr-migration-validation.md)；2004 源码同步与自动化结果见[同步记录](../development/upstream-sync-2026-10-19.md)。
 
 This is an unaccepted migration candidate, not a daily-use replacement. Keep the Swift application until isolated upgrade, rollback, Widget and required platform checks pass. MIT license and original Licoy attribution are retained.

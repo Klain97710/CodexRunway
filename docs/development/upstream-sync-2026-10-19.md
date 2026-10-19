@@ -29,6 +29,17 @@
 
 ## 交付状态
 
-本机替换使用从干净提交构建的 arm64 replacement-candidate，并在安装前验证包、签名和备份。CI、安装提交、备份和启动结果在完成后追加于本节。
+GitHub CI [39222232702](https://github.com/Klain97710/CodexRunway/actions/runs/39222232702) 全部通过，包括 Go 回归、固定 Swift 数据兼容和 arm64/x86_64 开发包。下载的 CI 报告确认源码为 `81bf09426b6d3be9872f9e33413c93f3444bba94`、`dirty=false`、零失败，测试计数与本地一致。
+
+2026-10-19，按用户授权，从上述干净提交构建 arm64 replacement-candidate，安装到 `/Users/apple/Applications/CodexRunway.app` 并正常启动：
+
+- 正式身份、宿主/Widget 构建号 2004、Mach-O 最低系统、SQLite/桥接、最终签名、mygo 清单签名与 DMG 校验通过，二进制记录 `vcs.modified=false`。
+- 退出旧版 2003 后持有共享锁，备份旧应用、完整偏好和 19 个应用数据文件；逐文件指纹一致后原子替换。私有备份为 `~/.codex-runway-release/backups/20261019-162921-before-local-go-2004`，早期所有回退点保留。
+- 启动后只有一个宿主进程，共享锁正常持有，安装二进制与验证包一致。
+- 5 个账号、账号顺序、当前账号、重登录标记、完整偏好（包括开机启动设置）和代理保持不变。
+- Codex 配额与 Codex-only Widget 快照均在安装后刷新，快照权限 0600；Widget 插件注册在新安装路径。插件注册不视为桌面 Widget 的完整视觉验收。
+- 未切换账号、修复或回收会话，也未对真实账号执行失败注入。安装迁移不改写官方认证文件；启动后的合法刷新按原有路径运行。
+
+安装二进制 SHA256：`e2819f240acc7e011c64ab7f6222f61139934b6ce510397db32859fe3f36e6e2`。ZIP SHA256：`28c4cf35b69d519e3d3b6d2f51af7647ce59f6e6db3975cf04e64c685db2f1c1`。本地包和校验记录位于忽略的 `build/local-install-2004-arm64`；私有备份内保存安装、启动验证记录和回退说明。
 
 Intel 实机、最低系统原生启动、桌面 Widget、完整跨代更新与故障回退仍以[迁移验证报告](quosparr-migration-validation.md)中的未验收项为准。本次正常本机安装不等同于公开发布验收。

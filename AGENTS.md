@@ -4,7 +4,7 @@
 
 - This branch migrates the Klain97710 CodexRunway edition onto upstream Quosparr Go + mygo/ui. It is not an accepted daily replacement yet.
 - Follow `docs/superpowers/plans/2026-10-14-quosparr-migration-validation.md`; retain Swift stable code on `personal/legacy-swift` and keep `personal/main` stable until acceptance.
-- Upstream synchronized through `21947ff00f4b3b3beb01af7bc8373a09c7bca79b` (v1.6.2 plus website changes) on 2026-10-19; source build is 0.2.0/2004. The user explicitly requested local replacement on 2026-10-15; build 2003 is now installed and its normal launch verified.
+- Upstream synchronized through `21947ff00f4b3b3beb01af7bc8373a09c7bca79b` (v1.6.2 plus website changes) on 2026-10-19; source build is 0.2.0/2004. The user explicitly requested upstream sync and local replacement on 2026-10-19; build 2004 is now installed and its normal launch verified.
 - User-required behavior: Codex only; no Grok/Claude runtime or reset reactions; remaining-quota tray columns `5h | bar | %`, `7d | bar | %`; Pro hides standard 5h in the tray only; action-only context menu. Floating windows, provider lists and deep links must also respect the production feature gate.
 - Work sequentially in the main agent. No subagents. Independent read-only tools may run in parallel.
 
@@ -20,8 +20,8 @@
 ## Data and execution safety
 
 - Never log or commit tokens, keys, credentials, account identifiers or full auth documents. Tests use synthetic fixtures.
-- Default migration validation must not launch against real user data. The user explicitly authorized local arm64 replacement and normal launch verification for 2002 on 2026-10-14 and 2003 on 2026-10-15; both installations are complete. These exceptions do not authorize failure tests against real accounts. A temporary HOME does not isolate Keychain/UserDefaults; full GUI/failure acceptance still requires a disposable VM or dedicated test user.
-- The user-authorized local install now runs Go 0.2.0/2003; verified 2002 and original Swift app/data/preferences backups are retained outside Git. Preserve both rollback points. No real auth in failure tests; no system proxy/DNS changes on this host.
+- Default migration validation must not launch against real user data. The user explicitly authorized local arm64 replacement and normal launch verification for 2002 on 2026-10-14, 2003 on 2026-10-15 and 2004 on 2026-10-19; these installations are complete. These exceptions do not authorize failure tests against real accounts. A temporary HOME does not isolate Keychain/UserDefaults; full GUI/failure acceptance still requires a disposable VM or dedicated test user.
+- The user-authorized local install now runs Go 0.2.0/2004; verified 2003, 2002 and original Swift app/data/preferences backups are retained outside Git. Preserve all rollback points. No real auth in failure tests; no system proxy/DNS changes on this host.
 - Production application data remains ~/.codex-runway; credential directories 0700, auth files and snapshots 0600, atomic writes. Acquire the legacy-compatible single lock before migrations or writes; skip upstream directory renaming when source and destination coincide.
 - Official Codex auth changes are limited to legitimate OAuth refresh or user-requested account switching. Non-current account refresh only writes the managed copy; reject stale writes after external switch/logout.
 - Skill, MCP and session management must use the same provider feature gates. Skill scans use the injected home, never a fallback to the host home. Only explicit user actions may modify Codex skills/MCP or recycle sessions; keep confirmations and backups.
